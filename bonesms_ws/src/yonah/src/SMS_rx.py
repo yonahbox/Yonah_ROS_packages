@@ -57,7 +57,6 @@ class SMSrx():
             try:
                 
                 # Subscribe to mavros arming plugin, and then read an SMS received by the air router (stored in ReadCMD as a string)
-                arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
                 ReadCMDraw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
                 self.ReadCMD = ReadCMDraw.decode()
                 #print(ReadCMD)
