@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import rospy
 import os
@@ -17,18 +17,18 @@ class SMSrx():
         with open (textfile, "r") as reader:
             for line in reader:
                 self.whitelist.add(line[:-1]) # remove whitespace at end of line
-        print self.whitelist
+        print(self.whitelist)
 
     def checkArming(self):
         """Check for Arm/Disarm commands from sender"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         
         if 'Arm:False' in self.ReadCMD:
-            print 'DISARM'
+            print('DISARM')
             arm(0)
 
         if 'Arm:True' in self.ReadCMD:
-            print 'ARM'
+            print('ARM')
             arm(1)
     
     def check_SMS_true_false(self, node):
@@ -37,7 +37,7 @@ class SMSrx():
             launch = roslaunch.scriptapi.ROSLaunch()
             launch.start()
             process = launch.launch(node)
-            print process.is_alive()
+            print(process.is_alive())
 
         if 'SMS:False' in self.ReadCMD:
             process.stop()
@@ -55,8 +55,11 @@ class SMSrx():
     
         while not rospy.is_shutdown():
             try:
+                
+                # Subscribe to mavros arming plugin, and then read an SMS received by the air router (stored in ReadCMD as a string)
                 arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
-                self.ReadCMD = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
+                ReadCMDraw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
+                self.ReadCMD = ReadCMDraw.decode()
                 #print(ReadCMD)
 
                 if 'no message' in self.ReadCMD: # if no message from sender, then just skip
@@ -77,8 +80,8 @@ class SMSrx():
 
                     subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
  
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
+            except(rospy.ServiceException):
+                print("Service call failed")
             rate.sleep()
 
 if __name__=='__main__':
