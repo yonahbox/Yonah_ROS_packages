@@ -45,14 +45,15 @@ class SMSrx():
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
+        # Initiate everything
+        # When we start subscribing to more plugins (e.g. mode), might have to break out into a separate method
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.init_node('SMS_rx', anonymous=False)
         rate = rospy.Rate(2)
         node = roslaunch.core.Node('yonah','SMS_tx.py')
-        #first = False
-    
         self.populatewhitelist()
     
+        # Main loop
         while not rospy.is_shutdown():
             try:
                 
@@ -77,10 +78,14 @@ class SMSrx():
                     else:
                         print ('Rejected msg from unknown sender ' + sender)
 
-                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
- 
+                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Why is this here? We end up extracting sms twice
+            
+            except(subprocess.CalledProcessError):
+                print("SSH process into router has been killed.")
+            
             except(rospy.ServiceException):
                 print("Service call failed")
+            
             rate.sleep()
 
 if __name__=='__main__':

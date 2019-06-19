@@ -7,11 +7,13 @@ import subprocess
 
 def callback(data):
     rospy.loginfo(rospy.get_caller_id() + " Nemo is mode: %s armed: %s", data.mode, data.armed)
-#    RUTLATLON = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -i && gpsctl -x"], shell=False)
-#    LON = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -x"], shell=False)
-
-#    Sending SMS to Ground Control
-#    cmd2RUT = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '91514030 Nemo2 Lat:%s,Mode:%s,Arm:%s'"%(RUTLANLON, data.mode, data.armed)], shell=False)
+    try:
+        # Sending SMS to Ground Control
+        RUTLATLON = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -i && gpsctl -x"], shell=False)
+        # LON = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -x"], shell=False)
+        cmd2RUT = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '+6591993191 Nemo2 Lat:%s,Mode:%s,Arm:%s'"%(RUTLATLON, data.mode, data.armed)], shell=False)
+    except(subprocess.CalledProcessError):
+        print("SSH process into router has been killed.")
 
 def prepare():
     rospy.init_node('SMS_tx', anonymous=False)
