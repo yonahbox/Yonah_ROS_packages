@@ -11,6 +11,11 @@ class SMSrx():
     whitelist = set() # set of whitelisted numbers, initialized as an empty set
     ReadCMD = ""
 
+    # "Global" variables to be modified each time check_SMS_true_false is called
+    sms_flag = False
+    process = None
+    launch = None
+
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
         textfile = rospy.myargv(argv=sys.argv)[1]
@@ -34,14 +39,18 @@ class SMSrx():
     def check_SMS_true_false(self, node):
         """Check if air router should send out SMSes"""
         if 'SMS:True' in self.ReadCMD:
-            launch = roslaunch.scriptapi.ROSLaunch()
-            launch.start()
-            process = launch.launch(node)
-            print(process.is_alive())
+            self.launch = roslaunch.scriptapi.ROSLaunch()
+            self.launch.start()
+            self.process = self.launch.launch(node)
+            print(self.process.is_alive())
+            self.sms_flag = True
 
         if 'SMS:False' in self.ReadCMD:
-            process.stop()
-            launch.stop()
+            if not self.sms_flag: # SMS:False should only be called if SMS_tx is already running
+                pass
+            else:
+                self.process.stop()
+                self.launch.stop()
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
