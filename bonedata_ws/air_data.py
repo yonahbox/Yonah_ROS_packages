@@ -1,15 +1,15 @@
 #!/usr/bin/env/python
 
 # Imports essential libraries
+import os
 import time
-import rospy
-from std_msgs.msg import String
 import subprocess
 from subprocess import Popen, PIPE
 import rosnode
-import paramiko
-import socket
-import nclib
+from std_msgs.msg import String
+import rospy
+#import paramiko
+#import socket
 
 
 # Creates a ROS node based on air_data.py
@@ -53,7 +53,12 @@ class SSH:
 		self.__username = 'ubuntu'
 		self.__pkey = 'YonahAWSPrivateKey-8May19.pem'
 		self.__ssh_link = False
+
+	def ssh_init(self):
+		
 		self.ssh_attempt_connection()
+		if self.ssh_test_connection() == True:
+			self.netcat_init()
 
 	def ssh_test_connection(self):
 		
@@ -78,19 +83,23 @@ class SSH:
 	def ssh_attempt_connection(self):	
 		
 		print "Attempting connection..."
-		self.__ssh = paramiko.SSHClient()		
-		self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())			
-		try:
-			self.__ssh.connect(self.__server_address, username=self.__username, key_filename=self.__pkey, timeout=10)
-		except:
-			None
 		
-		subprocess.Popen(['bash', 'air_netcat_init.sh'])
+		# Work-in-Progress
+		#self.__ssh = paramiko.SSHClient()		
+		#self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())			
+		#try:
+		#	self.__ssh.connect(self.__server_address, username=self.__username, key_filename=self.__pkey, timeout=10)
+		#except:
+		#	None
+
+		self.ssh_linkage = subprocess.Popen(['bash', 'air_ssh_connection.sh'], stdout=PIPE)		
+		
+	
 
 	def ssh_attempt_reconnection(self, counter):
 
 		print "SSH Link Down, Initialising Reconnection Procedure"
-		self.__ssh.close()
+		self.ssh_linkage.terminate()
 		self.ssh_attempt_connection()
 		if (self.ssh_test_connection() == False):
 			if (counter is not 0):						
@@ -101,7 +110,15 @@ class SSH:
 				return False
 		else:
 			print "Connection Resumed!"
+			self.netcat_linkage.terminate()
+			self.netcat_init()
 			return True
+
+
+	def netcat_init(self):
+		self.netcat_linkage = subprocess.Popen(['bash', 'air_netcat_init.sh'], stdout=PIPE)
+		print "NETCAT Initialised"
+
 
 	def return_ssh_link():
 		return self.__ssh_link
@@ -111,6 +128,7 @@ class SSH:
 
 ros = ROS()
 ssh = SSH()
+ssh.ssh_init()
 
 # Main Program Loop
 
