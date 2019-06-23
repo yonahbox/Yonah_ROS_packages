@@ -8,13 +8,20 @@ import roslaunch
 
 class SMSrx():
     
-    whitelist = set() # set of whitelisted numbers, initialized as an empty set
-    ReadCMD = ""
+    def __init__(self):
+        self.whitelist = set() # set of whitelisted numbers, initialized as an empty set
+        self.ReadCMD = ""
 
-    # "Global" variables to be modified each time check_SMS_true_false is called
-    sms_flag = False
-    process = None
-    launch = None
+        # "Global" variables to be modified each time check_SMS_true_false is called
+        self.sms_flag = False
+        self.process = None
+        self.launch = None
+
+        rospy.wait_for_service('mavros/cmd/arming')
+        rospy.init_node('SMS_rx', anonymous=False)
+        self.rate = rospy.Rate(2)
+        self.node = roslaunch.core.Node('yonah','SMS_tx.py')
+        self.populatewhitelist()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
@@ -36,12 +43,12 @@ class SMSrx():
             print('ARM')
             arm(1)
     
-    def check_SMS_true_false(self, node):
+    def check_SMS_true_false(self):
         """Check if air router should send out SMSes"""
         if 'SMS:True' in self.ReadCMD:
             self.launch = roslaunch.scriptapi.ROSLaunch()
             self.launch.start()
-            self.process = self.launch.launch(node)
+            self.process = self.launch.launch(self.node)
             print(self.process.is_alive())
             self.sms_flag = True
 
@@ -54,19 +61,12 @@ class SMSrx():
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
-        # Initiate everything
-        # When we start subscribing to more plugins (e.g. mode), might have to break out into a separate method
-        rospy.wait_for_service('mavros/cmd/arming')
-        rospy.init_node('SMS_rx', anonymous=False)
-        rate = rospy.Rate(2)
-        node = roslaunch.core.Node('yonah','SMS_tx.py')
-        self.populatewhitelist()
     
         # Main loop
         while not rospy.is_shutdown():
             try:
                 
-                # Subscribe to mavros arming plugin, and then read an SMS received by the air router (stored in ReadCMD as a string)
+                # Read an SMS received by the air router (stored in ReadCMD as a string)
                 ReadCMDraw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
                 self.ReadCMD = ReadCMDraw.decode()
                 #print(ReadCMD)
@@ -82,12 +82,12 @@ class SMSrx():
 
                         # If sender is whitelisted, run through a series of checks to decipher and execute the command
                         self.checkArming()
-                        self.check_SMS_true_false(node)
+                        self.check_SMS_true_false()
 
                     else:
                         print ('Rejected msg from unknown sender ' + sender)
 
-                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Why is this here? We end up extracting sms twice
+                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS message
             
             except(subprocess.CalledProcessError):
                 print("SSH process into router has been killed.")
@@ -95,7 +95,7 @@ class SMSrx():
             except(rospy.ServiceException):
                 print("Service call failed")
             
-            rate.sleep()
+            self.rate.sleep()
 
 if __name__=='__main__':
     if len(rospy.myargv(argv=sys.argv)) < 2:
