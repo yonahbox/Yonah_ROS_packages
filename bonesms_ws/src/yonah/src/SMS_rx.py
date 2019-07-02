@@ -3,6 +3,7 @@ import sys
 import rospy
 import os
 from mavros_msgs.srv import CommandBool
+from mavros_msgs.srv import SetMode
 import subprocess
 import roslaunch
 
@@ -18,6 +19,7 @@ class SMSrx():
         self.launch = None
 
         rospy.wait_for_service('mavros/cmd/arming')
+        rospy.wait_for_service('mavros/set_mode')
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
         self.node = roslaunch.core.Node('yonah','SMS_tx.py')
@@ -42,6 +44,15 @@ class SMSrx():
         if 'Arm:True' in self.ReadCMD:
             print('ARM')
             arm(1)
+
+    def checkMode(self):
+        """Check for Mode change commands from sender. Mode is not case sensitive (:"""
+        mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
+
+        if 'Mode:' in self.ReadCMD:
+            modeCMD = (self.ReadCMD.splitlines()[4]).replace("Text: Mode:","")
+            print(modeCMD)
+            print(mode(custom_mode = modeCMD))
     
     def check_SMS_true_false(self):
         """Check if air router should send out SMSes"""
@@ -83,6 +94,7 @@ class SMSrx():
                         # If sender is whitelisted, run through a series of checks to decipher and execute the command
                         self.checkArming()
                         self.check_SMS_true_false()
+                        self.checkMode()
 
                     else:
                         print ('Rejected msg from unknown sender ' + sender)
