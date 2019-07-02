@@ -51,7 +51,7 @@ class SMStx():
         #rospy.loginfo(rospy.get_caller_id() + " Nemo is mode: %s armed: %s", data.mode, data.armed)
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
-        self.sendmsg
+        self.sendmsg()
     
     def get_VFD_HUD_data(self, data):
         '''Obtain VFD_HUD data (to be displayed eventually on MavP horizon module)'''
