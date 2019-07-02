@@ -33,14 +33,14 @@ class SMStx():
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
             "mode": "MANUAL",
-            "arspd": 0.0,
-            "gndspd": 0.0,
-            "heading": 0.0,
-            "thr": 0.0,
-            "rel_alt": 0.0,
-            "climb": 0.0,
-            "lat": 0.0,
-            "lon": 0.0,
+            #"arspd": 0.0,
+            #"gndspd": 0.0,
+            #"heading": 0.0,
+            #"thr": 0.0,
+            #"rel_alt": 0.0,
+            #"climb": 0.0,
+            #"lat": 0.0,
+            #"lon": 0.0,
             #"rll": 0.0,
             #"pit": 0.0,
             #"yaw": 0.0
@@ -51,6 +51,7 @@ class SMStx():
         #rospy.loginfo(rospy.get_caller_id() + " Nemo is mode: %s armed: %s", data.mode, data.armed)
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
+        self.sendmsg
     
     def get_VFD_HUD_data(self, data):
         '''Obtain VFD_HUD data (to be displayed eventually on MavP horizon module)'''
@@ -82,10 +83,9 @@ class SMStx():
     def prepare(self):
         rospy.init_node('SMS_tx', anonymous=False)
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
-        rospy.Subscriber("vfr_hud", VFR_HUD, self.get_VFD_HUD_data)
-        rospy.Subscriber("global_position/global", NavSatFix, self.get_GPS_coord)
+        #rospy.Subscriber("vfr_hud", VFR_HUD, self.get_VFD_HUD_data)
+        #rospy.Subscriber("global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
-        self.sendmsg()
         rospy.spin()
 
 if __name__=='__main__':
