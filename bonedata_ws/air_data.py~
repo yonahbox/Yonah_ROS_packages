@@ -1,18 +1,19 @@
 #!/usr/bin/env/python
 
 # Imports essential libraries
+import os
 import time
 import subprocess
 from subprocess import Popen, PIPE
 import rosnode
 from std_msgs.msg import String
 import rospy
-#import paramiko
-#import socket
+import socket
+import multiprocessing
 
 
 # Creates a ROS node based on air_data.py
-rospy.init_node('air_data', anonymous=False)
+#rospy.init_node('air_data', anonymous=False)
 
 
 # Defines the ROS class and its associated methods
@@ -52,65 +53,66 @@ class SSH:
 		self.__username = 'ubuntu'
 		self.__pkey = 'YonahAWSPrivateKey-8May19.pem'
 		self.__ssh_link = False
+		self.ssh_linkage = ''
+
+		self.ssh_init()
+
+	def ssh_init(self):
+		
 		self.ssh_attempt_connection()
-		while ssh_test_connection(self):
-			self.ssh_attempt_connection()
-		subprocess.Popen(['bash', 'air_netcat_init.sh'])
-		print "NETCAT Initialised"
+		
+		#if self.ssh_test_connection() == True:
+		#	self.__ssh_link = True			
+		#	self.netcat_init()
 
 	def ssh_test_connection(self):
-		
-		print "Testing Connection..."
-		for attempts in range(5):
 
-			probe = subprocess.Popen(['netstat', '-t'], stdout=PIPE)
-			network_list = probe.stdout.readlines()
-			for i in network_list:
-				if ('ec2-18-138-24-228' in i) and ('ESTABLISHED' in i):
-					print "SSH Link Connected"
-					self.__ssh_link = True
-					return True
-			time.sleep(0.5)
-			continue
-		
-		print "SSH Not Connected"
-		self._ssh_link = False
-		return False
+		try:
+			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.sock.connect(('localhost', 4000))
+			self.sock.send("AIR")
+			self.from_server = self.recv(4096)
+			self.sock.close()
+			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
+				print "Air-Server-Ground Established"
+				self.__ssh_link = True
+				return True
+			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
+				print "Air-Server Established, Server-Ground Connection Down, Please Reconnect"	
+				self.__ssh_link = False			
+				return False
+		except: 
+			print "Air-to-Server Disconnected\n"
+			self.__ssh_link = False
+			return False
 							
-	
 	def ssh_attempt_connection(self):	
 		
 		print "Attempting connection..."
-		
-		# Work-in-Progress
-		#self.__ssh = paramiko.SSHClient()		
-		#self.__ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())			
-		#try:
-		#	self.__ssh.connect(self.__server_address, username=self.__username, key_filename=self.__pkey, timeout=10)
-		#except:
-		#	None
+		self.ssh_linkage = subprocess.Popen(['bash', 'air_ssh_connection.sh'], stdout=PIPE)		
 
-		subprocess.Popen(['bash', 'air_ssh_connection'])		
-		
-	
-
-	def ssh_attempt_reconnection(self, counter):
+	def ssh_attempt_reconnection(self):
 
 		print "SSH Link Down, Initialising Reconnection Procedure"
-		self.__ssh.close()
+		self.ssh_linkage.terminate()
 		self.ssh_attempt_connection()
-		if (self.ssh_test_connection() == False):
-			if (counter is not 0):						
-				self.ssh_attempt_reconnection(counter-1)
-				return False			
-			else:
-				print "Reconnection Procedure Failed"
-				return False
-		else:
+		if (self.ssh_test_connection() == True):
 			print "Connection Resumed!"
-			subprocess.Popen(['bash', 'air_netcat_init.sh'])
-			print "NETCAT Initialised"
+			self.__ssh_link = True
+			self.netcat_linkage.terminate()
+			self.netcat_init()
 			return True
+
+		else:
+			print "Connection Failed"
+			self.__ssh_link = False
+			return False
+	
+
+	def netcat_init(self):
+		self.netcat_linkage = subprocess.Popen(['bash', 'air_netcat_init.sh'], stdout=PIPE)
+		print "NETCAT Initialised"
+
 
 	def return_ssh_link():
 		return self.__ssh_link
@@ -118,18 +120,17 @@ class SSH:
 			
 # Initialising ROS and SSH instances
 
-ros = ROS()
+#ros = ROS()
 ssh = SSH()
 
 # Main Program Loop
 
-while True:
+#while True:
 	
-	if (ssh.ssh_test_connection() == False):
-		ssh.ssh_attempt_reconnection(counter=5)
+#	if (ssh.ssh_test_connection() == False):
+#		while (ssh.ssh_attempt_reconnection() == False):
+#			time.sleep(2)			
+#			continue
 	
-	if (ssh.return_ssh_link == False):
-		ros.publish(sms, 'SSH Link Failed')
-	
-	time.sleep(2)
+#	time.sleep(2)
 			
