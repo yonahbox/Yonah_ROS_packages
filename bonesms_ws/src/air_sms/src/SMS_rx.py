@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""
+Read an SMS from Ground Control, extract and process the message inside, and send
+necessary commands to the aircraft.
+
+Message format:
+- Arm the aircraft: "arm"
+- Disarm the aircraft: "disarm"
+- Mode change: "mode <flight mode in lowercase letters>"
+- Activate SMS sending from aircraft: "sms true"
+- Deactivate SMS sending from aircraft: "sms false"
+Commands are not case sensitive
+"""
+
+# Possible bug: need to clear existing SMS msg inside the air router before starting up this script
+
 import sys
 import rospy
 import os
@@ -11,7 +26,8 @@ class SMSrx():
     
     def __init__(self):
         self.whitelist = set() # set of whitelisted numbers, initialized as an empty set
-        self.ReadCMD = ""
+        self.msglist = "" # Incoming msg extracted directly from RUT, consisting of 5 lines that is specified here: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
+        self.msg = "" # actual message that was sent by the GCS. It is located on the 5th line of msglist
 
         # "Global" variables to be modified each time check_SMS_true_false is called
         self.sms_flag = False
@@ -22,7 +38,7 @@ class SMSrx():
         rospy.wait_for_service('mavros/set_mode')
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
-        self.node = roslaunch.core.Node('yonah','SMS_tx.py')
+        self.node = roslaunch.core.Node('air_sms','SMS_tx.py')
         self.populatewhitelist()
 
     def populatewhitelist(self):
@@ -37,34 +53,36 @@ class SMSrx():
         """Check for Arm/Disarm commands from sender"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         
-        if 'Arm:False' in self.ReadCMD:
+        if self.msg == "disarm":
             print('DISARM')
             arm(0)
 
-        if 'Arm:True' in self.ReadCMD:
+        if self.msg == "arm":
             print('ARM')
             arm(1)
 
     def checkMode(self):
-        """Check for Mode change commands from sender. Mode is not case sensitive (:"""
+        """Check for Mode change commands from sender"""
         mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
 
-        if 'Mode:' in self.ReadCMD:
-            modeCMD = (self.ReadCMD.splitlines()[4]).replace("Text: Mode:","")
-            print(modeCMD)
-            print(mode(custom_mode = modeCMD))
+        # Message structure: mode <flight mode>; hence extract the 2nd word to get flightmode
+        if 'mode' in self.msg:
+            mode_command = self.msg.split()[1]
+            print (mode_command)
+            mode(custom_mode = mode_command)
     
     def check_SMS_true_false(self):
         """Check if air router should send out SMSes"""
-        if 'SMS:True' in self.ReadCMD:
+        if self.msg == "sms true":
             self.launch = roslaunch.scriptapi.ROSLaunch()
             self.launch.start()
             self.process = self.launch.launch(self.node)
             print(self.process.is_alive())
             self.sms_flag = True
 
-        if 'SMS:False' in self.ReadCMD:
-            if not self.sms_flag: # SMS:False should only be called if SMS_tx is already running
+        if self.msg == "sms false":
+            # SMS:False should only be called if SMS_tx is already running
+            if not self.sms_flag:
                 pass
             else:
                 self.process.stop()
@@ -76,22 +94,24 @@ class SMSrx():
         # Main loop
         while not rospy.is_shutdown():
             try:
-                
                 # Read an SMS received by the air router (stored in ReadCMD as a string)
                 ReadCMDraw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
-                self.ReadCMD = ReadCMDraw.decode()
-                #print(ReadCMD)
+                self.msglist = ReadCMDraw.decode().splitlines()
 
-                if 'no message' in self.ReadCMD: # if no message from sender, then just skip
+                # if no message from sender, then just skip
+                if 'no message' in self.msglist:
                     pass
             
                 else:
-                    sender = (self.ReadCMD.splitlines()[2]).split()[1] # extract sender number (2nd word of 3rd line in ReadCMD
+                    # extract sender number (2nd word of 3rd line in msglist)
+                    sender = self.msglist[2].split()[1]
                 
-                    if sender in self.whitelist: # Ensure sender is whitelisted
+                    # Ensure sender is whitelisted. If sender is whitelisted, extract the message
+                    # msg is located on the 5th line (minus the first word) of msglist. It is converted to lowercase automatically
+                    # Then run through a series of checks to see what command should be sent to aircraft
+                    if sender in self.whitelist:
                         print ('Command from '+ sender)
-
-                        # If sender is whitelisted, run through a series of checks to decipher and execute the command
+                        self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         self.checkArming()
                         self.check_SMS_true_false()
                         self.checkMode()
@@ -111,6 +131,7 @@ class SMSrx():
 
 if __name__=='__main__':
     if len(rospy.myargv(argv=sys.argv)) < 2:
-        raise Exception("You must specify the whitelist, e.g. rosrun yonah SMS_rx.py <path to whitelist>")
-    run = SMSrx()
-    run.client()
+        print("Usage: rosrun air_sms SMS_rx.py <path to whitelist>")
+    else:
+        run = SMSrx()
+        run.client()
