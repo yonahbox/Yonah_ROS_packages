@@ -3,6 +3,7 @@
 import time
 import socket
 import multiprocessing
+import subprocess
 
 class AWS:
 
@@ -50,7 +51,10 @@ class AWS:
 			p.start()
 
 		for p in self.processes:
-			p.join(0.5)	
+			p.join(0.5)
+		
+		for p in self.processes:
+			p.terminate()	
 
 		self.status = []
 			
@@ -65,25 +69,32 @@ class AWS:
 		except:
 			self.status.append('')
 
-
-		if ("AIR" in self.status) and ("GROUND" in self.status):	
+		if ("AIR" in self.status) and (("GROUND" in self.status) or ("GROUNDNETCAT" in self.status)):	
 			print "Air-Server-Ground Established"
 		
-		elif ("AIR" in self.status) and not ("GROUND" in self.status):
+		elif ("AIR" in self.status) and not (("GROUND" in self.status) or ("GROUNDNETCAT" in self.status)):
 			print "Air-Server Established, Server-Ground Connection Down, Please Reconnect"				
 
-		elif not ("AIR" in self.status) and ("GROUND" in self.status):
+		elif not ("AIR" in self.status) and (("GROUND" in self.status) or ("GROUNDNETCAT" in self.status)):
 			print "Server-Ground Established, Air-Server Connection Down, Please Reconnect"	
 
 		else:
 			print "SSH Connection Lost"
 
+	def socket_terminate(self):
+		self.s_air.shutdown()
+		self.s_air.close()
+		self.s_ground.shutdown()
+		self.s_ground.close()
+
 
 aws = AWS()
 
-while True:
-
-	aws.per_second
-	time.sleep(1)
-
-
+try:
+	while True:
+		aws.per_second
+		time.sleep(1)
+	
+except KeyboardInterrupt:
+	print "Terminating Connection..."
+	aws.socket_terminate()

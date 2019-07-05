@@ -61,9 +61,9 @@ class SSH:
 		
 		self.ssh_attempt_connection()
 		
-		#if self.ssh_test_connection() == True:
-		#	self.__ssh_link = True			
-		#	self.netcat_init()
+		if self.ssh_test_connection() == True:
+			self.__ssh_link = True			
+			self.netcat_init()
 
 	def ssh_test_connection(self):
 
