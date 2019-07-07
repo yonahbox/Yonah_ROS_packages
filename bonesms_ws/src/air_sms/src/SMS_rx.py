@@ -12,11 +12,10 @@ Message format:
 Commands are not case sensitive
 """
 
-# Possible bug: need to clear existing SMS msg inside the air router before starting up this script
-
 import sys
 import rospy
 import os
+import time
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 import subprocess
@@ -40,6 +39,7 @@ class SMSrx():
         self.rate = rospy.Rate(2)
         self.node = roslaunch.core.Node('air_sms','SMS_tx.py')
         self.populatewhitelist()
+        self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
@@ -48,6 +48,27 @@ class SMSrx():
             for line in reader:
                 self.whitelist.add(line[:-1]) # remove whitespace at end of line
         print(self.whitelist)
+
+    def purge_residual_sms(self):
+        """
+        Removes SMSes entering the air router for 5 seconds after bootup. This prevents the situation
+        where an SMS might have been sent when the air router was off, and the air router acts
+        on the SMS the moment it switches on (which can be very dangerous if that SMS is an arm msg!)
+        
+        To-do: Replace this with a more robust system to delete any messages that were delivered before
+        air router startup
+        """
+        start_time = time.time()
+        cur_time = time.time()
+        print ("Purging residual SMS, please wait...")
+        while (cur_time - start_time) < 5.0:
+            try:
+                subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
+                cur_time = time.time()
+            except:
+                cur_time = time.time()
+                continue
+        print ("Purge complete!")
 
     def checkArming(self):
         """Check for Arm/Disarm commands from sender"""
@@ -87,6 +108,7 @@ class SMSrx():
             else:
                 self.process.stop()
                 self.launch.stop()
+                self.sms_flag = False
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
