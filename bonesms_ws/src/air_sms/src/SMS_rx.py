@@ -3,6 +3,8 @@
 Read an SMS from Ground Control, extract and process the message inside, and send
 necessary commands to the aircraft.
 
+Prerequesite: Please ensure the GCS number (GCS_no) in SMS_tx.launch is correct
+
 Message format:
 - Arm the aircraft: "arm"
 - Disarm the aircraft: "disarm"
@@ -12,9 +14,7 @@ Message format:
 Commands are not case sensitive
 """
 
-import sys
 import rospy
-import os
 import time
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
@@ -33,21 +33,24 @@ class SMSrx():
         self.process = None
         self.launch = None
 
+        # Subscribe to all necessary mavros topics, initialize node, and prepare to launch SMS_tx node if necessary
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
-        self.node = roslaunch.core.Node('air_sms','SMS_tx.py')
+        self.SMS_tx = roslaunch.core.Node('air_sms','SMS_tx.py', name = 'SMS_tx')
+        
+        # Security and safety measures
         self.populatewhitelist()
         self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
-        textfile = rospy.myargv(argv=sys.argv)[1]
+        textfile = rospy.get_param("~whitelist", "src/whitelist.txt")
         with open (textfile, "r") as reader:
             for line in reader:
                 self.whitelist.add(line[:-1]) # remove whitespace at end of line
-        print(self.whitelist)
+        rospy.loginfo(self.whitelist)
 
     def purge_residual_sms(self):
         """
@@ -68,18 +71,18 @@ class SMSrx():
             except:
                 cur_time = time.time()
                 continue
-        print ("Purge complete!")
+        rospy.loginfo("Purge complete!")
 
     def checkArming(self):
         """Check for Arm/Disarm commands from sender"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         
         if self.msg == "disarm":
-            print('DISARM')
+            rospy.loginfo('DISARM')
             arm(0)
 
         if self.msg == "arm":
-            print('ARM')
+            rospy.loginfo('ARM')
             arm(1)
 
     def checkMode(self):
@@ -89,7 +92,7 @@ class SMSrx():
         # Message structure: mode <flight mode>; hence extract the 2nd word to get flightmode
         if 'mode' in self.msg:
             mode_command = self.msg.split()[1]
-            print (mode_command)
+            rospy.loginfo(mode_command)
             mode(custom_mode = mode_command)
     
     def check_SMS_true_false(self):
@@ -97,7 +100,7 @@ class SMSrx():
         if self.msg == "sms true":
             self.launch = roslaunch.scriptapi.ROSLaunch()
             self.launch.start()
-            self.process = self.launch.launch(self.node)
+            self.process = self.launch.launch(self.SMS_tx)
             print(self.process.is_alive())
             self.sms_flag = True
 
@@ -132,28 +135,25 @@ class SMSrx():
                     # msg is located on the 5th line (minus the first word) of msglist. It is converted to lowercase automatically
                     # Then run through a series of checks to see what command should be sent to aircraft
                     if sender in self.whitelist:
-                        print ('Command from '+ sender)
+                        rospy.loginfo('Command from '+ sender)
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         self.checkArming()
                         self.check_SMS_true_false()
                         self.checkMode()
 
                     else:
-                        print ('Rejected msg from unknown sender ' + sender)
+                        rospy.loginfo('Rejected msg from unknown sender ' + sender)
 
                     subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS message
             
             except(subprocess.CalledProcessError):
-                print("SSH process into router has been killed.")
+                rospy.loginfo("SSH process into router has been killed.")
             
             except(rospy.ServiceException):
-                print("Service call failed")
+                rospy.loginfo("Service call failed")
             
             self.rate.sleep()
 
 if __name__=='__main__':
-    if len(rospy.myargv(argv=sys.argv)) < 2:
-        print("Usage: rosrun air_sms SMS_rx.py <path to whitelist>")
-    else:
-        run = SMSrx()
-        run.client()
+    run = SMSrx()
+    run.client()

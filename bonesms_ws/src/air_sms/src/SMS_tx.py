@@ -4,6 +4,8 @@
 Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
 MAVROS topics: http://wiki.ros.org/mavros
 
+Prerequesite: Please ensure the GCS number (GCS_no) in SMS_tx.launch is correct
+
 Message breakdown (each entry is separated by a space):
 Armed: 1 or 0
 Mode: String
@@ -16,9 +18,9 @@ Climb Rate: m/s
 Lat
 Lon
 '''
+# Current status: VFD_HUD and GPS topics is are not being subscribed to. This is work in progress
 
 import rospy
-import os
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from sensor_msgs.msg import NavSatFix
@@ -27,12 +29,13 @@ import subprocess
 
 class SMStx():
 
-    def __init__(self, recv_no):
+    def __init__(self, GCS_no):
         '''Initialize all message entries'''
-        self.recv_no = recv_no # Receiver/Ground Control phone number
+        self.GCS_no = GCS_no # Receiver/Ground Control phone number
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
             "mode": "MANUAL",
+            "lanlon": "0" # Temporary stopgap: We use RUT's GPS
             #"arspd": 0.0,
             #"gndspd": 0.0,
             #"heading": 0.0,
@@ -75,8 +78,9 @@ class SMStx():
         '''Compile info from all MAVROS topics into a msg string and send it as an SMS'''
         msg = str(self.entries)
         try:
-            #RUTLATLON = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -i && gpsctl -x"], shell=False)
-            cmd2RUT = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.recv_no, msg)], shell=False)
+            # Next line will eventually be removed once we work out how to subscribe to multiple topics
+            self.entries["latlon"] = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -i && gpsctl -x"], shell=False)
+            cmd2RUT = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
         except(subprocess.CalledProcessError):
             print("SSH process into router has been killed.")
 
@@ -89,11 +93,10 @@ class SMStx():
         rospy.spin()
 
 if __name__=='__main__':
-    recv_no = "+6591993191"
-    run = SMStx(recv_no)
+    GCS_no = "+6591993191"
+    run = SMStx(GCS_no)
     run.prepare()
 
 #Old Ways
 #    cmd2RUT = "echo Mode: %s Arm: %s | nc 192.168.1.1 5002"%(data.mode, data.armed)
 #    os.system(cmd2RUT)
-
