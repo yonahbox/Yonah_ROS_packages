@@ -51,7 +51,7 @@ class AWS:
 			p.start()
 
 		for p in self.processes:
-			p.join(0.5)
+			p.join(1)
 		
 		for p in self.processes:
 			p.terminate()	
