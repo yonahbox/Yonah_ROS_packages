@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import time
 import socket
@@ -18,8 +18,8 @@ class SSH:
 
 	def ssh_attempt_connection(self):	
 		
-		print "Attempting connection..."
-		self.ssh_linkage = subprocess.Popen(['bash', 'ground_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
+		print "Attempting connection...\r\n"
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/goodness/Yonah_ROS_packages/bonedata_ws/ground_ssh_connection.sh'], stdout=PIPE, stderr=PIPE, bufsize=-1)
 		
 		time.sleep(5)	
 
@@ -46,14 +46,14 @@ class SSH:
 			self.client.close()
 	
 			if ("GROUND" in self.from_server) and ("AIR" in self.from_server):	
-				print "Air-Server-Ground Established\n"	
+				print "Air-Server-Ground Established\r"	
 				self.ssh_link = True	
 			elif ("GROUND" in self.from_server) and not ("AIR" in self.from_server):
-				print "Server-Ground Established, Air-Server Connection Down, Please Reconnect\n"
+				print "Server-Ground Established, Air-Server Connection Down, Please Reconnect\r"
 				self.ssh_link = True				
 
-		except: 
-			print "Server-Ground Disconnected\n"
+		except:
+			print "Server-Ground Disconnected\r"
 			self.ssh_link = False
 			self.netcat_link = False
 
@@ -61,9 +61,9 @@ class SSH:
 
 	def netcat_init(self):
 			
-		self.netcat_linkage = subprocess.Popen(['bash', 'ground_netcat_init.sh'], stdout=PIPE)
+		self.netcat_linkage = subprocess.Popen(['bash', '/home/goodness/Yonah_ROS_packages/bonedata_ws/ground_netcat_init.sh'], stdout=PIPE)
 		self.netcat_link = True
-		print "NETCAT Initialised"	
+		print "NETCAT Initialised\r"	
 
 	def ssh_terminate(self):
 	
@@ -76,7 +76,7 @@ ssh = SSH()
 
 try:
 	while True:
-	
+
 		if ssh.netcat_link == False:
 			ssh.netcat_init()
 	
@@ -87,6 +87,6 @@ try:
 
 except KeyboardInterrupt:
 	ssh.ssh_terminate()
-	print "Terminating program..."
+	print "Terminating program...\r"
 
 

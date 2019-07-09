@@ -4,6 +4,37 @@ import time
 import socket
 import subprocess
 from subprocess import PIPE
+import rospy
+from std_msgs.msg import String
+
+rospy.init_node('air_data', anonymous=False)
+
+class ROS:
+
+	def __init__(self):
+		self.receipt = []
+		self.test = None
+		to_sms = rospy.Publisher('data_to_sms', String, queue_size=50)
+		to_mavros = rospy.Publisher('data_to_mavros', String, queue_size=50)
+		from_sms = rospy.Subscriber('data_from_sms', String, self.subscribe)
+		from_mavros = rospy.Subscriber('data_from_mavros', String, self.subscribe)
+
+		
+	def publish(self, dest, message):
+		if sms in dest:
+			to_sms.publish(message)
+		if mavros in dest:
+			to_mavros.publish(message)
+	
+	def subscribe(self, message):
+		self.receipt_log.append(message)
+
+	def return_receipt(self):
+		return self.receipt_log
+
+	def clear_receipt(self):
+		self.receipt = []
+		return True
 
 class SSH:
 
@@ -19,8 +50,9 @@ class SSH:
 
 	def ssh_attempt_connection(self):	
 		
-		print "Attempting connection..."
-		self.ssh_linkage = subprocess.Popen(['bash', 'air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
+		rospy.loginfo("Attempting connection...")
+		print "\r"
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
 
@@ -42,10 +74,12 @@ class SSH:
 			self.from_server = self.client.recv(4096)
 			self.client.close()
 			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
-				print "Air-Server-Ground Established\n"	
+				rospy.loginfo("Air-Server-Ground Established")
+				print "\r"	
 				self.ssh_link = True	
 			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
-				print "Air-Server Established, Server-Ground Connection Down, Please Reconnect\n"
+				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
+				print "\r"
 				self.ssh_link = True
 				self.netcat_link = False
 			if ("NETCAT" in self.from_server):
@@ -54,30 +88,36 @@ class SSH:
 				self.ground_netcat = False				
 
 		except: 
-			print "Air-Server Disconnected\n"
+			print rospy.logerr("Air-Server Disconnected")
+			print "\r"
 			self.ssh_link = False
 			self.netcat_link = False
 
 		self.from_server = ''
 
 	def netcat_init(self):
-	
 		
 		self.netcat_list = subprocess.Popen(['pidof', 'netcat'], stdout=PIPE).stdout.read()
 		self.arg = 'kill -9 ' + self.netcat_list
-		subprocess.Popen([self.arg], shell= True)	
-		self.netcat_linkage = subprocess.Popen(['bash', 'air_netcat_init.sh'], stdout=PIPE)
+		subprocess.Popen([self.arg], shell=True)
+		rospy.loginfo("NETCAT Reset")
+		print "\r"	
+		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE)
 		self.netcat_link = True
-		print "NETCAT Initialised"
+		rospy.loginfo("NETCAT Initialised")
+		print "\r"
 
 	def ssh_terminate(self):
 	
+		rospy.loginfo("Program Terminating...")
+		print "\r"
 		self.ssh_link = False
 		self.netcat_link = False
 		self.ssh_linkage.kill()
 		self.netcat_linkage.kill()
 
 
+ros = ROS()
 ssh = SSH()
 
 try:
@@ -93,6 +133,5 @@ try:
 
 except KeyboardInterrupt:
 	ssh.ssh_terminate()
-	print "Terminating program..."
 
 
