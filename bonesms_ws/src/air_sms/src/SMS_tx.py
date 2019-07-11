@@ -31,19 +31,20 @@ class SMStx():
 
     def __init__(self, GCS_no):
         '''Initialize all message entries'''
+        rospy.init_node('SMS_tx', anonymous=False)
+        self.rate = rospy.Rate(0.2)
         self.GCS_no = GCS_no # Receiver/Ground Control phone number
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
             "mode": "MANUAL",
-            "lanlon": "0" # Temporary stopgap: We use RUT's GPS
-            #"arspd": 0.0,
-            #"gndspd": 0.0,
-            #"heading": 0.0,
-            #"thr": 0.0,
-            #"rel_alt": 0.0,
-            #"climb": 0.0,
-            #"lat": 0.0,
-            #"lon": 0.0,
+            "arspd": 0.0,
+            "gndspd": 0.0,
+            "heading": 0.0,
+            "thr": 0.0,
+            "rel_alt": 0.0,
+            "climb": 0.0,
+            "lat": 0.0,
+            "lon": 0.0,
             #"rll": 0.0,
             #"pit": 0.0,
             #"yaw": 0.0
@@ -54,21 +55,21 @@ class SMStx():
         #rospy.loginfo(rospy.get_caller_id() + " Nemo is mode: %s armed: %s", data.mode, data.armed)
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
-        self.sendmsg()
     
-    def get_VFD_HUD_data(self, data):
-        '''Obtain VFD_HUD data (to be displayed eventually on MavP horizon module)'''
-        self.entries["arspd"] = data.Airspeed
-        self.entries["gndspd"] = data.Gndspeed
-        self.entries["heading"] = data.Heading
-        self.entries["thr"] = data.Throttle
-        self.entries["rel_alt"] = data.Altitude
-        self.entries["climb"] = data.Climb
+    def get_VFR_HUD_data(self, data):
+        '''Obtain VFR_HUD data (to be displayed eventually on MavP horizon module)'''
+        self.entries["arspd"] = data.airspeed
+        self.entries["gndspd"] = data.groundspeed
+        self.entries["heading"] = data.heading
+        self.entries["thr"] = data.throttle
+        self.entries["rel_alt"] = data.altitude
+        self.entries["climb"] = data.climb
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude'''
-        self.entries["lat"] = data.Lat
-        self.entries["lon"] = data.Lon
+        self.entries["lat"] = data.latitude
+        self.entries["lon"] = data.longitude
+        self.sendmsg()
 
     #def get_RPY(self, data):
     #    '''Obtain IMU Roll, Pitch and Yaw Angles'''
@@ -78,22 +79,20 @@ class SMStx():
         '''Compile info from all MAVROS topics into a msg string and send it as an SMS'''
         msg = str(self.entries)
         try:
-            # Next line will eventually be removed once we work out how to subscribe to multiple topics
-            self.entries["latlon"] = subprocess.check_output(["ssh", "root@192.168.1.1", "gpsctl -i && gpsctl -x"], shell=False)
             cmd2RUT = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
         except(subprocess.CalledProcessError):
             print("SSH process into router has been killed.")
 
     def prepare(self):
-        rospy.init_node('SMS_tx', anonymous=False)
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
-        #rospy.Subscriber("vfr_hud", VFR_HUD, self.get_VFD_HUD_data)
-        #rospy.Subscriber("global_position/global", NavSatFix, self.get_GPS_coord)
+        rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
+        rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
+        self.rate.sleep()
         rospy.spin()
 
 if __name__=='__main__':
-    GCS_no = "+6591993191"
+    GCS_no = "12345678"
     run = SMStx(GCS_no)
     run.prepare()
 
