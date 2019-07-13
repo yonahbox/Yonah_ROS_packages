@@ -15,7 +15,6 @@ Commands are not case sensitive
 """
 
 import rospy
-import time
 from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
@@ -57,15 +56,15 @@ class SMSrx():
         To-do: Replace this with a more robust system to delete any messages that were delivered before
         air router startup
         """
-        start_time = time.time()
-        cur_time = time.time()
+        start_time = rospy.get_time()
+        cur_time = rospy.get_time()
         rospy.loginfo("Purging residual SMS, please wait...")
         while (cur_time - start_time) < 5.0:
             try:
                 subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
-                cur_time = time.time()
+                cur_time = rospy.get_time()
             except:
-                cur_time = time.time()
+                cur_time = rospy.get_time()
                 continue
         rospy.loginfo("Purge complete!")
 
