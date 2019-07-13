@@ -16,6 +16,7 @@ Commands are not case sensitive
 
 import rospy
 import time
+from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 import subprocess
@@ -28,17 +29,12 @@ class SMSrx():
         self.msglist = "" # Incoming msg extracted directly from RUT, consisting of 5 lines that is specified here: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
         self.msg = "" # actual message that was sent by the GCS. It is located on the 5th line of msglist
 
-        # "Global" variables to be modified each time check_SMS_true_false is called
-        self.sms_flag = False
-        self.process = None
-        self.launch = None
-
-        # Subscribe to all necessary mavros topics, initialize node, and prepare to launch SMS_tx node if necessary
+        # Subscribe to all necessary mavros topics, prepare to publish to SMS_tx node, and initialize SMS_rx node
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
+        self.sms_sender = rospy.Publisher('sendsms', String, queue_size = 5)
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
-        self.SMS_tx = roslaunch.core.Node('air_sms','SMS_tx.py', name = 'SMS_tx')
         
         # Security and safety measures
         self.populatewhitelist()
@@ -63,7 +59,7 @@ class SMSrx():
         """
         start_time = time.time()
         cur_time = time.time()
-        print ("Purging residual SMS, please wait...")
+        rospy.loginfo("Purging residual SMS, please wait...")
         while (cur_time - start_time) < 5.0:
             try:
                 subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
@@ -96,22 +92,11 @@ class SMSrx():
             mode(custom_mode = mode_command)
     
     def check_SMS_true_false(self):
-        """Check if air router should send out SMSes"""
+        """Check if SMS_tx should send out SMSes"""
         if self.msg == "sms true":
-            self.launch = roslaunch.scriptapi.ROSLaunch()
-            self.launch.start()
-            self.process = self.launch.launch(self.SMS_tx)
-            print(self.process.is_alive())
-            self.sms_flag = True
-
+            self.sms_sender.publish("true")
         if self.msg == "sms false":
-            # SMS:False should only be called if SMS_tx is already running
-            if not self.sms_flag:
-                pass
-            else:
-                self.process.stop()
-                self.launch.stop()
-                self.sms_flag = False
+            self.sms_sender.publish("false")
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
@@ -142,15 +127,15 @@ class SMSrx():
                         self.checkMode()
 
                     else:
-                        rospy.loginfo('Rejected msg from unknown sender ' + sender)
+                        rospy.logwarn('Rejected msg from unknown sender ' + sender)
 
                     subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS message
             
             except(subprocess.CalledProcessError):
-                rospy.loginfo("SSH process into router has been killed.")
+                rospy.logwarn("SSH process into router has been killed.")
             
             except(rospy.ServiceException):
-                rospy.loginfo("Service call failed")
+                rospy.logwarn("Service call failed")
             
             self.rate.sleep()
 
