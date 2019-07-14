@@ -35,6 +35,9 @@ class SMStx():
         rospy.init_node('SMS_tx', anonymous=False)
         self.rate = rospy.Rate(0.2)
         self.sms_flag = False # Determine whether we should send SMS to Ground Control
+        self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
+        self.long_interval = rospy.get_param("~long_interval") # Long time interval between each SMS sent (seconds)
+        self.interval = self.long_interval # Interval between each SMS (in seconds) defaults to long_interval on bootup
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
@@ -76,11 +79,15 @@ class SMStx():
     #    self.entries["rll"] = data
 
     def check_sms_true_false(self, data):
-        '''Subscribe to SMS_rx node to see if we should send SMS'''
+        '''Subscribe to SMS_rx node to see if we should send SMS, and whether in long or short intervals'''
         if data.data == "true":
             self.sms_flag = True
         if data.data == "false":
             self.sms_flag = False
+        if data.data == "short":
+            self.interval = self.short_interval
+        if data.data == "long":
+            self.interval = self.long_interval
 
     def sendmsg(self, data):
         '''
@@ -100,15 +107,14 @@ class SMStx():
     def prepare(self):
         '''
         Main function to subscribe to all mavros topics and send SMS message (if requested by SMS_rx node)
-        If SMS sending is activated, messages are sent once every 2 seconds (specified by rospy.Timer)
-        To do: Design a system to vary the SMS sending interval (e.g. send more frequently when other links are down)
+        If SMS sending is activated, messages are sent at an interval (in seconds) specified by self.interval
         '''
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
         rospy.Subscriber("sendsms", String, self.check_sms_true_false)
-        message_sender = rospy.Timer(rospy.Duration(2), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.interval), self.sendmsg)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()

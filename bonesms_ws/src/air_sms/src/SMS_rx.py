@@ -11,6 +11,8 @@ Message format:
 - Mode change: "mode <flight mode in lowercase letters>"
 - Activate SMS sending from aircraft: "sms true"
 - Deactivate SMS sending from aircraft: "sms false"
+- Set long time intervals between each SMS message: "sms long" (on bootup, interval is long by default)
+- Set short time intervals between each SMS message: "sms short"
 Commands are not case sensitive
 """
 
@@ -97,6 +99,13 @@ class SMSrx():
         if self.msg == "sms false":
             self.sms_sender.publish("false")
     
+    def check_SMS_interval_short_long(self):
+        """Check if interval between each SMS sent should be short or long (defaults to long on bootup)"""
+        if self.msg == "sms long":
+            self.sms_sender.publish("long")
+        if self.msg == "sms short":
+            self.sms_sender.publish("short")
+    
     def client(self):
         """Main function to let aircraft receive SMS commands"""
     
@@ -123,6 +132,7 @@ class SMSrx():
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         self.checkArming()
                         self.check_SMS_true_false()
+                        self.check_SMS_interval_short_long()
                         self.checkMode()
 
                     else:

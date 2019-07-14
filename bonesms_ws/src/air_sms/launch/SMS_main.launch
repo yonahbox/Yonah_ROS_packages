@@ -8,6 +8,10 @@
     <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
     <arg name="whitelist" default="$(find air_sms)/src/whitelist.txt"/>
 
+    <!--Short and long message sending intervals in seconds-->
+    <arg name="short_interval" default="5">
+    <arg name="long_interval" default="60">
+
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen">
 
@@ -23,6 +27,8 @@
     <node pkg="air_sms" type="SMS_tx.py" name="SMS_tx"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="GCS_no" value="$(arg GCS_no)" />
+        <param name="short_interval" value="(arg short_interval)">
+        <param name="long_interval" value="(arg long_interval)">
     </node>
 
 </launch>
