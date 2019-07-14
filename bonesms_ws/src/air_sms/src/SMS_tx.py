@@ -18,7 +18,6 @@ Climb Rate: m/s
 Lat
 Lon
 '''
-# Current status: VFD_HUD and GPS topics is are not being subscribed to. This is work in progress
 
 import rospy
 from std_msgs.msg import String
@@ -56,12 +55,16 @@ class SMStx():
         }
     
     def get_mode_and_arm_status(self, data):
-        '''Obtain mode and arm status from mavros_msgs/State'''
+        '''Obtain mode and arm status from mavros/state'''
+        if not self.sms_flag:
+            return
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
-        '''Obtain VFR_HUD data (to be displayed eventually on MavP horizon module)'''
+        '''Obtain VFR_HUD data from mavros/vfr_hud'''
+        if not self.sms_flag:
+            return
         self.entries["arspd"] = data.airspeed
         self.entries["gndspd"] = data.groundspeed
         self.entries["heading"] = data.heading
@@ -70,7 +73,9 @@ class SMStx():
         self.entries["climb"] = data.climb
 
     def get_GPS_coord(self, data):
-        '''Obtain GPS latitude and longitude'''
+        '''Obtain GPS latitude and longitude from mavros/global_position/global'''
+        if not self.sms_flag:
+            return
         self.entries["lat"] = data.latitude
         self.entries["lon"] = data.longitude
 
