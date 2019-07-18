@@ -21,10 +21,6 @@ class AWS:
 		self.ground_ack = multiprocessing.Queue()
 		self.status = []
 
-		while True:
-			self.per_second()
-			time.sleep(1)
-
 	def air_sock_ping(self):
 		
 		self.s_air.listen(1)		
@@ -93,7 +89,7 @@ aws = AWS()
 try:
 	while True:
 		aws.per_second
-		time.sleep(1)
+		time.sleep(5)
 	
 except KeyboardInterrupt:
 	print "Terminating Connection..."
