@@ -61,6 +61,10 @@ class SSH:
 
 	def netcat_init(self):
 			
+		self.netcat_list = subprocess.Popen(['pidof', 'netcat'], stdout=PIPE).stdout.read()
+		self.arg = 'kill -9 ' + self.netcat_list
+		subprocess.Popen([self.arg], shell=True, stdout=PIPE, stderr=PIPE)
+		print "NETCAT Reset\r"		
 		self.netcat_linkage = subprocess.Popen(['bash', '/home/goodness/Yonah_ROS_packages/bonedata_ws/ground_netcat_init.sh'], stdout=PIPE)
 		self.netcat_link = True
 		print "NETCAT Initialised\r"	
@@ -77,13 +81,13 @@ ssh = SSH()
 try:
 	while True:
 
-		if ssh.netcat_link == False:
+		if (ssh.ssh_link == True) and (ssh.netcat_link == False):
 			ssh.netcat_init()
 	
 		if ssh.ssh_test_connection() == False:
 			ssh.ssh_attempt_connection()
 
-		time.sleep(0.2)
+		time.sleep(1)
 
 except KeyboardInterrupt:
 	ssh.ssh_terminate()

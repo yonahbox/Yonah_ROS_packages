@@ -99,7 +99,7 @@ class SSH:
 		
 		self.netcat_list = subprocess.Popen(['pidof', 'netcat'], stdout=PIPE).stdout.read()
 		self.arg = 'kill -9 ' + self.netcat_list
-		subprocess.Popen([self.arg], shell=True)
+		subprocess.Popen([self.arg], shell=True, stdout=PIPE, stderr=PIPE)
 		rospy.loginfo("NETCAT Reset")
 		print "\r"	
 		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE)
@@ -117,7 +117,7 @@ class SSH:
 		self.netcat_linkage.kill()
 
 
-ros = ROS()
+#ros = ROS()
 ssh = SSH()
 
 try:
@@ -129,7 +129,7 @@ try:
 		if ssh.ssh_test_connection() == False:
 			ssh.ssh_attempt_connection()
 
-		time.sleep(0.2)
+		time.sleep(1)
 
 except KeyboardInterrupt:
 	ssh.ssh_terminate()
