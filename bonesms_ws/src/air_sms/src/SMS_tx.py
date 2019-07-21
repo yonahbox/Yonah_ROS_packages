@@ -37,6 +37,7 @@ class SMStx():
         self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
         self.long_interval = rospy.get_param("~long_interval") # Long time interval between each SMS sent (seconds)
         self.interval = self.long_interval # Interval between each SMS (in seconds) defaults to long_interval on bootup
+        self.min_interval = 1 # Minimum allowable time interval between each SMS sent (1 second)
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
@@ -108,6 +109,14 @@ class SMStx():
                 rospy.logwarn("SSH process into router has been killed.")
         else:
             rospy.loginfo("SMS sending is deactivated")
+        
+        # Sleep for the specified interval. For some reason, we cannot exploit rospy.Duration's capability
+        # to control the interval. Thus, the following block of code is required. Note that rospy.Timer
+        # will not allow the time interval to go below the minimum allowable interval (min_interval)
+        start_time = rospy.get_time()
+        cur_time = rospy.get_time()
+        while (cur_time - start_time) < self.interval:
+            cur_time = rospy.get_time()
 
     def prepare(self):
         '''
@@ -119,7 +128,7 @@ class SMStx():
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
         rospy.Subscriber("sendsms", String, self.check_sms_true_false)
-        message_sender = rospy.Timer(rospy.Duration(self.interval), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
