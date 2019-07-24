@@ -92,19 +92,13 @@ class SMSrx():
             rospy.loginfo(mode_command)
             mode(custom_mode = mode_command)
     
-    def check_SMS_true_false(self):
-        """Check if SMS_tx should send out SMSes"""
-        if self.msg == "sms true":
-            self.sms_sender.publish("true")
-        if self.msg == "sms false":
-            self.sms_sender.publish("false")
-    
-    def check_SMS_interval_short_long(self):
-        """Check if interval between each SMS sent should be short or long (defaults to long on bootup)"""
-        if self.msg == "sms long":
-            self.sms_sender.publish("long")
-        if self.msg == "sms short":
-            self.sms_sender.publish("short")
+    def check_SMS(self):
+        """
+        Check if SMS_tx should send out SMSes, and whether the
+        interval between each SMS sent should be short or long (defaults to long on bootup)
+        """
+        if "sms" in self.msg:
+            self.sms_sender.publish(self.msg)
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
@@ -131,8 +125,7 @@ class SMSrx():
                         rospy.loginfo('Command from '+ sender)
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         self.checkArming()
-                        self.check_SMS_true_false()
-                        self.check_SMS_interval_short_long()
+                        self.check_SMS()
                         self.checkMode()
 
                     else:

@@ -84,15 +84,15 @@ class SMStx():
     #    '''Obtain IMU Roll, Pitch and Yaw Angles'''
     #    self.entries["rll"] = data
 
-    def check_sms_true_false(self, data):
+    def check_SMS(self, data):
         '''Subscribe to SMS_rx node to see if we should send SMS, and whether in long or short intervals'''
-        if data.data == "true":
+        if data.data == "sms true":
             self.sms_flag = True
-        if data.data == "false":
+        if data.data == "sms false":
             self.sms_flag = False
-        if data.data == "short":
+        if data.data == "sms short":
             self.interval = self.short_interval
-        if data.data == "long":
+        if data.data == "sms long":
             self.interval = self.long_interval
 
     def sendmsg(self, data):
@@ -127,7 +127,7 @@ class SMStx():
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
-        rospy.Subscriber("sendsms", String, self.check_sms_true_false)
+        rospy.Subscriber("sendsms", String, self.check_SMS)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
         self.rate.sleep()
         rospy.spin()
