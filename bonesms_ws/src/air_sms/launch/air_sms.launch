@@ -3,17 +3,16 @@
 <launch>
 
     <!-- please fill in the ground router's number. Enclose it in '' to recognise it as a string (instead of int)-->
-    <arg name="GCS_no" default="'+60135344652'"/>
+    <arg name="GCS_no"/>
 
     <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
-    <arg name="whitelist" default="$(find air_sms)/src/whitelist.txt"/>
+    <arg name="whitelist"/>
 
     <!--Short and long message sending intervals in seconds-->
-    <arg name="short_interval" default="5"/>
-    <arg name="long_interval" default="60"/>
+    <arg name="short_interval"/>
+    <arg name="long_interval"/>
 
-    <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
-    <arg name="log_output" default="screen"/>
+    <arg name="log_output"/>
 
     <!-- SMS_rx node: Receive SMS from Ground Control and send commands to aircraft/SMS_tx if necessary-->
     <node pkg="air_sms" type="SMS_rx.py" name="SMS_rx"
