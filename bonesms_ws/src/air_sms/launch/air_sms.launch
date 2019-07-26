@@ -1,0 +1,33 @@
+<!-- launch file for Yonah main SMS Telemetry Node on Bone-->
+
+<launch>
+
+    <!-- please fill in the ground router's number. Enclose it in '' to recognise it as a string (instead of int)-->
+    <arg name="GCS_no"/>
+
+    <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
+    <arg name="whitelist"/>
+
+    <!--Short and long message sending intervals in seconds-->
+    <arg name="short_interval"/>
+    <arg name="long_interval"/>
+
+    <arg name="log_output"/>
+
+    <!-- SMS_rx node: Receive SMS from Ground Control and send commands to aircraft/SMS_tx if necessary-->
+    <node pkg="air_sms" type="SMS_rx.py" name="SMS_rx"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="whitelist" value="$(arg whitelist)" />
+    </node>
+
+    <!--SMS_tx node: Send SMS containing key aircraft info to Ground Control.
+    SMS sending is deactivated by default. If SMS_rx receives a message by GCS requesting for SMS sending,
+    then SMS_rx will notify SMS_tx to start sending (similar for deactivation)-->
+    <node pkg="air_sms" type="SMS_tx.py" name="SMS_tx"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="GCS_no" value="$(arg GCS_no)" />
+        <param name="short_interval" value="$(arg short_interval)" />
+        <param name="long_interval" value="$(arg long_interval)" />
+    </node>
+
+</launch>
