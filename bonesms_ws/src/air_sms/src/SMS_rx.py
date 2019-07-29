@@ -21,7 +21,6 @@ from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 import subprocess
-import roslaunch
 
 class SMSrx():
     
