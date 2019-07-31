@@ -33,7 +33,7 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
+        #self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.sms_flag = False # Determine whether we should send SMS to Ground Control
         self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
@@ -93,6 +93,9 @@ class SMStx():
         increase SMS sending frequency, and notify GCS (through SMS) on the connection status.
         If connection is alive, air_data will publish "SVC" (serviceable) message
         '''
+        # Todo: Implement a system that will take action when no message is received from the data_to_sms topic
+        # after a certain value. The rospy.wait_for_message seems to be what we want for this; see
+        # https://docs.ros.org/diamondback/api/rospy/html/rospy.client-module.html#wait_for_message
         if data.data == "SVC":
             self.entries["AWS"] = 1
             self.interval = self.long_interval
@@ -124,23 +127,23 @@ class SMStx():
                 sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
                 if sendstatus == "Timeout":
                     rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-                    self.pub_to_data.publish("SMS to GCS: Msg sending Timeout")
-                else:
-                    self.pub_to_data.publish("SMS_to_GCS: Success")
+                    #self.pub_to_data.publish("SMS to GCS: Msg sending Timeout")
+                #else:
+                    #self.pub_to_data.publish("SMS_to_GCS: Success")
             except(subprocess.CalledProcessError):
                 rospy.logwarn("SSH process into router has been killed.")
-                self.pub_to_data.publish("SMS to GCS: Cannot ssh into air router")
+                #self.pub_to_data.publish("SMS to GCS: Cannot ssh into air router")
         else:
             rospy.loginfo("SMS sending is deactivated")
-            self.pub_to_data.publish("SMS to GCS: SMS sending is deactivated")
+            #self.pub_to_data.publish("SMS to GCS: SMS sending is deactivated")
         
         # Sleep for the specified interval. For some reason, we cannot exploit rospy.Duration's capability
         # to control the interval. Thus, the following block of code is required. Note that rospy.Timer
         # will not allow the time interval to go below the minimum allowable interval (min_interval)
-        start_time = rospy.get_time()
-        cur_time = rospy.get_time()
-        while (cur_time - start_time) < self.interval:
-            cur_time = rospy.get_time()
+        #start_time = rospy.get_time()
+        #cur_time = rospy.get_time()
+        #while (cur_time - start_time) < self.interval:
+        #    cur_time = rospy.get_time()
 
     def prepare(self):
         '''
@@ -151,9 +154,10 @@ class SMStx():
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
-        rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
+        #rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
-        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.long_interval), self.sendmsg) # temporary fix for stability, will be removed
+        #message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
