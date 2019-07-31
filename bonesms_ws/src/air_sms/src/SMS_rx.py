@@ -21,7 +21,6 @@ from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 import subprocess
-import roslaunch
 
 class SMSrx():
     
@@ -51,22 +50,22 @@ class SMSrx():
 
     def purge_residual_sms(self):
         """
-        Removes SMSes entering the air router for 5 seconds after bootup. This prevents the situation
+        Clear the router of SMSes (capped at 30 for the RUT955) upon bootup. This prevents the situation
         where an SMS might have been sent when the air router was off, and the air router acts
         on the SMS the moment it switches on (which can be very dangerous if that SMS is an arm msg!)
         
         To-do: Replace this with a more robust system to delete any messages that were delivered before
         air router startup
         """
-        start_time = rospy.get_time()
-        cur_time = rospy.get_time()
+        # The bad thing about this new implementation is that it increases the boot time of the nodes
+        # by 30 seconds (1 second for each SMS deleted)
+        count = 0
         rospy.loginfo("Purging residual SMS, please wait...")
-        while (cur_time - start_time) < 5.0:
+        while count < 30:
             try:
-                subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False)
-                cur_time = rospy.get_time()
+                subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d '%s'"%(str(count))], shell=False)
+                count += 1
             except:
-                cur_time = rospy.get_time()
                 continue
         rospy.loginfo("Purge complete!")
 
