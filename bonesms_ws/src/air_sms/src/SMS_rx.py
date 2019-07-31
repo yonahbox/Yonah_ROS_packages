@@ -59,9 +59,9 @@ class SMSrx():
         """
         # The bad thing about this new implementation is that it increases the boot time of the nodes
         # by 30 seconds (1 second for each SMS deleted)
-        count = 0
+        count = 1
         rospy.loginfo("Purging residual SMS, please wait...")
-        while count < 30:
+        while count <= 30:
             try:
                 subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d '%s'"%(str(count))], shell=False)
                 count += 1
