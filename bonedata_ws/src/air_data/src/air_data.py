@@ -2,7 +2,7 @@
 
 """
 File Name: air_data.py
-Date Modified: 26/07/2019
+Date Modified: 30/07/2019
 Required Scripts: air_ssh_connection.sh, air_netcat_init.sh
 
 Launched by ROS under air_data.launch, which performs the initialisation of a SSH connection from the companion computer to a web server.
@@ -24,29 +24,18 @@ from std_msgs.msg import String
 class ROS:
 
 	def __init__(self):
-		self.receipt = []
-		self.test = None
-		to_sms = rospy.Publisher('data_to_sms', String, queue_size=50)
-		to_mavros = rospy.Publisher('data_to_mavros', String, queue_size=50)
-		from_sms = rospy.Subscriber('data_from_sms', String, self.subscribe)
-		from_mavros = rospy.Subscriber('data_from_mavros', String, self.subscribe)
-
+		self.sms_status = []
+		self.to_sms = rospy.Publisher('data_to_sms', String, queue_size=50)
+		self.from_sms = rospy.Subscriber('sms_to_data', String, self.subscribe)
 		
-	def publish(self, dest, message):
-		if sms in dest:
-			to_sms.publish(message)
-		if mavros in dest:
-			to_mavros.publish(message)
+	def publish(self, message):
+		self.to_sms.publish(message)
 	
 	def subscribe(self, message):
-		self.receipt_log.append(message)
-
-	def return_receipt(self):
-		return self.receipt_log
+		self.sms_status.append(message)
 
 	def clear_receipt(self):
-		self.receipt = []
-		return True
+		self.sms_status = []
 
 #Defines the SSH Class that handles the network connection between the companion computer and the remote web server
 class SSH:
@@ -54,7 +43,8 @@ class SSH:
 	#Initialises SSH states and attempts connection
 	def __init__(self):
 		
-		self.ssh_link = False
+		self.air_link = False
+		self.ground_link = False
 		self.netcat_link = False
 		self.ssh_linkage = ''
 		self.netcat_linkage = ''
@@ -65,18 +55,19 @@ class SSH:
 	#Attempts one SSH connection. Waits for 5 seconds before any tests to allow OpenSSH to thoroughly finish the connection process
 	def ssh_attempt_connection(self):	
 		
-		rospy.loginfo("Attempting connection...")		
+		rospy.loginfo("Attempting connection...")
 		print "\r"
 
 		#Usage of python subprocessing to maintain an open SSH connection
-		self.ssh_linkage = subprocess.Popen(['bash', '$(find', '-name', '*air_ssh_connection.sh)'], stdout=PIPE, stderr=PIPE)
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
 		
-		time.sleep(5)				
+		time.sleep(5)	
 
-		return self.ssh_link		
+		while self.ssh_test_connection('') == False:			
+			None			
 
-	#Tests for a valid SSH connection with the web server using sockets
-	def ssh_test_connection(self):
+	#Tests for a valid SSH connection with the web server using sockets	
+	def ssh_test_connection(self, sms_status):
 
 		#Attempts to connect to the running socket server on the web server
 		try:
@@ -86,25 +77,36 @@ class SSH:
 			#Receives a status message from the web server
 			self.from_server = self.client.recv(4096)
 			self.client.close()
-			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
-				rospy.loginfo("Air-Server-Ground Established")
-				print "\r"	
-				self.ssh_link = True	
-			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
-				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
-				print "\r"
-				self.ssh_link = True
-				self.netcat_link = False
+			
 			if ("NETCAT" in self.from_server):
 				self.ground_netcat = True
 			else:
-				self.ground_netcat = False				
+				self.ground_netcat = False
+
+			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
+				rospy.loginfo("Air-Server-Ground Established")
+				print "\r"	
+				self.air_link = True
+				self.ground_link = True
+				return True	
+			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
+				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
+				print "\r"
+				self.air_link = True
+				self.ground_link = False
+				self.netcat_link = False
+				return True
+				
 
 		except: 
-			print rospy.logerr("Air-Server Disconnected")
+			rospy.logerr("Air-Server Disconnected")
 			print "\r"
-			self.ssh_link = False
+			self.air_link = False
+			self.ground_link = False
 			self.netcat_link = False
+			self.ground_netcat = False
+			time.sleep(2)
+			return False
 
 		self.from_server = ''
 
@@ -118,7 +120,7 @@ class SSH:
 		rospy.loginfo("NETCAT Reset")
 		print "\r"
 		#Usage of python subprocessing to open a NETCAT process	
-		self.netcat_linkage = subprocess.Popen(['bash', '$(find', '-name', '*air_netcat_init.sh)'], stdout=PIPE)
+		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
 		print "\r"
@@ -127,7 +129,7 @@ class SSH:
 	
 		rospy.loginfo("Program Terminating...")
 		print "\r"
-		self.ssh_link = False
+		self.air_link = False
 		self.netcat_link = False
 		self.ssh_linkage.kill()
 		self.netcat_linkage.kill()
@@ -142,12 +144,24 @@ if __name__ == "__main__":
 	try:
 		#Loops to ensure that the connection is established, otherwise, the program will continue to attempt connections with the web server until successful
 		while True:
-	
+
+			if ssh.ssh_test_connection(ros.sms_status) == False:
+				ssh.ssh_attempt_connection()
+
+			ros.clear_receipt()
+
+			print ssh.netcat_link
+			print ssh.ground_netcat
+		
 			if (ssh.netcat_link == False) and (ssh.ground_netcat == True):
 				ssh.netcat_init()
-	
-			if ssh.ssh_test_connection() == False:
-				ssh.ssh_attempt_connection()
+
+			if (ssh.air_link == True) and (ssh.ground_link == True):
+				ros.publish("SVC")
+			elif (ssh.air_link == True) and (ssh.ground_link == False):
+				ros.publish("AIR")
+			else:
+				ros.publish("DWN")
 
 			time.sleep(1)
 
