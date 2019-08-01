@@ -2,7 +2,9 @@
 
 """
 File Name: air_data.py
+
 Date Modified: 30/07/2019
+
 Required Scripts: air_ssh_connection.sh, air_netcat_init.sh
 
 Launched by ROS under air_data.launch, which performs the initialisation of a SSH connection from the companion computer to a web server.
@@ -55,10 +57,11 @@ class SSH:
 	#Attempts one SSH connection. Waits for 5 seconds before any tests to allow OpenSSH to thoroughly finish the connection process
 	def ssh_attempt_connection(self):	
 		
-		rospy.loginfo("Attempting connection...")
+		rospy.loginfo("Attempting connection...")		
 		print "\r"
 
 		#Usage of python subprocessing to maintain an open SSH connection
+
 		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
@@ -68,6 +71,7 @@ class SSH:
 
 	#Tests for a valid SSH connection with the web server using sockets	
 	def ssh_test_connection(self, sms_status):
+
 
 		#Attempts to connect to the running socket server on the web server
 		try:
@@ -120,6 +124,7 @@ class SSH:
 		rospy.loginfo("NETCAT Reset")
 		print "\r"
 		#Usage of python subprocessing to open a NETCAT process	
+
 		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
