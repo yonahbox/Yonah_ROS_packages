@@ -21,6 +21,7 @@ AWS (status of AWS Data Telemetry Node): 1 = alive, 0 = dead
 '''
 
 import rospy
+from time import sleep
 from std_msgs.msg import String
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
@@ -69,19 +70,19 @@ class SMStx():
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
         if not self.sms_flag:
             return
-        self.entries["AS"] = data.airspeed
-        self.entries["GS"] = data.groundspeed
-        self.entries["yaw"] = data.heading
+        self.entries["AS"] = round(data.airspeed, 1)
+        self.entries["GS"] = round(data.groundspeed, 1)
+        self.entries["yaw"] = round(data.heading, 1)
         self.entries["thr"] = data.throttle
-        self.entries["alt"] = data.altitude
-        self.entries["cmb"] = data.climb
+        self.entries["alt"] = round(data.altitude, 1)
+        self.entries["cmb"] = round(data.climb, 1)
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude from mavros/global_position/global'''
         if not self.sms_flag:
             return
-        self.entries["lat"] = data.latitude
-        self.entries["lon"] = data.longitude
+        self.entries["lat"] = round(data.latitude, 6)
+        self.entries["lon"] = round(data.longitude, 6)
 
     #def get_RPY(self, data):
     #    '''Obtain IMU Roll, Pitch and Yaw Angles'''
@@ -138,12 +139,9 @@ class SMStx():
             #self.pub_to_data.publish("SMS to GCS: SMS sending is deactivated")
         
         # Sleep for the specified interval. For some reason, we cannot exploit rospy.Duration's capability
-        # to control the interval. Thus, the following block of code is required. Note that rospy.Timer
+        # to control the interval. Thus, the following line is required. Note that rospy.Timer
         # will not allow the time interval to go below the minimum allowable interval (min_interval)
-        #start_time = rospy.get_time()
-        #cur_time = rospy.get_time()
-        #while (cur_time - start_time) < self.interval:
-        #    cur_time = rospy.get_time()
+        sleep(self.interval)
 
     def prepare(self):
         '''
@@ -156,8 +154,7 @@ class SMStx():
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
         #rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
-        message_sender = rospy.Timer(rospy.Duration(self.long_interval), self.sendmsg) # temporary fix for stability, will be removed
-        #message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
