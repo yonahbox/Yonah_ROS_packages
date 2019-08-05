@@ -34,7 +34,7 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        #self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
+        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.sms_flag = False # Determine whether we should send SMS to Ground Control
         self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
@@ -128,15 +128,15 @@ class SMStx():
                 sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
                 if sendstatus == "Timeout":
                     rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-                    #self.pub_to_data.publish("SMS to GCS: Msg sending Timeout")
-                #else:
-                    #self.pub_to_data.publish("SMS_to_GCS: Success")
+                    self.pub_to_data.publish("air_sms to GCS: Msg sending Timeout")
+                else:
+                    self.pub_to_data.publish("air_sms_to_GCS: Success")
             except(subprocess.CalledProcessError):
                 rospy.logwarn("SSH process into router has been killed.")
-                #self.pub_to_data.publish("SMS to GCS: Cannot ssh into air router")
+                self.pub_to_data.publish("air_sms to GCS: Cannot ssh into air router")
         else:
             rospy.loginfo("SMS sending is deactivated")
-            #self.pub_to_data.publish("SMS to GCS: SMS sending is deactivated")
+            self.pub_to_data.publish("air_sms to GCS: SMS sending is deactivated")
         
         # Sleep for the specified interval. For some reason, we cannot exploit rospy.Duration's capability
         # to control the interval. Thus, the following line is required. Note that rospy.Timer
@@ -152,7 +152,7 @@ class SMStx():
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
-        #rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
+        rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
         self.rate.sleep()
