@@ -105,35 +105,28 @@ class SMStx():
             self.interval = self.short_interval
 
     def check_SMS(self, data):
-        '''Subscribe to SMS_rx node to see if we should send SMS, and whether in long or short intervals'''
+        '''
+        Subscribe to SMS_rx node to see if we should send SMS, whether in long or short intervals,
+        or whether to send a message once (ping reply)
+        '''
         if data.data == "sms true":
             self.sms_flag = True
-        if data.data == "sms false":
+        elif data.data == "sms false":
             self.sms_flag = False
-        if data.data == "sms short":
+        elif data.data == "sms short":
             self.interval = self.short_interval
-        if data.data == "sms long":
+        elif data.data == "sms long":
             self.interval = self.long_interval
+        elif data.data == "ping":
+            self.sendmsg()
 
-    def sendmsg(self, data):
+    def send_msg_at_specified_interval(self, data):
         '''
-        Compile info from all mavros topics into a msg string and send it as an SMS.
-        SMS is sent only if message sending is explicitly requested by Ground Control (sms_flag = true)
-        Also publish sending result to air_data node, so that air_data can inform Ground Control about status of SMS
+        Send SMS at regular intervals (either short or long interval)
+        Regular sending is active only if it is requested by Ground Control (sms_flag = true)
         '''
         if self.sms_flag:
-            msg = str(self.entries)
-            rospy.loginfo("Sending SMS to Ground Control")
-            try:
-                sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
-                if sendstatus == "Timeout":
-                    rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-                    self.pub_to_data.publish("air_sms to GCS: Msg sending Timeout")
-                else:
-                    self.pub_to_data.publish("air_sms_to_GCS: Success")
-            except(subprocess.CalledProcessError):
-                rospy.logwarn("SSH process into router has been killed.")
-                self.pub_to_data.publish("air_sms to GCS: Cannot ssh into air router")
+            self.sendmsg()
         else:
             rospy.loginfo("SMS sending is deactivated")
             self.pub_to_data.publish("air_sms to GCS: SMS sending is deactivated")
@@ -142,6 +135,25 @@ class SMStx():
         # to control the interval. Thus, the following line is required. Note that rospy.Timer
         # will not allow the time interval to go below the minimum allowable interval (min_interval)
         sleep(self.interval)
+    
+    def sendmsg(self):
+        '''
+        Compile info from all mavros topics into a msg string and send it as an SMS.
+        Also publish sending result to air_data node, so that air_data can inform Ground Control about status of SMS
+        '''
+        msg = str(self.entries)
+        rospy.loginfo("Sending SMS to Ground Control")
+        try:
+            sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
+            if sendstatus == "Timeout":
+                rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
+                self.pub_to_data.publish("air_sms to GCS: Msg sending Timeout")
+            else:
+                self.pub_to_data.publish("air_sms_to_GCS: Success")
+        except(subprocess.CalledProcessError):
+            rospy.logwarn("SSH process into router has been killed.")
+            self.pub_to_data.publish("air_sms to GCS: Cannot ssh into air router")
+            
 
     def prepare(self):
         '''
@@ -154,7 +166,7 @@ class SMStx():
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
-        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()

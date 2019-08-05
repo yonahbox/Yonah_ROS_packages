@@ -9,8 +9,9 @@ Message format:
 - Arm the aircraft: "arm"
 - Disarm the aircraft: "disarm"
 - Mode change: "mode <flight mode in lowercase letters>"
-- Activate SMS sending from aircraft: "sms true"
-- Deactivate SMS sending from aircraft: "sms false"
+- Activate regular SMS sending from aircraft: "sms true"
+- Deactivate regular SMS sending from aircraft: "sms false"
+- Request one SMS from the aircraft: "ping"
 - Set long time intervals between each SMS message: "sms long" (on bootup, interval is long by default)
 - Set short time intervals between each SMS message: "sms short"
 Commands are not case sensitive
@@ -91,12 +92,13 @@ class SMSrx():
             rospy.loginfo(mode_command)
             mode(custom_mode = mode_command)
     
-    def check_SMS(self):
+    def check_SMS_or_ping(self):
         """
         Check if SMS_tx should send out SMSes, and whether the
         interval between each SMS sent should be short or long (defaults to long on bootup)
+        Also handle ping request: If GCS sends "ping" command, then instruct SMS_tx to send one message
         """
-        if "sms" in self.msg:
+        if "sms" in self.msg or self.msg == "ping":
             self.sms_sender.publish(self.msg)
     
     def client(self):
@@ -124,7 +126,7 @@ class SMSrx():
                         rospy.loginfo('Command from '+ sender)
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         self.checkArming()
-                        self.check_SMS()
+                        self.check_SMS_or_ping()
                         self.checkMode()
 
                     else:
