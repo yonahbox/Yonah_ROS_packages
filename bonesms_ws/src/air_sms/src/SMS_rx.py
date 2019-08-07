@@ -3,7 +3,7 @@
 Read an SMS from Ground Control, extract and process the message inside, and send
 necessary commands to the aircraft.
 
-Prerequesite: Please ensure the GCS number (GCS_no) in SMS_tx.launch is correct
+Prerequisite: Please ensure the GCS number (GCS_no) in air.launch is correct
 
 Message format:
 - Arm the aircraft: "arm"
