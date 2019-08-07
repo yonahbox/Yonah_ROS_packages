@@ -8,13 +8,13 @@
 	<arg name="tgt_component" default="1" />
 	<arg name="log_output" default="screen" />
 	<arg name="fcu_protocol" default="v2.0" />
-	<arg name="respawn_mavros" default="false" />
+	<arg name="respawn_mavros" default="true" />
 
 	<!-- Params for air_sms-->
-	<arg name="GCS_no" default="'+60135344652'"/>
+	<arg name="GCS_no" default="'12345678'"/>
 	<arg name="whitelist" default="$(find air_sms)/src/whitelist.txt"/>
-	<arg name="short_interval" default="5"/>
-    <arg name="long_interval" default="60"/>
+	<arg name="short_interval" default="10"/>
+    <arg name="long_interval" default="300"/>
 
 	<include file="$(find mavros)/launch/node.launch">
 		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
