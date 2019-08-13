@@ -61,15 +61,11 @@ class SMStx():
     
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
-        if not self.sms_flag:
-            return
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        if not self.sms_flag:
-            return
         self.entries["AS"] = round(data.airspeed, 1)
         self.entries["GS"] = round(data.groundspeed, 1)
         self.entries["yaw"] = round(data.heading, 1)
@@ -79,8 +75,6 @@ class SMStx():
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude from mavros/global_position/global'''
-        if not self.sms_flag:
-            return
         self.entries["lat"] = round(data.latitude, 6)
         self.entries["lon"] = round(data.longitude, 6)
 
