@@ -21,6 +21,7 @@ AWS (status of AWS Data Telemetry Node): 1 = alive, 0 = dead
 '''
 
 import rospy
+from time import sleep
 from std_msgs.msg import String
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
@@ -33,7 +34,7 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        #self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
+        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.sms_flag = False # Determine whether we should send SMS to Ground Control
         self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
@@ -60,28 +61,22 @@ class SMStx():
     
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
-        if not self.sms_flag:
-            return
         self.entries["arm"] = data.armed
         self.entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        if not self.sms_flag:
-            return
-        self.entries["AS"] = data.airspeed
-        self.entries["GS"] = data.groundspeed
-        self.entries["yaw"] = data.heading
+        self.entries["AS"] = round(data.airspeed, 1)
+        self.entries["GS"] = round(data.groundspeed, 1)
+        self.entries["yaw"] = round(data.heading, 1)
         self.entries["thr"] = data.throttle
-        self.entries["alt"] = data.altitude
-        self.entries["cmb"] = data.climb
+        self.entries["alt"] = round(data.altitude, 1)
+        self.entries["cmb"] = round(data.climb, 1)
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude from mavros/global_position/global'''
-        if not self.sms_flag:
-            return
-        self.entries["lat"] = data.latitude
-        self.entries["lon"] = data.longitude
+        self.entries["lat"] = round(data.latitude, 6)
+        self.entries["lon"] = round(data.longitude, 6)
 
     #def get_RPY(self, data):
     #    '''Obtain IMU Roll, Pitch and Yaw Angles'''
@@ -104,46 +99,55 @@ class SMStx():
             self.interval = self.short_interval
 
     def check_SMS(self, data):
-        '''Subscribe to SMS_rx node to see if we should send SMS, and whether in long or short intervals'''
+        '''
+        Subscribe to SMS_rx node to see if we should send SMS, whether in long or short intervals,
+        or whether to send a message once (ping reply)
+        '''
         if data.data == "sms true":
             self.sms_flag = True
-        if data.data == "sms false":
+        elif data.data == "sms false":
             self.sms_flag = False
-        if data.data == "sms short":
+        elif data.data == "sms short":
             self.interval = self.short_interval
-        if data.data == "sms long":
+        elif data.data == "sms long":
             self.interval = self.long_interval
+        elif data.data == "ping":
+            self.sendmsg()
 
-    def sendmsg(self, data):
+    def send_msg_at_specified_interval(self, data):
         '''
-        Compile info from all mavros topics into a msg string and send it as an SMS.
-        SMS is sent only if message sending is explicitly requested by Ground Control (sms_flag = true)
-        Also publish sending result to air_data node, so that air_data can inform Ground Control about status of SMS
+        Send SMS at regular intervals (either short or long interval)
+        Regular sending is active only if it is requested by Ground Control (sms_flag = true)
         '''
         if self.sms_flag:
-            msg = str(self.entries)
-            rospy.loginfo("Sending SMS to Ground Control")
-            try:
-                sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
-                if sendstatus == "Timeout":
-                    rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-                    #self.pub_to_data.publish("SMS to GCS: Msg sending Timeout")
-                #else:
-                    #self.pub_to_data.publish("SMS_to_GCS: Success")
-            except(subprocess.CalledProcessError):
-                rospy.logwarn("SSH process into router has been killed.")
-                #self.pub_to_data.publish("SMS to GCS: Cannot ssh into air router")
+            self.sendmsg()
         else:
             rospy.loginfo("SMS sending is deactivated")
-            #self.pub_to_data.publish("SMS to GCS: SMS sending is deactivated")
+            self.pub_to_data.publish("air_sms to GCS: SMS sending is deactivated")
         
         # Sleep for the specified interval. For some reason, we cannot exploit rospy.Duration's capability
-        # to control the interval. Thus, the following block of code is required. Note that rospy.Timer
+        # to control the interval. Thus, the following line is required. Note that rospy.Timer
         # will not allow the time interval to go below the minimum allowable interval (min_interval)
-        #start_time = rospy.get_time()
-        #cur_time = rospy.get_time()
-        #while (cur_time - start_time) < self.interval:
-        #    cur_time = rospy.get_time()
+        sleep(self.interval)
+    
+    def sendmsg(self):
+        '''
+        Compile info from all mavros topics into a msg string and send it as an SMS.
+        Also publish sending result to air_data node, so that air_data can inform Ground Control about status of SMS
+        '''
+        msg = str(self.entries)
+        rospy.loginfo("Sending SMS to Ground Control")
+        try:
+            sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
+            if sendstatus == "Timeout":
+                rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
+                self.pub_to_data.publish("air_sms to GCS: Msg sending Timeout")
+            else:
+                self.pub_to_data.publish("air_sms_to_GCS: Success")
+        except(subprocess.CalledProcessError):
+            rospy.logwarn("SSH process into router has been killed.")
+            self.pub_to_data.publish("air_sms to GCS: Cannot ssh into air router")
+            
 
     def prepare(self):
         '''
@@ -154,10 +158,9 @@ class SMStx():
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         #rospy.Subscriber("imu/data", Imu, self.get_RPY)
-        #rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
+        rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
-        message_sender = rospy.Timer(rospy.Duration(self.long_interval), self.sendmsg) # temporary fix for stability, will be removed
-        #message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.sendmsg)
+        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
