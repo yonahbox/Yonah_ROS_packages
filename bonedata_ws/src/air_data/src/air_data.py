@@ -62,7 +62,7 @@ class SSH:
 
 		#Usage of python subprocessing to maintain an open SSH connection
 		#Remarks: Let's get the $find function to work, so that we don't have to keep specifying the absolute path!
-		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
 
@@ -125,7 +125,7 @@ class SSH:
 		print "\r"
 		#Usage of python subprocessing to open a NETCAT process	
 		#Remarks: Let's get the $find function to work, so that we don't have to keep specifying the absolute path!
-		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
+		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
 		print "\r"
