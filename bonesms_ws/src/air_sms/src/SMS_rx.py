@@ -14,6 +14,8 @@ Message format:
 - Request one SMS from the aircraft: "ping"
 - Set long time intervals between each SMS message: "sms long" (on bootup, interval is long by default)
 - Set short time intervals between each SMS message: "sms short"
+- Set a specific waypoint number in an already-loaded mission file: "wp set <wp number>"
+- Load a waypoint file that is stored in the companion computer: "wp load <absolute path to waypoint file>"
 Commands are not case sensitive
 """
 
@@ -21,6 +23,7 @@ import rospy
 from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
+from mavros_msgs.srv import WaypointSetCurrent
 import subprocess
 
 class SMSrx():
@@ -33,6 +36,7 @@ class SMSrx():
         # Subscribe to all necessary mavros topics, prepare to publish to SMS_tx node, and initialize SMS_rx node
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/mission/set_current')
         self.sms_sender = rospy.Publisher('sendsms', String, queue_size = 5)
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
@@ -100,6 +104,25 @@ class SMSrx():
         """
         if "sms" in self.msg or self.msg == "ping":
             self.sms_sender.publish(self.msg)
+
+    def checkMission(self):
+        """Check for waypoint file loading, or waypoint sequence set commands from sender"""
+        
+        if "wp" in self.msg:
+
+            if "wp set" in self.msg:
+
+                # Message structure: wp set <seq_no>, hence extract the 3rd word to get seq no
+                wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
+                seq_no = self.msg.split()[2]
+                wp_set(seq_no)
+            
+            elif "wp load" in self.msg:
+            
+                # Message structure: wp load <wp file name>, hence extract 3rd word to get wp file name
+                # In this implementation, assume that wp file is located in root directory of Beaglebone
+                wp_file = self.msg.split()[2]
+                subprocess.call(["rosrun", "mavros", "mavwp", "load", "~/%s"%(wp_file)], shell=False)
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
@@ -128,6 +151,7 @@ class SMSrx():
                         self.checkArming()
                         self.check_SMS_or_ping()
                         self.checkMode()
+                        self.checkMission()
 
                     else:
                         rospy.logwarn('Rejected msg from unknown sender ' + sender)

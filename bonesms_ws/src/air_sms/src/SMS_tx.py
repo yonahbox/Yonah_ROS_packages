@@ -26,7 +26,8 @@ from std_msgs.msg import String
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from sensor_msgs.msg import NavSatFix
-#from sensor_msgs.msg import Imu
+from mavros_msgs.msg import WaypointReached
+from mavros_msgs.msg import RCOut
 import subprocess
 
 class SMStx():
@@ -46,17 +47,13 @@ class SMStx():
             "arm": 0,
             "mode": "MANUAL",
             "AS": 0.0,
-            "GS": 0.0,
-            "yaw": 0.0,
             "thr": 0.0,
             "alt": 0.0,
-            "cmb": 0.0,
             "lat": 0.0,
             "lon": 0.0,
             "AWS": 0,
-            #"rll": 0.0,
-            #"pit": 0.0,
-            #"yaw": 0.0
+            "wp": 0,
+            "VTOL": 0,
         }
     
     def get_mode_and_arm_status(self, data):
@@ -68,19 +65,25 @@ class SMStx():
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
         self.entries["AS"] = round(data.airspeed, 1)
         self.entries["GS"] = round(data.groundspeed, 1)
-        self.entries["yaw"] = round(data.heading, 1)
         self.entries["thr"] = data.throttle
         self.entries["alt"] = round(data.altitude, 1)
-        self.entries["cmb"] = round(data.climb, 1)
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude from mavros/global_position/global'''
         self.entries["lat"] = round(data.latitude, 6)
         self.entries["lon"] = round(data.longitude, 6)
 
-    #def get_RPY(self, data):
-    #    '''Obtain IMU Roll, Pitch and Yaw Angles'''
-    #    self.entries["rll"] = data
+    def get_wp_reached(self, data):
+        '''Obtain information on which waypoint number has been reached'''
+        self.entries["wp"] = data.wp_seq
+
+    def get_VTOL_mode(self, data):
+        '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''
+        if data.channels[4] > 1200 or data.channels[5] > 1200 or data.channels[6] > 1200\
+            or data.channels[7] > 1200:
+            self.entries["VTOL"] = 1
+        else:
+            self.entries["VTOL"] = 0
 
     def check_air_data_status(self, data):
         '''
@@ -157,7 +160,7 @@ class SMStx():
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
-        #rospy.Subscriber("imu/data", Imu, self.get_RPY)
+        rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
