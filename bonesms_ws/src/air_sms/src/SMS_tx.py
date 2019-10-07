@@ -47,6 +47,7 @@ class SMStx():
             "arm": 0,
             "mode": "MANUAL",
             "AS": 0.0,
+            "GS": 0.0,
             "thr": 0.0,
             "alt": 0.0,
             "lat": 0.0,
@@ -87,8 +88,8 @@ class SMStx():
 
     def check_air_data_status(self, data):
         '''
-        Check whether connection between air_data node and GCS is alive or dead.. If connection is dead, 
-        increase SMS sending frequency, and notify GCS (through SMS) on the connection status.
+        Check whether connection between air_data node and GCS is alive or dead. 
+        If connection is dead, notify GCS (through SMS) on the connection status.
         If connection is alive, air_data will publish "SVC" (serviceable) message
         '''
         # Todo: Implement a system that will take action when no message is received from the data_to_sms topic
@@ -96,10 +97,8 @@ class SMStx():
         # https://docs.ros.org/diamondback/api/rospy/html/rospy.client-module.html#wait_for_message
         if data.data == "SVC":
             self.entries["AWS"] = 1
-            self.interval = self.long_interval
         else:
             self.entries["AWS"] = 0
-            self.interval = self.short_interval
 
     def check_SMS(self, data):
         '''
