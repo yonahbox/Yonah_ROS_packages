@@ -15,7 +15,7 @@ Message format:
 - Set long time intervals between each SMS message: "sms long" (on bootup, interval is long by default)
 - Set short time intervals between each SMS message: "sms short"
 - Set a specific waypoint number in an already-loaded mission file: "wp set <wp number>"
-- Load a waypoint file that is stored in the companion computer: "wp load <absolute path to waypoint file>"
+- Load a waypoint file that is stored in the companion computer: "wp load <path to waypoint file>"
 Commands are not case sensitive
 """
 
@@ -28,12 +28,17 @@ import subprocess
 
 class SMSrx():
     
+    ############################
+    # Initialization
+    ############################
+
     def __init__(self):
         self.whitelist = set() # set of whitelisted numbers, initialized as an empty set
-        self.msglist = "" # Incoming msg extracted directly from RUT, consisting of 5 lines that is specified here: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
-        self.msg = "" # actual message that was sent by the GCS. It is located on the 5th line of msglist
+        self.msglist = "" # Incoming msg extracted directly from RUT with the format: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
+        self.msg = "" # actual message that was sent by the GCS. Located on the 5th line of msglist
 
         # Subscribe to all necessary mavros topics, prepare to publish to SMS_tx node, and initialize SMS_rx node
+        # Make sure all services below are whitelisted in apm_pluginlists.yaml
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
@@ -47,7 +52,7 @@ class SMSrx():
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
-        textfile = rospy.get_param("~whitelist", "src/whitelist.txt")
+        textfile = rospy.get_param("~whitelist", "whitelist.txt")
         with open (textfile, "r") as reader:
             for line in reader:
                 self.whitelist.add(line[:-1]) # remove whitespace at end of line
@@ -55,15 +60,11 @@ class SMSrx():
 
     def purge_residual_sms(self):
         """
-        Clear the router of SMSes (capped at 30 for the RUT955) upon bootup. This prevents the situation
-        where an SMS might have been sent when the air router was off, and the air router acts
-        on the SMS the moment it switches on (which can be very dangerous if that SMS is an arm msg!)
-        
-        To-do: Replace this with a more robust system to delete any messages that were delivered before
-        air router startup
+        Clear the router of SMSes (capped at 30 for the RUT955) on bootup. This prevents the situation
+        where an SMS is received when the air router was off, and is acted upon the moment the router
+        switches on (very dangerous if that SMS is an arm msg!)
         """
-        # The bad thing about this new implementation is that it increases the boot time of the nodes
-        # by 30 seconds (1 second for each SMS deleted)
+        # The bad thing about this implementation is that it increases boot time by 30 seconds (1 second per SMS deleted)
         count = 1
         rospy.loginfo("Purging residual SMS, please wait...")
         while count <= 30:
@@ -74,23 +75,24 @@ class SMSrx():
                 continue
         rospy.loginfo("Purge complete!")
 
+    #####################################
+    # Interaction with ROS Services/Nodes
+    #####################################
+    
     def checkArming(self):
-        """Check for Arm/Disarm commands from sender"""
+        """Check for Arm/Disarm commands from Ground Control"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
-        
         if self.msg == "disarm":
             rospy.loginfo('DISARM')
             arm(0)
-
         if self.msg == "arm":
             rospy.loginfo('ARM')
             arm(1)
 
     def checkMode(self):
-        """Check for Mode change commands from sender"""
+        """Check for Mode change commands from Ground Control"""
         mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
-
-        # Message structure: mode <flight mode>; hence extract the 2nd word to get flightmode
+        # Message structure: mode <flight mode>; extract 2nd word to get flightmode
         if 'mode' in self.msg:
             mode_command = self.msg.split()[1]
             rospy.loginfo(mode_command)
@@ -98,65 +100,56 @@ class SMSrx():
     
     def check_SMS_or_ping(self):
         """
-        Check if SMS_tx should send out SMSes, and whether the
-        interval between each SMS sent should be short or long (defaults to long on bootup)
-        Also handle ping request: If GCS sends "ping" command, then instruct SMS_tx to send one message
+        Handle all services related to sending of SMS to Ground Control
+        If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
         """
         if "sms" in self.msg or self.msg == "ping":
             self.sms_sender.publish(self.msg)
 
     def checkMission(self):
-        """Check for waypoint file loading, or waypoint sequence set commands from sender"""
-        
+        """Check for mission/waypoint commands from Ground Control"""
         if "wp" in self.msg:
-
             if "wp set" in self.msg:
-
                 # Message structure: wp set <seq_no>, hence extract the 3rd word to get seq no
                 wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
                 seq_no = self.msg.split()[2]
-                wp_set(seq_no)
-            
-            elif "wp load" in self.msg:
-            
-                # Message structure: wp load <wp file name>, hence extract 3rd word to get wp file name
-                # In this implementation, assume that wp file is located in root directory of Beaglebone
+                wp_set(wp_seq = int(seq_no))            
+            elif "wp load" in self.msg:            
+                # Message structure: wp load <wp file name>; extract 3rd word to get wp file
+                # Assume that wp file is located in root directory of Beaglebone
                 wp_file = self.msg.split()[2]
-                subprocess.call(["rosrun", "mavros", "mavwp", "load", "~/%s"%(wp_file)], shell=False)
+                subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
+    
+    ############################
+    # "Main" function
+    ############################
     
     def client(self):
         """Main function to let aircraft receive SMS commands"""
-    
-        # Main loop
         while not rospy.is_shutdown():
             try:
-                # Read an SMS received by the air router (stored in ReadCMD as a string)
-                ReadCMDraw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
-                self.msglist = ReadCMDraw.decode().splitlines()
-
+                # Read an SMS received by the air router
+                msglist_raw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
+                self.msglist = msglist_raw.decode().splitlines()
                 # if no message from sender, then just skip
                 if 'no message' in self.msglist:
                     pass
-            
                 else:
                     # extract sender number (2nd word of 3rd line in msglist)
                     sender = self.msglist[2].split()[1]
-                
                     # Ensure sender is whitelisted. If sender is whitelisted, extract the message
-                    # msg is located on the 5th line (minus the first word) of msglist. It is converted to lowercase automatically
-                    # Then run through a series of checks to see what command should be sent to aircraft
                     if sender in self.whitelist:
                         rospy.loginfo('Command from '+ sender)
+                        # msg is located on the 5th line (minus the first word) of msglist. It is converted to lowercase
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
+                        # Run through a series of checks to see what command should be sent to aircraft
                         self.checkArming()
                         self.check_SMS_or_ping()
                         self.checkMode()
                         self.checkMission()
-
                     else:
                         rospy.logwarn('Rejected msg from unknown sender ' + sender)
-
-                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS message
+                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS
             
             except(subprocess.CalledProcessError):
                 rospy.logwarn("SSH process into router has been killed.")
