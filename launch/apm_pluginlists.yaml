@@ -36,7 +36,6 @@ plugin_blacklist:
 - setpoint_raw
 - home_position
 - param
-- rc_io
 - manual_control
 - actuator_control
 
@@ -45,6 +44,7 @@ plugin_whitelist:
 - command
 - global_position
 - imu_pub
+- rc_io
 - vfr_hud
 - vibration
 - waypoint
