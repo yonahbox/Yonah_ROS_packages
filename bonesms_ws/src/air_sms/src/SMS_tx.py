@@ -41,11 +41,11 @@ class SMStx():
         rospy.init_node('SMS_tx', anonymous=False)
         self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
-        self.sms_flag = False # Determine whether we should send SMS to Ground Control
-        self.short_interval = rospy.get_param("~short_interval") # Short time interval between each SMS sent (seconds)
-        self.long_interval = rospy.get_param("~long_interval") # Long time interval between each SMS sent (seconds)
-        self.interval = self.long_interval # Interval between each SMS (in seconds) defaults to long_interval on bootup
-        self.min_interval = 1 # Minimum allowable time interval between each SMS sent (1 second)
+        self.sms_flag = False # Determine whether we should send regular SMS updates to Ground Control
+        self.short_interval = rospy.get_param("~short_interval") # Short time interval (seconds) for regular SMS update
+        self.long_interval = rospy.get_param("~long_interval") # Long time interval (seconds) for regular SMS update
+        self.interval = self.long_interval # Interval (seconds) for regular SMS update, defaults to long_interval on bootup
+        self.min_interval = 1 # Minimum allowable time interval for regular SMS update (1 second)
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
