@@ -74,7 +74,7 @@ class SMStx():
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
         self.entries["AS"] = round(data.airspeed, 1)
         self.entries["GS"] = round(data.groundspeed, 1)
-        self.entries["thr"] = data.throttle
+        self.entries["thr"] = round(data.throttle, 1)
         self.entries["alt"] = round(data.altitude, 1)
 
     def get_GPS_coord(self, data):
