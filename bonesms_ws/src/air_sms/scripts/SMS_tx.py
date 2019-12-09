@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 '''
 Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
@@ -27,7 +27,6 @@ from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from sensor_msgs.msg import NavSatFix
 from mavros_msgs.msg import WaypointReached
-from mavros_msgs.msg import RCOut
 import subprocess
 
 class SMStx():
@@ -39,6 +38,7 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
+        self.router_hostname = "root@192.168.1.1" # Hostname and IP of onboard RUT router
         self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.sms_flag = False # Determine whether we should send regular SMS updates to Ground Control
@@ -152,6 +152,7 @@ class SMStx():
         rospy.loginfo("Sending SMS to Ground Control")
         try:
             sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
+            #sendstatus = sms_utils.send_msg(self.router_hostname, self.GCS_no, msg)
             if sendstatus == "Timeout":
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
                 self.pub_to_data.publish("air_sms: Msg sending Timeout")

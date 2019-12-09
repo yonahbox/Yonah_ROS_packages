@@ -6,7 +6,7 @@ This package will be used on the BeagleBone Black companion computer that is con
 
 ## Notes
 
-* Make sure that a text file containing whitelisted phone numbers (with the title `whitelist.txt`) is located in `~/Yonah_ROS_packages/bonesms_ws/src/air_sms/src/` directory
+* Make sure that a text file containing whitelisted phone numbers (with the title `whitelist.txt`) is located in `~/Yonah_ROS_packages/bonesms_ws/src/air_sms/scripts/` directory
 * When specifying the phone numbers, be sure to include the country code of the number
 * Make sure there is an empty line at the end of the text file.
 * Example file, containing one Singapore and one Malaysian phone number (`whitelist.txt`):
