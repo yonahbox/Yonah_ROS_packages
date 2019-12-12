@@ -1,22 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
 MAVROS topics: http://wiki.ros.org/mavros
 
-Prerequesite: Please ensure the GCS number (GCS_no) in SMS_main.launch is correct
+Prerequisite: Please ensure the GCS number (GCS_no) in air.launch and sms_standalone.launch is correct
 
 Message breakdown (each entry is separated by a space):
 Armed: 1 or 0
 Mode: String
 Airspeed: m/s
 Gndspeed: m/s
-Heading: deg
 Throttle: Scaled between 0.0 and 1.0
 Altitude (relative to home location): m
-Climb Rate: m/s
 Lat
 Lon
+Reached Waypoint: Integer
 AWS (status of AWS Data Telemetry Node): 1 = alive, 0 = dead
 '''
 

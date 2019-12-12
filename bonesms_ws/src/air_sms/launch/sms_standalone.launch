@@ -3,10 +3,10 @@
 <launch>
 
     <!-- please fill in the ground router's number. Enclose it in '' to recognise it as a string (instead of int)-->
-    <arg name="GCS_no" default="'+6512345678'"/>
+    <arg name="GCS_no" default="'+6591993191'"/>
 
     <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
-    <arg name="whitelist" default="$(find air_sms)/src/whitelist.txt"/>
+    <arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
 
     <!--Short and long message sending intervals in seconds-->
     <arg name="short_interval" default="5"/>

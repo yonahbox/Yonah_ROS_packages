@@ -12,7 +12,7 @@
 
 	<!-- Params for air_sms-->
 	<arg name="GCS_no" default="'12345678'"/>
-	<arg name="whitelist" default="$(find air_sms)/src/whitelist.txt"/>
+	<arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
 	<arg name="short_interval" default="10"/>
     <arg name="long_interval" default="300"/>
 

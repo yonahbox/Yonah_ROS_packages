@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Read an SMS from Ground Control, extract and process the message inside, and send
 necessary commands to the aircraft.
