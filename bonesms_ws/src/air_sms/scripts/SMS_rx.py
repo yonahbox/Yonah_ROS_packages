@@ -19,12 +19,18 @@ Message format:
 Commands are not case sensitive
 """
 
+# Standard Library
+import subprocess
+
+# ROS/Third-Party
 import rospy
-from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
-import subprocess
+from std_msgs.msg import String
+
+# Local
+import RuTOS
 
 class SMSrx():
     
@@ -33,6 +39,7 @@ class SMSrx():
     ############################
 
     def __init__(self):
+        self.router_hostname = "root@192.168.1.1" # Hostname and IP of onboard RUT router
         self.whitelist = set() # set of whitelisted numbers, initialized as an empty set
         self.msglist = "" # Incoming msg extracted directly from RUT with the format: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
         self.msg = "" # actual message that was sent by the GCS. Located on the 5th line of msglist
@@ -69,7 +76,7 @@ class SMSrx():
         rospy.loginfo("Purging residual SMS, please wait...")
         while count <= 30:
             try:
-                subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d '%s'"%(str(count))], shell=False)
+                RuTOS.delete_msg(self.router_hostname, str(count))
                 count += 1
             except:
                 continue
@@ -129,7 +136,7 @@ class SMSrx():
         while not rospy.is_shutdown():
             try:
                 # Read an SMS received by the air router
-                msglist_raw = subprocess.check_output(["ssh", "root@192.168.1.1", "gsmctl -S -r 1"], shell=False)
+                msglist_raw = RuTOS.extract_msg(self.router_hostname, 1)
                 self.msglist = msglist_raw.decode().splitlines()
                 # if no message from sender, then just skip
                 if 'no message' in self.msglist:
@@ -149,7 +156,7 @@ class SMSrx():
                         self.checkMission()
                     else:
                         rospy.logwarn('Rejected msg from unknown sender ' + sender)
-                    subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -d 1"], shell=False) # Delete the existing SMS
+                    RuTOS.delete_msg(self.router_hostname, 1) # Delete the existing SMS
             
             except(subprocess.CalledProcessError):
                 rospy.logwarn("SSH process into router has been killed.")

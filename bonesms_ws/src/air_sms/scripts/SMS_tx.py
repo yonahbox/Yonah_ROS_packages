@@ -19,14 +19,20 @@ Reached Waypoint: Integer
 AWS (status of AWS Data Telemetry Node): 1 = alive, 0 = dead
 '''
 
-import rospy
+# Standard Library
+import subprocess
 from time import sleep
-from std_msgs.msg import String
+
+# ROS/Third-Party
+import rospy
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
-from sensor_msgs.msg import NavSatFix
 from mavros_msgs.msg import WaypointReached
-import subprocess
+from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import String
+
+# Local
+import RuTOS
 
 class SMStx():
 
@@ -150,8 +156,7 @@ class SMStx():
         msg = str(self.entries)
         rospy.loginfo("Sending SMS to Ground Control")
         try:
-            sendstatus = subprocess.call(["ssh", "root@192.168.1.1", "gsmctl -S -s '%s %s'"%(self.GCS_no, msg)], shell=False)
-            #sendstatus = sms_utils.send_msg(self.router_hostname, self.GCS_no, msg)
+            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, msg)
             if sendstatus == "Timeout":
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
                 self.pub_to_data.publish("air_sms: Msg sending Timeout")
