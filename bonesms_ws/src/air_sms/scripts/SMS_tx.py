@@ -52,6 +52,7 @@ class SMStx():
         self.interval = self.long_interval # Interval (seconds) for regular SMS update, defaults to long_interval on bootup
         self.min_interval = 1 # Minimum allowable time interval for regular SMS update (1 second)
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
+        self.msg # Stores outgoing SMS to Ground Control
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
             "mode": "MANUAL",
@@ -120,14 +121,21 @@ class SMStx():
         '''
         if data.data == "sms true":
             self.sms_flag = True
+            self.msg = "Regular SMS updating activated"
         elif data.data == "sms false":
             self.sms_flag = False
+            self.msg = "Regular SMS updating deactivated"
         elif data.data == "sms short":
             self.interval = self.short_interval
+            self.msg = "Regular SMS update intervals set to short"
         elif data.data == "sms long":
             self.interval = self.long_interval
+            self.msg = "Regular SMS update intervals set to long"
         elif data.data == "ping":
-            self.sendmsg()
+            self.msg = str(self.entries)
+        else:
+            return
+        self.sendmsg()
 
     #########################################
     # Handle sending of SMS to Ground Control
@@ -139,6 +147,7 @@ class SMStx():
         Regular sending is active only if it is requested by Ground Control (sms_flag = true)
         '''
         if self.sms_flag:
+            self.msg = str(self.entries)
             self.sendmsg()
         else:
             rospy.loginfo("SMS sending is deactivated")
@@ -153,10 +162,9 @@ class SMStx():
         Compile info from all mavros topics into a msg string and send it as an SMS.
         Also inform air_data node of outcome, so that air_data can inform Ground Control about air_sms status
         '''
-        msg = str(self.entries)
         rospy.loginfo("Sending SMS to Ground Control")
         try:
-            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, msg)
+            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, self.msg)
             if sendstatus == "Timeout":
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
                 self.pub_to_data.publish("air_sms: Msg sending Timeout")
