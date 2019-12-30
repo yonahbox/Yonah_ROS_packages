@@ -27,6 +27,7 @@ from time import sleep
 import rospy
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
+from mavros_msgs.msg import RCOut
 from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
@@ -187,6 +188,7 @@ class SMStx():
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
+        rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS)
