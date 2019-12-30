@@ -52,7 +52,7 @@ class SMStx():
         self.interval = self.long_interval # Interval (seconds) for regular SMS update, defaults to long_interval on bootup
         self.min_interval = 1 # Minimum allowable time interval for regular SMS update (1 second)
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
-        self.msg # Stores outgoing SMS to Ground Control
+        self.msg = "" # Stores outgoing SMS to Ground Control
         self.entries = { # Dictionary to hold all message entries
             "arm": 0,
             "mode": "MANUAL",

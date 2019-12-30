@@ -76,7 +76,7 @@ class SMSrx():
         rospy.loginfo("Purging residual SMS, please wait...")
         while count <= 30:
             try:
-                RuTOS.delete_msg(self.router_hostname, str(count))
+                RuTOS.delete_msg(self.router_hostname, count)
                 count += 1
             except:
                 continue
