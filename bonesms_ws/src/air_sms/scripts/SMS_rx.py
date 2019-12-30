@@ -116,22 +116,34 @@ class SMSrx():
         Handle all services related to sending of SMS to Ground Control
         If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
         """
-        if "sms" in self.msg or "ping" in self.msg:
-            self.sms_sender.publish(self.msg)
+        if "sms" in self.msg:
+            sms_breakdown = self.msg.split()
+            # Command is "sms <command>"
+            if sms_breakdown[0] == 'sms' and len(sms_breakdown) == 2:
+                self.sms_sender.publish(self.msg)
+        elif "ping" in self.msg:
+            ping_breakdown = self.msg.split()
+            # Command can either be "ping <command>" or "ping"
+            if ping_breakdown[0] == 'ping' and len(ping_breakdown) <= 2:
+                self.sms_sender.publish(self.msg)
 
     def checkMission(self):
         """Check for mission/waypoint commands from Ground Control"""
         if "wp" in self.msg:
-            if "wp set" in self.msg:
-                # Message structure: wp set <seq_no>, hence extract the 3rd word to get seq no
-                wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-                seq_no = self.msg.split()[2]
-                wp_set(wp_seq = int(seq_no))            
-            elif "wp load" in self.msg:            
-                # Message structure: wp load <wp file name>; extract 3rd word to get wp file
-                # Assume that wp file is located in root directory of Beaglebone
-                wp_file = self.msg.split()[2]
-                subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
+            wp_breakdown = self.msg.split()
+            if wp_breakdown[0] == "wp" and len(wp_breakdown) == 3:
+                if wp_breakdown[1] == 'set':
+                    # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
+                    wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
+                    seq_no = wp_breakdown[2]
+                    wp_set(wp_seq = int(seq_no))
+                    rospy.loginfo("WP set to " + seq_no)           
+                elif wp_breakdown[1] == 'load':            
+                    # Message structure: wp load <wp file name>; extract 3rd word to get wp file
+                    # Assume that wp file is located in root directory of Beaglebone
+                    wp_file = wp_breakdown[2]
+                    subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
+                    rospy.loginfo("Loaded wp file " + wp_file)
     
     ############################
     # "Main" function
