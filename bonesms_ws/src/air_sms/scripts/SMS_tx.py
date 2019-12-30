@@ -6,17 +6,20 @@ MAVROS topics: http://wiki.ros.org/mavros
 
 Prerequisite: Please ensure the GCS number (GCS_no) in air.launch and sms_standalone.launch is correct
 
-Message breakdown (each entry is separated by a space):
-Armed: 1 or 0
-Mode: String
-Airspeed: m/s
-Gndspeed: m/s
-Throttle: Scaled between 0.0 and 1.0
-Altitude (relative to home location): m
-Lat
-Lon
-Reached Waypoint: Integer
-AWS (status of AWS Data Telemetry Node): 1 = alive, 0 = dead
+Breakdown of regular message entries (each entry is separated by a space):
+    - Arm status (Arm): 1 or 0
+    - Airspeed (AS): m/s
+    - Gndspeed (GS): m/s
+    - Throttle (thr): Scaled between 0.0 and 1.0
+    - Altitude relative to home (alt): m
+    - Lat (lat)
+    - Lon (lon)
+    - Status of AWS Data Telemetry Node (AWS): 1 = alive, 0 = dead
+    - Waypoint that has been reached (wp): Integer
+    - Whether aircraft is in VTOL mode (VTOL): 1 = yes, 0 = no
+
+Breakdown of on-demand message entries:
+    - Mode (mode): String
 '''
 
 # Standard Library
@@ -54,9 +57,8 @@ class SMStx():
         self.min_interval = 1 # Minimum allowable time interval for regular SMS update (1 second)
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.msg = "" # Stores outgoing SMS to Ground Control
-        self.entries = { # Dictionary to hold all message entries
+        self.entries = { # Dictionary to hold all regular message entries
             "arm": 0,
-            "mode": "MANUAL",
             "AS": 0.0,
             "GS": 0.0,
             "thr": 0.0,
@@ -67,6 +69,9 @@ class SMStx():
             "wp": 0,
             "VTOL": 0,
         }
+        self.ping_entries = { # Dictionary to hold all on-demand message entries
+            "mode": "MANUAL",
+        }
     
     #####################################
     # Interaction with ROS Services/Nodes
@@ -75,7 +80,7 @@ class SMStx():
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
         self.entries["arm"] = data.armed
-        self.entries["mode"] = data.mode
+        self.ping_entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
@@ -115,7 +120,7 @@ class SMStx():
         else:
             self.entries["AWS"] = 0
 
-    def check_SMS(self, data):
+    def check_SMS_rx_node(self, data):
         '''
         Subscribe to SMS_rx node to see if we should send SMS, whether in long or short intervals,
         or whether to send a message once (ping reply)
@@ -134,6 +139,14 @@ class SMStx():
             self.msg = "Regular SMS update intervals set to long"
         elif data.data == "ping":
             self.msg = str(self.entries)
+        elif "ping" in data.data:
+            ping_breakdown = data.data.split()
+            # Make sure the ping command is of the correct format ("ping <command>")
+            if len(ping_breakdown) == 2 and ping_breakdown[0] == 'ping' and \
+                ping_breakdown[1] in self.ping_entries:
+                self.msg = self.ping_entries[ping_breakdown[1]]
+            else:
+                return
         else:
             return
         self.sendmsg()
@@ -191,7 +204,7 @@ class SMStx():
         rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
-        rospy.Subscriber("sendsms", String, self.check_SMS)
+        rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
         self.rate.sleep()
         rospy.spin()

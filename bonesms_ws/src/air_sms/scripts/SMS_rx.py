@@ -5,17 +5,22 @@ necessary commands to the aircraft.
 
 Prerequisite: Please ensure the GCS number (GCS_no) in air.launch is correct
 
-Message format:
+Available commands:
+
 - Arm the aircraft: "arm"
 - Disarm the aircraft: "disarm"
 - Mode change: "mode <flight mode in lowercase letters>"
-- Activate regular SMS sending from aircraft: "sms true"
-- Deactivate regular SMS sending from aircraft: "sms false"
-- Request one SMS from the aircraft: "ping"
-- Set long time intervals between each SMS message: "sms long" (on bootup, interval is long by default)
-- Set short time intervals between each SMS message: "sms short"
 - Set a specific waypoint number in an already-loaded mission file: "wp set <wp number>"
 - Load a waypoint file that is stored in the companion computer: "wp load <path to waypoint file>"
+- Regular SMS update functions:
+    - Activate regular SMS updates: "sms true"
+    - Deactivate regular SMS updates: "sms false"
+    - Set long time intervals between each update: "sms long" (on bootup, interval is long by default)
+    - Set short time intervals between each update: "sms short"
+- On-demand SMS update functions:
+    - Request one SMS from the aircraft: "ping"
+    - Request flight mode: "ping mode"
+
 Commands are not case sensitive
 """
 
@@ -101,16 +106,17 @@ class SMSrx():
         mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
         # Message structure: mode <flight mode>; extract 2nd word to get flightmode
         if 'mode' in self.msg:
-            mode_command = self.msg.split()[1]
-            rospy.loginfo(mode_command)
-            mode(custom_mode = mode_command)
+            mode_breakdown = self.msg.split()
+            if mode_breakdown[0] == 'mode' and len(mode_breakdown) == 2:
+                rospy.loginfo(mode_breakdown[1])
+                mode(custom_mode = mode_breakdown[1])
     
     def check_SMS_or_ping(self):
         """
         Handle all services related to sending of SMS to Ground Control
         If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
         """
-        if "sms" in self.msg or self.msg == "ping":
+        if "sms" in self.msg or "ping" in self.msg:
             self.sms_sender.publish(self.msg)
 
     def checkMission(self):
