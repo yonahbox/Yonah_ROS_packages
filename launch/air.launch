@@ -15,6 +15,7 @@
 	<arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
 	<arg name="short_interval" default="10"/>
     <arg name="long_interval" default="300"/>
+	<arg name="router_hostname" default="'root@192.168.1.1'" />
 
 	<!-- MAVROS. Use our own pluginlist and config file -->
 	<include file="$(find mavros)/launch/node.launch">
@@ -42,6 +43,7 @@
 		<arg name="short_interval" value="$(arg short_interval)"/>
 		<arg name="long_interval" value="$(arg long_interval)"/>
 		<arg name="log_output" value="$(arg log_output)"/>
+		<arg name="router_hostname" value="$(arg router_hostname)" />
 	</include>
 
 </launch>

@@ -48,7 +48,7 @@ class SMSrx():
     ############################
 
     def __init__(self):
-        self.router_hostname = root@192.168.1.1 # Hostname and IP of onboard router
+        self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
         self.whitelist = set() # set of whitelisted numbers
         self.msglist = "" # Raw message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self.msg = "" # Actual message sent by GCS. Located on 5th line of msglist

@@ -49,7 +49,7 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        self.router_hostname = "root@192.168.1.1" # Hostname and IP of router
+        self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
         self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.sms_flag = False # Whether we should send regular payload to Ground Control
