@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+SMS_rx
+
 Read an SMS from Ground Control, extract and process the message inside, and send
 necessary commands to the aircraft.
 
@@ -9,9 +11,9 @@ Available commands:
 
 - Arm the aircraft: "arm"
 - Disarm the aircraft: "disarm"
-- Mode change: "mode <flight mode in lowercase letters>"
+- Mode change: "mode <flight mode>"
 - Set a specific waypoint number in an already-loaded mission file: "wp set <wp number>"
-- Load a waypoint file that is stored in the companion computer: "wp load <path to waypoint file>"
+- Load a waypoint file that is stored in the companion computer: "wp load < absolute path to waypoint file>"
 - Regular SMS update functions:
     - Activate regular SMS updates: "sms true"
     - Deactivate regular SMS updates: "sms false"
@@ -22,6 +24,8 @@ Available commands:
     - Request flight mode: "ping mode"
 
 Commands are not case sensitive
+
+Lau Yan Han and Yonah, March 2020
 """
 
 # Standard Library
@@ -44,13 +48,13 @@ class SMSrx():
     ############################
 
     def __init__(self):
-        self.router_hostname = "root@192.168.1.1" # Hostname and IP of onboard RUT router
-        self.whitelist = set() # set of whitelisted numbers, initialized as an empty set
-        self.msglist = "" # Incoming msg extracted directly from RUT with the format: https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index
-        self.msg = "" # actual message that was sent by the GCS. Located on the 5th line of msglist
+        self.router_hostname = root@192.168.1.1 # Hostname and IP of onboard router
+        self.whitelist = set() # set of whitelisted numbers
+        self.msglist = "" # Raw message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
+        self.msg = "" # Actual message sent by GCS. Located on 5th line of msglist
 
-        # Subscribe to all necessary mavros topics, prepare to publish to SMS_tx node, and initialize SMS_rx node
-        # Make sure all services below are whitelisted in apm_pluginlists.yaml
+        # Initialize all ROS node and topic communications
+        # Make sure all services below are whitelisted in apm_pluginlists.yaml!
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
@@ -76,7 +80,7 @@ class SMSrx():
         where an SMS is received when the air router was off, and is acted upon the moment the router
         switches on (very dangerous if that SMS is an arm msg!)
         """
-        # The bad thing about this implementation is that it increases boot time by 30 seconds (1 second per SMS deleted)
+        # The bad thing about this implementation is that it increases boot time by 30 seconds
         count = 1
         rospy.loginfo("Purging residual SMS, please wait...")
         while count <= 30:
@@ -156,16 +160,15 @@ class SMSrx():
                 # Read an SMS received by the air router
                 msglist_raw = RuTOS.extract_msg(self.router_hostname, 1)
                 self.msglist = msglist_raw.decode().splitlines()
-                # if no message from sender, then just skip
                 if 'no message' in self.msglist:
                     pass
                 else:
                     # extract sender number (2nd word of 3rd line in msglist)
                     sender = self.msglist[2].split()[1]
-                    # Ensure sender is whitelisted. If sender is whitelisted, extract the message
+                    # Ensure sender is whitelisted before extracting message
                     if sender in self.whitelist:
                         rospy.loginfo('Command from '+ sender)
-                        # msg is located on the 5th line (minus the first word) of msglist. It is converted to lowercase
+                        # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         # Run through a series of checks to see what command should be sent to aircraft
                         self.checkArming()

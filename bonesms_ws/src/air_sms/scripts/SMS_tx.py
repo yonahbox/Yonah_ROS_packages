@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 '''
+SMS_tx
+
 Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
 MAVROS topics: http://wiki.ros.org/mavros
 
 Prerequisite: Please ensure the GCS number (GCS_no) in air.launch and sms_standalone.launch is correct
 
-Breakdown of regular message entries (each entry is separated by a space):
+Breakdown of regular payload data:
     - Arm status (Arm): 1 or 0
     - Airspeed (AS): m/s
     - Gndspeed (GS): m/s
@@ -18,7 +20,7 @@ Breakdown of regular message entries (each entry is separated by a space):
     - Waypoint that has been reached (wp): Integer
     - Whether aircraft is in VTOL mode (VTOL): 1 = yes, 0 = no
 
-Breakdown of on-demand message entries:
+Breakdown of on-demand payload data:
     - Mode (mode): String
 '''
 
@@ -47,17 +49,17 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        self.router_hostname = "root@192.168.1.1" # Hostname and IP of onboard RUT router
-        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish stuff to air_data node
+        self.router_hostname = "root@192.168.1.1" # Hostname and IP of router
+        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
-        self.sms_flag = False # Determine whether we should send regular SMS updates to Ground Control
-        self.short_interval = rospy.get_param("~short_interval") # Short time interval (seconds) for regular SMS update
-        self.long_interval = rospy.get_param("~long_interval") # Long time interval (seconds) for regular SMS update
-        self.interval = self.long_interval # Interval (seconds) for regular SMS update, defaults to long_interval on bootup
-        self.min_interval = 1 # Minimum allowable time interval for regular SMS update (1 second)
+        self.sms_flag = False # Whether we should send regular payload to Ground Control
+        self.short_interval = rospy.get_param("~short_interval") # Short time interval (seconds) for regular payload
+        self.long_interval = rospy.get_param("~long_interval") # Long time interval (seconds) for regular payload
+        self.interval = self.long_interval # Interval (seconds) for regular payload, defaults to long_interval on bootup
+        self.min_interval = 1 # Minimum allowable time interval (seconds) for regular payload
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.msg = "" # Stores outgoing SMS to Ground Control
-        self.entries = { # Dictionary to hold all regular message entries
+        self.entries = { # Dictionary to hold all regular payload entries
             "arm": 0,
             "AS": 0.0,
             "GS": 0.0,
@@ -69,7 +71,7 @@ class SMStx():
             "wp": 0,
             "VTOL": 0,
         }
-        self.ping_entries = { # Dictionary to hold all on-demand message entries
+        self.ping_entries = { # Dictionary to hold all on-demand payloadentries
             "mode": "MANUAL",
         }
     
@@ -95,7 +97,7 @@ class SMStx():
         self.entries["lon"] = round(data.longitude, 6)
 
     def get_wp_reached(self, data):
-        '''Obtain information on which waypoint number has been reached'''
+        '''Obtain information on which waypoint has been reached'''
         self.entries["wp"] = data.wp_seq
 
     def get_VTOL_mode(self, data):
@@ -157,8 +159,8 @@ class SMStx():
     
     def send_msg_at_specified_interval(self, data):
         '''
-        Send SMS at regular intervals (either short or long interval)
-        Regular sending is active only if it is requested by Ground Control (sms_flag = true)
+        Send regular SMS payloads (either short or long interval)
+        Regular paylod is active only if it is requested by Ground Control (sms_flag = true)
         '''
         if self.sms_flag:
             self.msg = str(self.entries)
@@ -168,7 +170,7 @@ class SMStx():
             self.pub_to_data.publish("air_sms to GCS: SMS sending is deactivated")
         
         # Sleep for the specified interval. Note that rospy.Timer
-        # will not allow the time interval to go below the minimum allowable interval (min_interval)
+        # will not allow the time interval to go below min_interval
         sleep(self.interval)
     
     def sendmsg(self):
@@ -195,8 +197,8 @@ class SMStx():
     
     def prepare(self):
         '''
-        Main function to subscribe to all mavros topics and send SMS message (if requested by SMS_rx node)
-        If SMS sending is activated, messages are sent at an interval (in seconds) specified by self.interval
+        Main function to subscribe to all mavros topics and send SMS messages (if requested by SMS_rx node)
+        If regular payload is activated, messages are sent with a time interval (seconds) specified by self.interval
         '''
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
