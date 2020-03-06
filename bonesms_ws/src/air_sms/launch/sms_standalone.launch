@@ -22,6 +22,7 @@
     <node pkg="air_sms" type="SMS_rx.py" name="SMS_rx"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="whitelist" value="$(arg whitelist)" />
+        <param name="router_hostname" value = "$(arg router_hostname)"/>
     </node>
 
     <!--SMS_tx node: Send SMS containing key aircraft info to Ground Control.
