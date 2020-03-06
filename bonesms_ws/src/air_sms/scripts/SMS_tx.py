@@ -140,7 +140,7 @@ class SMStx():
             self.interval = self.long_interval
             self.msg = "Regular SMS update intervals set to long"
         elif data.data == "ping":
-            self.msg = str(self.entries)
+            self.truncate_regular_payload()
         elif "ping" in data.data:
             ping_breakdown = data.data.split()
             # Make sure the ping command is of the correct format ("ping <command>")
@@ -163,7 +163,7 @@ class SMStx():
         Regular paylod is active only if it is requested by Ground Control (sms_flag = true)
         '''
         if self.sms_flag:
-            self.msg = str(self.entries)
+            self.truncate_regular_payload()
             self.sendmsg()
         else:
             rospy.loginfo("SMS sending is deactivated")
@@ -172,6 +172,15 @@ class SMStx():
         # Sleep for the specified interval. Note that rospy.Timer
         # will not allow the time interval to go below min_interval
         sleep(self.interval)
+    
+    def truncate_regular_payload(self):
+        '''
+        Remove unnecessary characters (e.g. , and spaces) from regular payload
+        '''
+        self.msg = str(sorted(self.entries.items())) # Sort entries and convert to string
+        bad_char = ",[]()'"
+        for i in bad_char:
+            self.msg = self.msg.replace(i,"") # Remove unnecessary characters
     
     def sendmsg(self):
         '''
