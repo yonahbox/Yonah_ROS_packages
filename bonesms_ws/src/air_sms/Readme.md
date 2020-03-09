@@ -25,6 +25,7 @@ Regular Payload data:
 
 On-demand payload data:
 * Mode (mode): String
+* Status Text Messages (msg): String
 
 ## Available ground-to-air (G2A) commands:
 
@@ -41,6 +42,8 @@ On-demand payload data:
 * On-demand SMS update functions:
     * Request one SMS from the aircraft: "ping"
     * Request flight mode: "ping mode"
+    * Request aircraft status text messages: "ping msg"
+    
 
 Commands are not case sensitive
 

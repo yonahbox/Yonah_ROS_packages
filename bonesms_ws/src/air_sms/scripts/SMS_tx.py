@@ -22,6 +22,7 @@ Breakdown of regular payload data:
 
 Breakdown of on-demand payload data:
     - Mode (mode): String
+    - Status Text Messages (msg): String
 '''
 
 # Standard Library
@@ -34,6 +35,7 @@ from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
 from mavros_msgs.msg import WaypointReached
+from mavros_msgs.msg import StatusText
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 
@@ -73,6 +75,7 @@ class SMStx():
         }
         self.ping_entries = { # Dictionary to hold all on-demand payloadentries
             "mode": "MANUAL",
+            "msg": "",
         }
     
     #####################################
@@ -107,6 +110,10 @@ class SMStx():
             self.entries["VTOL"] = 1
         else:
             self.entries["VTOL"] = 0
+
+    def get_status_text(self, data):
+        '''Obtain special messages from mavros/statustext'''
+        self.ping_entries["msg"] = data.text
 
     def check_air_data_status(self, data):
         '''
@@ -214,6 +221,7 @@ class SMStx():
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
+        rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
