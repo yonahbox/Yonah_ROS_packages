@@ -23,6 +23,8 @@ Breakdown of regular payload data:
 Breakdown of on-demand payload data:
     - Mode (mode): String
     - Status Text Messages (msg): String
+    - Vibration levels (vibe): m/s/s in x, y and z axes
+    - Clipping Events (clipping): No units; x, y and z axes
 '''
 
 # Standard Library
@@ -36,6 +38,7 @@ from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
 from mavros_msgs.msg import WaypointReached
 from mavros_msgs.msg import StatusText
+from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 
@@ -73,9 +76,11 @@ class SMStx():
             "wp": 0,
             "VTOL": 0,
         }
-        self.ping_entries = { # Dictionary to hold all on-demand payloadentries
+        self.ping_entries = { # Dictionary to hold all on-demand payload entries
             "mode": "MANUAL",
             "msg": "",
+            "vibe": (0.0,0.0,0.0),
+            "clipping": (0,0,0),
         }
     
     #####################################
@@ -114,6 +119,11 @@ class SMStx():
     def get_status_text(self, data):
         '''Obtain special messages from mavros/statustext'''
         self.ping_entries["msg"] = data.text
+
+    def get_vibration_status(self, data):
+        '''Obtain vibration and clipping data from mavros/vibration/raw/vibration'''
+        self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2), round(data.vibration.z, 2))
+        self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
 
     def check_air_data_status(self, data):
         '''
@@ -222,6 +232,7 @@ class SMStx():
         rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
+        rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)

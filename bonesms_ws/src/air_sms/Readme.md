@@ -26,6 +26,8 @@ Regular Payload data:
 On-demand payload data:
 * Mode (mode): String
 * Status Text Messages (msg): String
+* Vibration levels (vibe): m/s/s
+* Clipping Events (clipping)
 
 ## Available ground-to-air (G2A) commands:
 
@@ -43,6 +45,8 @@ On-demand payload data:
     * Request one SMS from the aircraft: "ping"
     * Request flight mode: "ping mode"
     * Request aircraft status text messages: "ping msg"
+    * Request vibration levels in x, y and z axes: "ping vibe"
+    * Request total number of clipping events in x, y and z axes: "ping clipping"
     
 
 Commands are not case sensitive

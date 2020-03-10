@@ -22,6 +22,9 @@ Available commands:
 - On-demand SMS update functions:
     - Request one SMS from the aircraft: "ping"
     - Request flight mode: "ping mode"
+    - Request aircraft status text messages: "ping msg"
+    - Request vibration levels in x, y and z axes: "ping vibe"
+    - Request total number of clipping events in x, y and z axes: "ping clipping"
 
 Commands are not case sensitive
 
@@ -64,7 +67,7 @@ class SMSrx():
         
         # Security and safety measures
         self.populatewhitelist()
-        self.purge_residual_sms()
+        #self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
