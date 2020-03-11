@@ -118,12 +118,27 @@ class SMStx():
 
     def get_status_text(self, data):
         '''Obtain special messages from mavros/statustext'''
+        previous_msg = self.ping_entries["msg"]
         self.ping_entries["msg"] = data.text
+        if self.ping_entries["msg"] != previous_msg: # Send new status texts to Ground Control
+            self.msg = self.ping_entries["msg"]
+            self.sendmsg()
 
     def get_vibration_status(self, data):
         '''Obtain vibration and clipping data from mavros/vibration/raw/vibration'''
-        self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2), round(data.vibration.z, 2))
+        bad_vibes = 30 # Vibrations above this level (m/s/s) are considered bad
+        previous_vibes = self.ping_entries["vibe"]
+        self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
+            round(data.vibration.z, 2))
         self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
+        # Check for special events
+        i = 0
+        while i < 3:
+            if self.ping_entries["vibe"][i] >= bad_vibes and previous_vibes[i] < bad_vibes:
+                self.msg = "Warning: Vibrations are high"
+                self.sendmsg()
+                break
+            i = i + 1
 
     def check_air_data_status(self, data):
         '''
