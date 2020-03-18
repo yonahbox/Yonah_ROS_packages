@@ -28,6 +28,7 @@ Breakdown of on-demand payload data:
 '''
 
 # Standard Library
+import datetime
 import subprocess
 from time import sleep
 
@@ -178,7 +179,7 @@ class SMStx():
             # Make sure the ping command is of the correct format ("ping <command>")
             if len(ping_breakdown) == 2 and ping_breakdown[0] == 'ping' and \
                 ping_breakdown[1] in self.ping_entries:
-                self.msg = self.ping_entries[ping_breakdown[1]]
+                self.msg = str(self.ping_entries[ping_breakdown[1]])
             else:
                 return
         else:
@@ -220,6 +221,8 @@ class SMStx():
         Also inform air_data node of outcome, so that air_data can inform Ground Control about air_sms status
         '''
         rospy.loginfo("Sending SMS to Ground Control")
+        timestamp = datetime.datetime.now().replace(microsecond=0) 
+        self.msg = str(timestamp) + " " + self.msg # Add timestamp to outgoing messages
         try:
             sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, self.msg)
             if sendstatus == "Timeout":
