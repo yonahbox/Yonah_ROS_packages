@@ -15,5 +15,14 @@ def delete_msg(hostname, n):
     '''Delete the nth message in the onboard router'''
     subprocess.call(["ssh", "%s"%(hostname), "gsmctl -S -d %d"%(n)], shell=False)
 
-def get_gps():
-    pass # stub
+def get_gps_coords(hostname):
+    '''Get GPS coordinates of router'''
+    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -i -x"], shell=False)
+
+def get_gps_alt(hostname):
+    '''Get GPS altitude of router'''
+    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -a"], shell=False)
+
+def get_gps_speed(hostname):
+    '''Get GPS speed of router'''
+    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -v"], shell=False)
