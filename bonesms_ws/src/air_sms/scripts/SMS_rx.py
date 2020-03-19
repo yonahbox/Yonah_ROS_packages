@@ -67,7 +67,7 @@ class SMSrx():
         
         # Security and safety measures
         self.populatewhitelist()
-        #self.purge_residual_sms()
+        self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
@@ -97,16 +97,22 @@ class SMSrx():
     #####################################
     # Interaction with ROS Services/Nodes
     #####################################
+
+    def log_and_ack_msg(self):
+        '''Log msg and pass it to SMS_tx (through sms_sender topic) for acknowledgement purposes'''
+        rospy.loginfo(self.msg)
+        self.sms_sender.publish(self.msg)
     
     def checkArming(self):
         """Check for Arm/Disarm commands from Ground Control"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
         if self.msg == "disarm":
-            rospy.loginfo('DISARM')
             arm(0)
-        if self.msg == "arm":
-            rospy.loginfo('ARM')
+        elif self.msg == "arm":
             arm(1)
+        else:
+            return
+        self.log_and_ack_msg()
 
     def checkMode(self):
         """Check for Mode change commands from Ground Control"""
@@ -115,10 +121,11 @@ class SMSrx():
         if 'mode' in self.msg:
             mode_breakdown = self.msg.split()
             if mode_breakdown[0] == 'mode' and len(mode_breakdown) == 2:
-                rospy.loginfo(mode_breakdown[1])
-                mode(custom_mode = mode_breakdown[1])
+                # Set flight mode, check if successful
+                if mode(custom_mode = mode_breakdown[1]).mode_sent == True:
+                    self.log_and_ack_msg()
     
-    def check_SMS_or_ping(self):
+    def checkSMS(self):
         """
         Handle all services related to sending of SMS to Ground Control
         If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
@@ -127,12 +134,13 @@ class SMSrx():
             sms_breakdown = self.msg.split()
             # Command is "sms <command>"
             if sms_breakdown[0] == 'sms' and len(sms_breakdown) == 2:
-                self.sms_sender.publish(self.msg)
+                self.log_and_ack_msg()
         elif "ping" in self.msg:
             ping_breakdown = self.msg.split()
             # Command can either be "ping <command>" or "ping"
+            # To do: Provide whitelist of ping messages (provided in SMS_tx special_entries)
             if ping_breakdown[0] == 'ping' and len(ping_breakdown) <= 2:
-                self.sms_sender.publish(self.msg)
+                self.log_and_ack_msg()
 
     def checkMission(self):
         """Check for mission/waypoint commands from Ground Control"""
@@ -143,14 +151,18 @@ class SMSrx():
                     # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
                     wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
                     seq_no = wp_breakdown[2]
-                    wp_set(wp_seq = int(seq_no))
-                    rospy.loginfo("WP set to " + seq_no)           
+                    # Set target waypoint, check if successful
+                    if wp_set(wp_seq = int(seq_no)).success == True:
+                        self.log_and_ack_msg()
                 elif wp_breakdown[1] == 'load':            
                     # Message structure: wp load <wp file name>; extract 3rd word to get wp file
                     # Assume that wp file is located in root directory of Beaglebone
+                    # To do: Switch to WaypointPush service; currently no way to determine whether WPs successfully loaded
                     wp_file = wp_breakdown[2]
                     subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
-                    rospy.loginfo("Loaded wp file " + wp_file)
+                    self.log_and_ack_msg()
+                else:
+                    return
     
     ############################
     # "Main" function
@@ -175,7 +187,7 @@ class SMSrx():
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
                         # Run through a series of checks to see what command should be sent to aircraft
                         self.checkArming()
-                        self.check_SMS_or_ping()
+                        self.checkSMS()
                         self.checkMode()
                         self.checkMission()
                     else:

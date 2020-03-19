@@ -65,6 +65,7 @@ class SMStx():
         self.min_interval = 1 # Minimum allowable time interval (seconds) for regular payload
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
         self.msg = "" # Stores outgoing SMS to Ground Control
+        self.ack = "ACK: " # Acknowledgement prefix
         self.entries = { # Dictionary to hold all regular payload entries
             "arm": 0,
             "AS": 0.0,
@@ -157,22 +158,9 @@ class SMStx():
 
     def check_SMS_rx_node(self, data):
         '''
-        Subscribe to SMS_rx node to see if we should send SMS, whether in long or short intervals,
-        or whether to send a message once (ping reply)
+        Subscribe to SMS_rx node
         '''
-        if data.data == "sms true":
-            self.sms_flag = True
-            self.msg = "Regular SMS updating activated"
-        elif data.data == "sms false":
-            self.sms_flag = False
-            self.msg = "Regular SMS updating deactivated"
-        elif data.data == "sms short":
-            self.interval = self.short_interval
-            self.msg = "Regular SMS update intervals set to short"
-        elif data.data == "sms long":
-            self.interval = self.long_interval
-            self.msg = "Regular SMS update intervals set to long"
-        elif data.data == "ping":
+        if data.data == "ping":
             self.truncate_regular_payload()
         elif "ping" in data.data:
             ping_breakdown = data.data.split()
@@ -182,15 +170,24 @@ class SMStx():
                 self.msg = str(self.ping_entries[ping_breakdown[1]])
             else:
                 return
-        else:
-            return
+        elif data.data == "sms true": # Send regular payloads to Ground Control
+            self.sms_flag = True
+        elif data.data == "sms false": # Don't send regular payloads
+            self.sms_flag = False
+        elif data.data == "sms short": # Send regular payloads at short intervals
+            self.interval = self.short_interval
+        elif data.data == "sms long": # Send regular payloads at long intervals
+            self.interval = self.long_interval
+        # Defaut: Do nothing. To do: Implement whitelist of allowed commands
+        if "ping" not in data.data:
+            self.msg = self.ack + data.data
         self.sendmsg()
 
     #########################################
     # Handle sending of SMS to Ground Control
     #########################################
     
-    def send_msg_at_specified_interval(self, data):
+    def send_regular_payload(self, data):
         '''
         Send regular SMS payloads (either short or long interval)
         Regular paylod is active only if it is requested by Ground Control (sms_flag = true)
@@ -253,7 +250,7 @@ class SMStx():
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
         rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
-        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_msg_at_specified_interval)
+        message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_regular_payload)
         self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
