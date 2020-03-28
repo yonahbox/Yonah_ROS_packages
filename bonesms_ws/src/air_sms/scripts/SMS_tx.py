@@ -58,7 +58,8 @@ class SMStx():
         self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
         self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
-        self.sms_flag = False # Whether we should send regular payload to Ground Control
+        self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
+        self.statustext_flag = False # Whether we should send status texts to Ground Control
         self.short_interval = rospy.get_param("~short_interval") # Short time interval (seconds) for regular payload
         self.long_interval = rospy.get_param("~long_interval") # Long time interval (seconds) for regular payload
         self.interval = self.long_interval # Interval (seconds) for regular payload, defaults to long_interval on bootup
@@ -85,9 +86,9 @@ class SMStx():
             "clipping": (0,0,0),
         }
     
-    #####################################
-    # Interaction with ROS Services/Nodes
-    #####################################
+    ########################################
+    # Interaction with MAVROS Services/Nodes
+    ########################################
     
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
@@ -122,7 +123,8 @@ class SMStx():
         '''Obtain special messages from mavros/statustext'''
         previous_msg = self.ping_entries["msg"]
         self.ping_entries["msg"] = data.text
-        if self.ping_entries["msg"] != previous_msg: # Send new status texts to Ground Control
+        # Send new status texts to Ground Control
+        if self.ping_entries["msg"] != previous_msg and self.statustext_flag == True:
             self.msg = self.ping_entries["msg"]
             self.sendmsg()
 
@@ -141,6 +143,10 @@ class SMStx():
                 self.sendmsg()
                 break
             i = i + 1
+    
+    ###########################################
+    # Interaction with other ROS Services/Nodes
+    ###########################################
 
     def check_air_data_status(self, data):
         '''
@@ -160,27 +166,51 @@ class SMStx():
         '''
         Subscribe to SMS_rx node
         '''
-        if data.data == "ping":
+        if "ping" in data.data():
+            self.check_ping(data.data())
+        elif "sms" in data.data():
+            self.check_sms(data.data())
+        elif "statustext" in data.data():
+            self.check_statustext(data.data())
+    
+    def check_ping(self, data):
+        '''Check for ping commands from SMS_rx'''
+        if data == "ping": # Simple "ping" request
             self.truncate_regular_payload()
-        elif "ping" in data.data:
-            ping_breakdown = data.data.split()
+        else:
+            breakdown = data.split()
             # Make sure the ping command is of the correct format ("ping <command>")
-            if len(ping_breakdown) == 2 and ping_breakdown[0] == 'ping' and \
-                ping_breakdown[1] in self.ping_entries:
-                self.msg = str(self.ping_entries[ping_breakdown[1]])
+            if len(breakdown) == 2 and breakdown[0] == 'ping' and \
+                breakdown[1] in self.ping_entries:
+                self.msg = str(self.ping_entries[breakdown[1]])
             else:
                 return
-        elif data.data == "sms true": # Send regular payloads to Ground Control
-            self.sms_flag = True
-        elif data.data == "sms false": # Don't send regular payloads
-            self.sms_flag = False
-        elif data.data == "sms short": # Send regular payloads at short intervals
+        self.sendmsg()
+
+    def check_sms(self, data):
+        '''Check for regular payload (sms) commands from SMS_rx'''
+        if data == "sms true": # Send regular payloads to Ground Control
+            self.regular_payload_flag = True
+        elif data == "sms false": # Don't send regular payloads
+            self.regular_payload_flag = False
+        elif data == "sms short": # Send regular payloads at short intervals
             self.interval = self.short_interval
-        elif data.data == "sms long": # Send regular payloads at long intervals
+        elif data == "sms long": # Send regular payloads at long intervals
             self.interval = self.long_interval
-        # Defaut: Do nothing. To do: Implement whitelist of allowed commands
-        if "ping" not in data.data:
-            self.msg = self.ack + data.data
+        else:
+            return
+        self.msg = self.ack + data.data
+        self.sendmsg()
+
+    def check_statustext(self, data):
+        '''Check for statustext commands from SMS_rx'''
+        if data == "statustext true":
+            self.statustext_flag = True
+        elif data == "statustext false":
+            self.statustext_flag = False
+        else:
+            return
+        self.msg = self.ack + data.data
         self.sendmsg()
 
     #########################################
@@ -190,9 +220,9 @@ class SMStx():
     def send_regular_payload(self, data):
         '''
         Send regular SMS payloads (either short or long interval)
-        Regular paylod is active only if it is requested by Ground Control (sms_flag = true)
+        Regular paylod is active only if it is requested by Ground Control (regular_payload_flag = true)
         '''
-        if self.sms_flag:
+        if self.regular_payload_flag:
             self.truncate_regular_payload()
             self.sendmsg()
         else:

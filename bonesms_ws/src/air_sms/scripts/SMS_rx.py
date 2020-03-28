@@ -130,17 +130,14 @@ class SMSrx():
         Handle all services related to sending of SMS to Ground Control
         If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
         """
-        if "sms" in self.msg:
-            sms_breakdown = self.msg.split()
-            # Command is "sms <command>"
-            if sms_breakdown[0] == 'sms' and len(sms_breakdown) == 2:
-                self.log_and_ack_msg()
-        elif "ping" in self.msg:
-            ping_breakdown = self.msg.split()
-            # Command can either be "ping <command>" or "ping"
-            # To do: Provide whitelist of ping messages (provided in SMS_tx special_entries)
-            if ping_breakdown[0] == 'ping' and len(ping_breakdown) <= 2:
-                self.log_and_ack_msg()
+        prefixes = ["sms", "ping", "statustext"]
+        for i in prefixes:
+            if i in self.msg:
+                breakdown = self.msg.spilt()
+                # Commands are "sms/ping/statustext <command>"" or "ping"
+                if breakdown[0] == i and len(breakdown) <= 2:
+                    self.log_and_ack_msg()
+                break
 
     def checkMission(self):
         """Check for mission/waypoint commands from Ground Control"""
