@@ -166,12 +166,16 @@ class SMStx():
         '''
         Subscribe to SMS_rx node
         '''
-        if "ping" in data.data():
-            self.check_ping(data.data())
-        elif "sms" in data.data():
-            self.check_sms(data.data())
-        elif "statustext" in data.data():
-            self.check_statustext(data.data())
+        if "ping" in data.data:
+            self.check_ping(data.data)
+        elif "sms" in data.data:
+            self.check_sms(data.data)
+        elif "statustext" in data.data:
+            self.check_statustext(data.data)
+        else:
+            # Default: Send acknowledgement. To-do: Implement whitelist of msgs from SMS_rx
+            self.msg = self.ack + data.data
+            self.sendmsg()
     
     def check_ping(self, data):
         '''Check for ping commands from SMS_rx'''
@@ -199,7 +203,7 @@ class SMStx():
             self.interval = self.long_interval
         else:
             return
-        self.msg = self.ack + data.data
+        self.msg = self.ack + data
         self.sendmsg()
 
     def check_statustext(self, data):
@@ -210,7 +214,7 @@ class SMStx():
             self.statustext_flag = False
         else:
             return
-        self.msg = self.ack + data.data
+        self.msg = self.ack + data
         self.sendmsg()
 
     #########################################

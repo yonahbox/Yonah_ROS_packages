@@ -133,7 +133,7 @@ class SMSrx():
         prefixes = ["sms", "ping", "statustext"]
         for i in prefixes:
             if i in self.msg:
-                breakdown = self.msg.spilt()
+                breakdown = self.msg.split()
                 # Commands are "sms/ping/statustext <command>"" or "ping"
                 if breakdown[0] == i and len(breakdown) <= 2:
                     self.log_and_ack_msg()
