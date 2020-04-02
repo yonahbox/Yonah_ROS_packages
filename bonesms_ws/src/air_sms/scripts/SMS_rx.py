@@ -74,7 +74,10 @@ class SMSrx():
         textfile = rospy.get_param("~whitelist", "whitelist.txt")
         with open (textfile, "r") as reader:
             for line in reader:
-                self.whitelist.add(line[:-1]) # remove whitespace at end of line
+                if line[-1] == "\n":
+                    self.whitelist.add(line[:-1]) # remove whitespace at end of line
+                else:
+                    self.whitelist.add(line) # last line
         rospy.loginfo(self.whitelist)
 
     def purge_residual_sms(self):
