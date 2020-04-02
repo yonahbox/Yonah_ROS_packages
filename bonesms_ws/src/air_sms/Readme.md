@@ -53,6 +53,26 @@ Commands are not case sensitive
 
 ## Additional Notes
 
+* When setting up this package, change the following in the "CMakelists.txt" file (note: instructions are taken from the following [guide](http://www.artificialhumancompanions.com/structure-python-based-ros-package/)):
+
+Uncomment the following line (To tell Catkin to pay attention during the catkin_make process to the setup.py file):
+
+```
+catkin_python_setup()
+```
+
+List the nodes in the install() function (To tells Catkin to install these executable files into an accessible location in the Catkin development workspace):
+
+```
+install(PROGRAMS
+   scripts/SMS_tx.py
+   scripts/SMS_rx.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+```
+
+After the above edits are done, cd back to the bonesms_ws workspace and run `catkin_make` again
+
 * Make sure that a text file containing whitelisted phone numbers (with the title `whitelist.txt`) is located in `~/Yonah_ROS_packages/bonesms_ws/src/air_sms/scripts/` directory
 * When specifying the phone numbers, be sure to include the country code of the number
 * Make sure there is an empty line at the end of the text file.
