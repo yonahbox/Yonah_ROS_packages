@@ -1,6 +1,6 @@
 # Bonesms 
 
-Workspace that contains *air_sms*, a package for handling SMS telemetry
+Workspace that contains *air_sms*, a package for handling SMS telemetry for technical development (a separate package will be created for Operational Development)
 
 This package will be used on the BeagleBone Black companion computer that is connected to the Cube autopilot
 

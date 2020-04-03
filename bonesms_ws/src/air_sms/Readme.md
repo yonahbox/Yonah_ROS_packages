@@ -1,6 +1,6 @@
 # air_sms
 
-Package for handling Yonah's SMS Telemetry
+Package for handling Yonah's SMS Telemetry for Technical Development (a separate package will be used for Operational Development)
 
 ## air_sms Nodes
 
