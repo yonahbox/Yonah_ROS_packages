@@ -4,6 +4,7 @@
 
  ## List of folders	
 
-* launch: Contains launch file for MAVROS, data, and SMS nodes	
-* bonesms_ws: ROS package containing SMS telemetry scripts, which will be used on the aircraft's Beaglebone companion computer	
-* bonedata_ws: ROS_package containing data telemetry scripts, , which will be used on the aircraft's Beaglebone companion computer
+* launch: Contains launch file for MAVROS, data, and SMS nodes. Take note of the following:
+    * Copy the `apm_pluginlists.yaml` and `apm_config.yaml` file from the launch folder and put it into the mavros workspace: `/opt/ros/kinetic/share/mavros/launch/`
+* bonesms_ws: ROS workspace containing air_sms package that handles SMS Telemetry for technical development. See `bonesms_ws/src/air_sms/Readme.md` for more information
+* bonedata_ws: ROS workspace containing air_data package that handles Cellular Data Telemetry
