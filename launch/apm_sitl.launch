@@ -1,7 +1,6 @@
 <launch>
 
 	<!-- standalone launch file for mavros on sitl, used for testing purposes -->
-	<!-- Use our own pluginlist and config file -->
 	<arg name="fcu_url" default="udp://127.0.0.1:14551@14555" />
 	<arg name="gcs_url" default="udp://@localhost:5001" />
 	<arg name="tgt_system" default="1" />
@@ -10,11 +9,11 @@
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="false" />
 
+	<!-- MAVROS: Copy the pluginlist and config file from the same folder of this file -->
+	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
 	<include file="$(find mavros)/launch/node.launch">
-		<!--  <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" /> -->
-		<!--  <arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" /> -->
-		<arg name="pluginlists_yaml" value="apm_pluginlists.yaml" />
-		<arg name="config_yaml" value="apm_config.yaml" />
+		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
+		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
 
 		<arg name="fcu_url" value="$(arg fcu_url)" />
 		<arg name="gcs_url" value="$(arg gcs_url)" />

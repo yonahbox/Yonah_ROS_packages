@@ -17,12 +17,11 @@
     <arg name="long_interval" default="300"/>
 	<arg name="router_hostname" default="'root@192.168.1.1'" />
 
-	<!-- MAVROS. Use our own pluginlist and config file -->
+	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
+	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
 	<include file="$(find mavros)/launch/node.launch">
-		<!--  <arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" /> -->
-		<!--  <arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" /> -->
-		<arg name="pluginlists_yaml" value="apm_pluginlists.yaml" />
-		<arg name="config_yaml" value="apm_config.yaml" />
+		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
+		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
 
 		<arg name="fcu_url" value="$(arg fcu_url)" />
 		<arg name="gcs_url" value="$(arg gcs_url)" />
