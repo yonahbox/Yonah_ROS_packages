@@ -47,6 +47,8 @@ On-demand payload data:
     * Request aircraft status text messages: "ping msg"
     * Request vibration levels in x, y and z axes: "ping vibe"
     * Request total number of clipping events in x, y and z axes: "ping clipping"
+    * Request for statustext messages to be sent to GCS: "statustext on"
+    * Request for statustext messages to not be sent to GCS: "statustext off"
     
 
 Commands are not case sensitive
