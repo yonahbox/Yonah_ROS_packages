@@ -32,28 +32,18 @@ class SMStx():
         rospy.init_node('SMS_tx', anonymous=False)
         self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
         self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
-        self.msg = "" # Stores outgoing SMS to Ground Control
 
     #########################################
     # Handle sending of SMS to Ground Control
     #########################################
     
-    def send_regular_payload(self, data):
+    def send_sms(self, data):
         '''
-        Send regular SMS payloads
-        Regular paylod is active only if it is requested by Ground Control (regular_payload_flag = true)
+        Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
-        self.msg = data.data
-        rospy.loginfo(self.msg)
-        self.sendmsg()
-    
-    def sendmsg(self):
-        '''
-        Compile info from all mavros topics into a msg string and send it as an SMS.
-        '''
-        rospy.loginfo("Sending SMS to Ground Control")
+        rospy.loginfo("Sending SMS: " + data.data)
         try:
-            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, self.msg)
+            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, data.data)
             if sendstatus == "Timeout":
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         except(subprocess.CalledProcessError):
@@ -69,7 +59,7 @@ class SMStx():
         Main function to subscribe to all mavros topics and send SMS messages (if requested by SMS_rx node)
         If regular payload is activated, messages are sent with a time interval (seconds) specified by self.interval
         '''
-        rospy.Subscriber("ogc/to_sms", String, self.send_regular_payload)
+        rospy.Subscriber("ogc/to_sms", String, self.send_sms)
         rospy.spin()
 
 if __name__=='__main__':
