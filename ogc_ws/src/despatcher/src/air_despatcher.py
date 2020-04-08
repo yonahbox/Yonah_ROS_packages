@@ -1,30 +1,10 @@
 #!/usr/bin/env python3
 
 '''
-SMS_tx
+air_despatcher
 
-Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
-MAVROS topics: http://wiki.ros.org/mavros
+Bridge between MAVROS and the Ops Ground Control Links (Telegram, SMS, SBD)
 
-Prerequisite: Please ensure the GCS number (GCS_no) in air.launch and sms_standalone.launch is correct
-
-Breakdown of regular payload data:
-    - Arm status (Arm): 1 or 0
-    - Airspeed (AS): m/s
-    - Gndspeed (GS): m/s
-    - Throttle (thr): Scaled between 0.0 and 1.0
-    - Altitude relative to home (alt): m
-    - Lat (lat)
-    - Lon (lon)
-    - Status of AWS Data Telemetry Node (AWS): 1 = alive, 0 = dead
-    - Waypoint that has been reached (wp): Integer
-    - Whether aircraft is in VTOL mode (VTOL): 1 = yes, 0 = no
-
-Breakdown of on-demand payload data:
-    - Mode (mode): String
-    - Status Text Messages (msg): String
-    - Vibration levels (vibe): m/s/s in x, y and z axes
-    - Clipping Events (clipping): No units; x, y and z axes
 '''
 
 # Standard Library
@@ -43,10 +23,7 @@ from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 
-# Local
-import RuTOS
-
-class SMStx():
+class airdespatcher():
 
     ############################
     # Initialization
@@ -54,18 +31,16 @@ class SMStx():
     
     def __init__(self):
         '''Initialize all message entries'''
-        rospy.init_node('SMS_tx', anonymous=False)
-        self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
-        self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish to air_data node
-        self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
+        rospy.init_node('air_despatcher', anonymous=False)
+        self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.msg = "" # Stores outgoing msg to Ground Control
+        self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by sms_interval
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
         self.statustext_flag = False # Whether we should send status texts to Ground Control
-        self.short_interval = rospy.get_param("~short_interval") # Short time interval (seconds) for regular payload
-        self.long_interval = rospy.get_param("~long_interval") # Long time interval (seconds) for regular payload
-        self.interval = self.long_interval # Interval (seconds) for regular payload, defaults to long_interval on bootup
+        self.interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
+        self.interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
+        self.sms_interval = self.interval_2 # Interval (seconds) for regular payload over sms
         self.min_interval = 1 # Minimum allowable time interval (seconds) for regular payload
-        self.GCS_no = rospy.get_param("~GCS_no", "12345678") # GCS phone number
-        self.msg = "" # Stores outgoing SMS to Ground Control
         self.ack = "ACK: " # Acknowledgement prefix
         self.entries = { # Dictionary to hold all regular payload entries
             "arm": 0,
@@ -75,7 +50,6 @@ class SMStx():
             "alt": 0.0,
             "lat": 0.0,
             "lon": 0.0,
-            "AWS": 0,
             "wp": 0,
             "VTOL": 0,
         }
@@ -85,9 +59,10 @@ class SMStx():
             "vibe": (0.0,0.0,0.0),
             "clipping": (0,0,0),
         }
+
     
     ########################################
-    # Interaction with MAVROS Services/Nodes
+    # Subsrcription to MAVROS topics
     ########################################
     
     def get_mode_and_arm_status(self, data):
@@ -120,7 +95,6 @@ class SMStx():
             self.entries["VTOL"] = 0
 
     def get_status_text(self, data):
-        '''Obtain special messages from mavros/statustext'''
         previous_msg = self.ping_entries["msg"]
         self.ping_entries["msg"] = data.text
         # Send new status texts to Ground Control
@@ -129,7 +103,6 @@ class SMStx():
             self.sendmsg()
 
     def get_vibration_status(self, data):
-        '''Obtain vibration and clipping data from mavros/vibration/raw/vibration'''
         bad_vibes = 30 # Vibrations above this level (m/s/s) are considered bad
         previous_vibes = self.ping_entries["vibe"]
         self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
@@ -144,28 +117,17 @@ class SMStx():
                 break
             i = i + 1
     
+    ########################################
+    # Subsrcription to MAVROS services
+    ########################################
+
+    #
+
     ###########################################
     # Interaction with other ROS Services/Nodes
     ###########################################
 
-    def check_air_data_status(self, data):
-        '''
-        Check whether connection between air_data node and GCS is alive or dead. 
-        If connection is dead, notify GCS (through SMS) on the connection status.
-        If connection is alive, air_data will publish "SVC" (serviceable) message
-        '''
-        # Todo: Implement a system that will take action when no message is received from the data_to_sms topic
-        # after a certain value. The rospy.wait_for_message seems to be what we want for this; see
-        # https://docs.ros.org/diamondback/api/rospy/html/rospy.client-module.html#wait_for_message
-        if data.data == "SVC":
-            self.entries["AWS"] = 1
-        else:
-            self.entries["AWS"] = 0
-
     def check_SMS_rx_node(self, data):
-        '''
-        Subscribe to SMS_rx node
-        '''
         if "ping" in data.data:
             self.check_ping(data.data)
         elif "sms" in data.data:
@@ -178,7 +140,6 @@ class SMStx():
             self.sendmsg()
     
     def check_ping(self, data):
-        '''Check for ping commands from SMS_rx'''
         if data == "ping": # Simple "ping" request
             self.truncate_regular_payload()
         else:
@@ -192,22 +153,20 @@ class SMStx():
         self.sendmsg()
 
     def check_sms(self, data):
-        '''Check for regular payload (sms) commands from SMS_rx'''
         if data == "sms true": # Send regular payloads to Ground Control
             self.regular_payload_flag = True
         elif data == "sms false": # Don't send regular payloads
             self.regular_payload_flag = False
         elif data == "sms short": # Send regular payloads at short intervals
-            self.interval = self.short_interval
+            self.sms_interval = self.interval_1
         elif data == "sms long": # Send regular payloads at long intervals
-            self.interval = self.long_interval
+            self.sms_interval = self.interval_2
         else:
             return
         self.msg = self.ack + data
         self.sendmsg()
 
     def check_statustext(self, data):
-        '''Check for statustext commands from SMS_rx'''
         if data == "statustext true":
             self.statustext_flag = True
         elif data == "statustext false":
@@ -218,63 +177,48 @@ class SMStx():
         self.sendmsg()
 
     #########################################
-    # Handle sending of SMS to Ground Control
+    # Handle sending of msg to Ground Control
     #########################################
-    
-    def send_regular_payload(self, data):
-        '''
-        Send regular SMS payloads (either short or long interval)
-        Regular paylod is active only if it is requested by Ground Control (regular_payload_flag = true)
-        '''
-        if self.regular_payload_flag:
-            self.truncate_regular_payload()
-            self.sendmsg()
-        else:
-            rospy.loginfo("SMS sending is deactivated")
-            self.pub_to_data.publish("air_sms to GCS: SMS sending is deactivated")
-        
-        # Sleep for the specified interval. Note that rospy.Timer
-        # will not allow the time interval to go below min_interval
-        sleep(self.interval)
-    
+
     def truncate_regular_payload(self):
-        '''
-        Remove unnecessary characters (e.g. , and spaces) from regular payload
-        '''
+        '''Remove unnecessary characters (e.g. , and spaces) from regular payload'''
         self.msg = str(sorted(self.entries.items())) # Sort entries and convert to string
         bad_char = ",[]()'"
         for i in bad_char:
             self.msg = self.msg.replace(i,"") # Remove unnecessary characters
     
-    def sendmsg(self):
-        '''
-        Compile info from all mavros topics into a msg string and send it as an SMS.
-        Also inform air_data node of outcome, so that air_data can inform Ground Control about air_sms status
-        '''
-        rospy.loginfo("Sending SMS to Ground Control")
-        timestamp = datetime.datetime.now().replace(microsecond=0) 
-        self.msg = str(timestamp) + " " + self.msg # Add timestamp to outgoing messages
-        try:
-            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, self.msg)
-            if sendstatus == "Timeout":
-                rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-                self.pub_to_data.publish("air_sms: Msg sending Timeout")
-            else:
-                self.pub_to_data.publish("air_sms: Msg sending success")
-        except(subprocess.CalledProcessError):
-            rospy.logwarn("SSH process into router has been killed.")
-            self.pub_to_data.publish("air_sms: Cannot ssh into air router")
-            
+    def send_regular_payload_sms(self):
+        '''Send regular payload over sms link'''
+        self.pub_to_sms.publish(self.msg)
+        # Sleep for the specified interval. Note that rospy.Timer
+        # will not allow the time interval to go below min_interval
+        sleep(self.sms_interval)
+    
+    def send_regular_payload_sbd(self):
+        '''Send regular payload over SBD Satcomms link'''
+        pass
 
+    def send_regular_payload_tele(self):
+        '''Send regular payload over Telegram link'''
+        pass
+    
+    def send_regular_payload(self, data):
+        if self.regular_payload_flag == False:
+            return
+        '''Send regular payload over one of the three links: SMS, SBD or Telegram'''
+        self.truncate_regular_payload()
+        #rospy.loginfo(self.msg)
+        self.send_regular_payload_sms() # To-do: Replace with if-else statement
+    
+    def sendmsg(self):
+        '''Send any msg that's not a regular payload'''
+        self.pub_to_sms.publish(self.msg) # To-do: Replace with if-else statement
+    
     ############################
     # "Main" function
     ############################
     
-    def prepare(self):
-        '''
-        Main function to subscribe to all mavros topics and send SMS messages (if requested by SMS_rx node)
-        If regular payload is activated, messages are sent with a time interval (seconds) specified by self.interval
-        '''
+    def client(self):
         rospy.Subscriber("mavros/state", State, self.get_mode_and_arm_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
@@ -282,13 +226,12 @@ class SMStx():
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
-        rospy.Subscriber("data_to_sms", String, self.check_air_data_status)
         rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_regular_payload)
-        self.rate.sleep()
+        #self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
 
 if __name__=='__main__':
-    run = SMStx()
-    run.prepare()
+    run = airdespatcher()
+    run.client()

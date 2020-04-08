@@ -69,7 +69,7 @@ class SMSrx():
         
         # Security and safety measures
         self.populatewhitelist()
-        self.purge_residual_sms()
+        #self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
