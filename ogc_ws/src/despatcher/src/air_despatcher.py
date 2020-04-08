@@ -95,10 +95,9 @@ class airdespatcher():
             self.entries["VTOL"] = 0
 
     def get_status_text(self, data):
-        previous_msg = self.ping_entries["msg"]
         self.ping_entries["msg"] = data.text
         # Send new status texts to Ground Control
-        if self.ping_entries["msg"] != previous_msg and self.statustext_flag == True:
+        if self.statustext_flag == True:
             self.msg = self.ping_entries["msg"]
             self.sendmsg()
 
