@@ -5,6 +5,8 @@ air_despatcher
 
 Bridge between MAVROS and the Ops Ground Control Links (Telegram, SMS, SBD)
 
+Lau Yan Han and Yonah, Apr 2020
+
 '''
 
 # Standard Library
