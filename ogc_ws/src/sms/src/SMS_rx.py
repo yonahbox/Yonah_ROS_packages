@@ -38,9 +38,6 @@ import subprocess
 
 # ROS/Third-Party
 import rospy
-from mavros_msgs.srv import CommandBool
-from mavros_msgs.srv import SetMode
-from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
 
 # Local
@@ -63,13 +60,13 @@ class SMSrx():
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
-        self.sms_sender = rospy.Publisher('sendsms', String, queue_size = 5)
+        self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
         rospy.init_node('SMS_rx', anonymous=False)
         self.rate = rospy.Rate(2)
         
         # Security and safety measures
         self.populatewhitelist()
-        #self.purge_residual_sms()
+        self.purge_residual_sms()
 
     def populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
@@ -98,73 +95,6 @@ class SMSrx():
             except:
                 continue
         rospy.loginfo("Purge complete!")
-
-    #####################################
-    # Interaction with ROS Services/Nodes
-    #####################################
-
-    def log_and_ack_msg(self):
-        '''Log msg and pass it to SMS_tx (through sms_sender topic) for acknowledgement purposes'''
-        rospy.loginfo(self.msg)
-        self.sms_sender.publish(self.msg)
-    
-    def checkArming(self):
-        """Check for Arm/Disarm commands from Ground Control"""
-        arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
-        if self.msg == "disarm":
-            arm(0)
-        elif self.msg == "arm":
-            arm(1)
-        else:
-            return
-        self.log_and_ack_msg()
-
-    def checkMode(self):
-        """Check for Mode change commands from Ground Control"""
-        mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
-        # Message structure: mode <flight mode>; extract 2nd word to get flightmode
-        if 'mode' in self.msg:
-            mode_breakdown = self.msg.split()
-            if mode_breakdown[0] == 'mode' and len(mode_breakdown) == 2:
-                # Set flight mode, check if successful
-                if mode(custom_mode = mode_breakdown[1]).mode_sent == True:
-                    self.log_and_ack_msg()
-    
-    def checkSMS(self):
-        """
-        Handle all services related to sending of SMS to Ground Control
-        If SMS sending is required, instruct SMS_tx (through the sendsms topic) to do it
-        """
-        prefixes = ["sms", "ping", "statustext"]
-        for i in prefixes:
-            if i in self.msg:
-                breakdown = self.msg.split()
-                # Commands are "sms/ping/statustext <command>"" or "ping"
-                if breakdown[0] == i and len(breakdown) <= 2:
-                    self.log_and_ack_msg()
-                break
-
-    def checkMission(self):
-        """Check for mission/waypoint commands from Ground Control"""
-        if "wp" in self.msg:
-            wp_breakdown = self.msg.split()
-            if wp_breakdown[0] == "wp" and len(wp_breakdown) == 3:
-                if wp_breakdown[1] == 'set':
-                    # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
-                    wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-                    seq_no = wp_breakdown[2]
-                    # Set target waypoint, check if successful
-                    if wp_set(wp_seq = int(seq_no)).success == True:
-                        self.log_and_ack_msg()
-                elif wp_breakdown[1] == 'load':            
-                    # Message structure: wp load <wp file name>; extract 3rd word to get wp file
-                    # Assume that wp file is located in root directory of Beaglebone
-                    # To do: Switch to WaypointPush service; currently no way to determine whether WPs successfully loaded
-                    wp_file = wp_breakdown[2]
-                    subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
-                    self.log_and_ack_msg()
-                else:
-                    return
     
     ############################
     # "Main" function
@@ -187,20 +117,14 @@ class SMSrx():
                         rospy.loginfo('Command from '+ sender)
                         # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                         self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
-                        # Run through a series of checks to see what command should be sent to aircraft
-                        self.checkArming()
-                        self.checkSMS()
-                        self.checkMode()
-                        self.checkMission()
+                        # Forward msg to air_despatcher
+                        self.pub_to_despatcher.publish(self.msg)
                     else:
                         rospy.logwarn('Rejected msg from unknown sender ' + sender)
                     RuTOS.delete_msg(self.router_hostname, 1) # Delete the existing SMS
             
             except(subprocess.CalledProcessError):
                 rospy.logwarn("SSH process into router has been killed.")
-            
-            except(rospy.ServiceException):
-                rospy.logwarn("Service call failed")
             
             self.rate.sleep()
 

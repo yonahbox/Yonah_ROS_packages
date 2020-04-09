@@ -8,7 +8,6 @@ Bridge between MAVROS and the Ops Ground Control Links (Telegram, SMS, SBD)
 '''
 
 # Standard Library
-import datetime
 import subprocess
 from time import sleep
 
@@ -21,6 +20,9 @@ from mavros_msgs.msg import WaypointReached
 from mavros_msgs.msg import StatusText
 from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
+from mavros_msgs.srv import CommandBool
+from mavros_msgs.srv import SetMode
+from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
 
 class airdespatcher():
@@ -33,7 +35,8 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.msg = "" # Stores outgoing msg to Ground Control
+        self.msg = "" # Stores outgoing msg Air-to-Ground message
+        self.recv_msg = "" # Stores incoming Ground-to-Air message
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by sms_interval
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
         self.statustext_flag = False # Whether we should send status texts to Ground Control
@@ -59,6 +62,10 @@ class airdespatcher():
             "vibe": (0.0,0.0,0.0),
             "clipping": (0,0,0),
         }
+        # Wait for MAVROS services
+        rospy.wait_for_service('mavros/cmd/arming')
+        rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/mission/set_current')
 
     
     ########################################
@@ -95,6 +102,7 @@ class airdespatcher():
             self.entries["VTOL"] = 0
 
     def get_status_text(self, data):
+        '''Obtain status text messages from mavros/statustext/recv)'''
         self.ping_entries["msg"] = data.text
         # Send new status texts to Ground Control
         if self.statustext_flag == True:
@@ -102,6 +110,7 @@ class airdespatcher():
             self.sendmsg()
 
     def get_vibration_status(self, data):
+        '''Obtain vibration data from mavros/vibration/raw/vibration'''
         bad_vibes = 30 # Vibrations above this level (m/s/s) are considered bad
         previous_vibes = self.ping_entries["vibe"]
         self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
@@ -115,34 +124,36 @@ class airdespatcher():
                 self.sendmsg()
                 break
             i = i + 1
-    
-    ########################################
-    # Subsrcription to MAVROS services
-    ########################################
-
-    #
 
     ###########################################
-    # Interaction with other ROS Services/Nodes
+    # Handle Ground-to-Air (G2A) messages
     ###########################################
 
-    def check_SMS_rx_node(self, data):
-        if "ping" in data.data:
-            self.check_ping(data.data)
-        elif "sms" in data.data:
-            self.check_sms(data.data)
-        elif "statustext" in data.data:
-            self.check_statustext(data.data)
-        else:
-            # Default: Send acknowledgement. To-do: Implement whitelist of msgs from SMS_rx
-            self.msg = self.ack + data.data
-            self.sendmsg()
+    def check_incoming_msgs(self, data):
+        '''Check for incoming G2A messages from ogc/from_sms topic'''
+        try:
+            self.recv_msg = data.data
+            if "ping" in self.recv_msg:
+                self.check_ping()
+            elif "sms" in self.recv_msg:
+                self.check_sms()
+            elif "statustext" in self.recv_msg:
+                self.check_statustext()
+            elif "arm" in self.recv_msg:
+                self.check_arming()
+            elif "mode" in self.recv_msg:
+                self.check_mode()
+            elif "wp" in self.recv_msg:
+                self.check_mission()
+        except(rospy.ServiceException):
+            rospy.logwarn("Service Call Failed")
     
-    def check_ping(self, data):
-        if data == "ping": # Simple "ping" request
+    def check_ping(self):
+        '''Check for ping commands from Ground Control'''
+        if self.recv_msg == "ping": # Simple "ping" request
             self.truncate_regular_payload()
         else:
-            breakdown = data.split()
+            breakdown = self.recv_msg.split()
             # Make sure the ping command is of the correct format ("ping <command>")
             if len(breakdown) == 2 and breakdown[0] == 'ping' and \
                 breakdown[1] in self.ping_entries:
@@ -151,32 +162,80 @@ class airdespatcher():
                 return
         self.sendmsg()
 
-    def check_sms(self, data):
-        if data == "sms true": # Send regular payloads to Ground Control
+    def check_sms(self):
+        '''Check for SMS commands from Ground Control'''
+        if self.recv_msg == "sms true": # Send regular payloads to Ground Control
             self.regular_payload_flag = True
-        elif data == "sms false": # Don't send regular payloads
+        elif self.recv_msg == "sms false": # Don't send regular payloads
             self.regular_payload_flag = False
-        elif data == "sms short": # Send regular payloads at short intervals
+        elif self.recv_msg == "sms short": # Send regular payloads at short intervals
             self.sms_interval = self.interval_1
-        elif data == "sms long": # Send regular payloads at long intervals
+        elif self.recv_msg == "sms long": # Send regular payloads at long intervals
             self.sms_interval = self.interval_2
         else:
             return
-        self.msg = self.ack + data
+        self.msg = self.ack + self.recv_msg
         self.sendmsg()
 
-    def check_statustext(self, data):
-        if data == "statustext true":
+    def check_statustext(self):
+        '''Check for statustext commands from Ground Control'''
+        if self.recv_msg == "statustext true":
             self.statustext_flag = True
-        elif data == "statustext false":
+        elif self.recv_msg == "statustext false":
             self.statustext_flag = False
         else:
             return
-        self.msg = self.ack + data
+        self.msg = self.ack + self.recv_msg
+        self.sendmsg()
+    
+    def check_arming(self):
+        """Check for Arm/Disarm commands from Ground Control"""
+        arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
+        if self.recv_msg == "disarm":
+            arm(0)
+        elif self.recv_msg == "arm":
+            arm(1)
+        else:
+            return
+        self.msg = self.ack + self.recv_msg
         self.sendmsg()
 
+    def check_mode(self):
+        """Check for Mode change commands from Ground Control"""
+        mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
+        mode_breakdown = self.recv_msg.split()
+        # Message structure: mode <flight mode>; extract 2nd word to get flightmode
+        if mode_breakdown[0] == 'mode' and len(mode_breakdown) == 2:
+            # Set flight mode, check if successful
+            if mode(custom_mode = mode_breakdown[1]).mode_sent == True:
+                self.msg = self.ack + self.recv_msg
+                self.sendmsg()
+
+    def check_mission(self):
+        """Check for mission/waypoint commands from Ground Control"""
+        wp_breakdown = self.recv_msg.split()
+        if wp_breakdown[0] == "wp" and len(wp_breakdown) == 3:
+            if wp_breakdown[1] == 'set':
+                # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
+                wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
+                seq_no = wp_breakdown[2]
+                # Set target waypoint, check if successful
+                if wp_set(wp_seq = int(seq_no)).success == True:
+                    self.msg = self.ack + self.recv_msg
+                    self.sendmsg()
+            elif wp_breakdown[1] == 'load':            
+                # Message structure: wp load <wp file name>; extract 3rd word to get wp file
+                # Assume that wp file is located in root directory of Beaglebone
+                # To do: Switch to WaypointPush service; currently no way to determine whether WPs successfully loaded
+                wp_file = wp_breakdown[2]
+                subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
+                self.msg = self.ack + self.recv_msg
+                self.sendmsg()
+            else:
+                return
+
     #########################################
-    # Handle sending of msg to Ground Control
+    # Handle Air-to-Ground (A2G) messages
     #########################################
 
     def truncate_regular_payload(self):
@@ -225,7 +284,7 @@ class airdespatcher():
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
-        rospy.Subscriber("sendsms", String, self.check_SMS_rx_node)
+        rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_regular_payload)
         #self.rate.sleep()
         rospy.spin()
