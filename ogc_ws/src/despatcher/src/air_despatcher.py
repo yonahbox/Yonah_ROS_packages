@@ -37,7 +37,6 @@ class airdespatcher():
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.msg = "" # Stores outgoing msg Air-to-Ground message
         self.recv_msg = "" # Stores incoming Ground-to-Air message
-        self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by sms_interval
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
         self.statustext_flag = False # Whether we should send status texts to Ground Control
         self.interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
@@ -130,7 +129,7 @@ class airdespatcher():
     ###########################################
 
     def check_incoming_msgs(self, data):
-        '''Check for incoming G2A messages from ogc/from_sms topic'''
+        '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             self.recv_msg = data.data
             if "ping" in self.recv_msg:
@@ -285,8 +284,9 @@ class airdespatcher():
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         message_sender = rospy.Timer(rospy.Duration(self.min_interval), self.send_regular_payload)
-        #self.rate.sleep()
         rospy.spin()
         message_sender.shutdown()
 
