@@ -75,7 +75,7 @@ class airdespatcher():
     
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
-        self.entries["arm"] = data.armed
+        self.entries["arm"] = int(data.armed)
         self.ping_entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
@@ -240,11 +240,14 @@ class airdespatcher():
     #########################################
 
     def truncate_regular_payload(self):
-        '''Remove unnecessary characters (e.g. , and spaces) from regular payload'''
+        '''Remove unnecessary characters from regular payload'''
         self.msg = str(sorted(self.entries.items())) # Sort entries and convert to string
         bad_char = ",[]()'"
         for i in bad_char:
             self.msg = self.msg.replace(i,"") # Remove unnecessary characters
+        for k in self.entries.keys():
+            k = k + " "
+            self.msg = self.msg.replace(k,"") # Remove entry descriptions
     
     def send_regular_payload_sms(self):
         '''Send regular payload over sms link'''
