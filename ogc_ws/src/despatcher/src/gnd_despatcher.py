@@ -15,7 +15,6 @@ import subprocess
 # ROS/Third-Party
 import rospy
 from despatcher.msg import regular_payload
-from despatcher.msg import on_demand_payload
 from std_msgs.msg import String
 
 REGULAR_PAYLOAD_LEN = 9
@@ -26,7 +25,8 @@ class gnddespatcher():
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.pub_to_rqt = rospy.Publisher('ogc/from_despatcher', regular_payload, queue_size=5)
+        self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', regular_payload, queue_size=5)
+        self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.msg = "" # Stores incoming Ground-to-Air message
         self.recv_msg = "" # Stores outgoing Air-to-Ground message
 
@@ -43,7 +43,8 @@ class gnddespatcher():
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         self.msg = data.data
-        self.handle_regular_payload()
+        if not self.handle_regular_payload():
+            self.handle_ondemand_payload()
 
     def handle_regular_payload(self):
         '''Check if incoming message is a regular payload, and handle it accordingly'''
@@ -51,7 +52,7 @@ class gnddespatcher():
         entries = self.msg.split()
         # Check if incoming message is of the regular payload format
         if not len(entries) == REGULAR_PAYLOAD_LEN:
-            return
+            return False
         # Decode regular payload
         msg = regular_payload()
         msg.airspeed = float(entries[0])
@@ -63,10 +64,13 @@ class gnddespatcher():
         msg.throttle = float(entries[6])
         msg.vtol = bool(entries[7])
         msg.wp = int(entries[8])
-        self.pub_to_rqt.publish(msg)
+        self.pub_to_rqt_regular.publish(msg)
+        return True
 
-    def handle_on_demand_payload(self):
-        pass
+    def handle_ondemand_payload(self):
+        '''Publish on-demand messages to be displayed on rqt's console'''
+        # To-do: Add some checking mechanism. Right now, all incoming msgs are strings with no fixed format
+        self.pub_to_rqt_ondemand.publish(self.msg)
     
     ############################
     # "Main" function
