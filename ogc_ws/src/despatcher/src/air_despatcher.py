@@ -47,15 +47,15 @@ class airdespatcher():
         self.min_interval = 1 # Minimum allowable time interval (seconds) for regular payload
         self.ack = "ACK: " # Acknowledgement prefix
         self.entries = { # Dictionary to hold all regular payload entries
-            "arm": 0,
-            "AS": 0.0,
-            "GS": 0.0,
-            "thr": 0.0,
+            "airspeed": 0.0,
             "alt": 0.0,
+            "arm": 0,
+            "groundspeed": 0.0,
             "lat": 0.0,
             "lon": 0.0,
+            "throttle": 0.0,
             "wp": 0,
-            "VTOL": 0,
+            "vtol": 0,
         }
         self.ping_entries = { # Dictionary to hold all on-demand payload entries
             "mode": "MANUAL",
@@ -80,9 +80,9 @@ class airdespatcher():
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        self.entries["AS"] = round(data.airspeed, 1)
-        self.entries["GS"] = round(data.groundspeed, 1)
-        self.entries["thr"] = round(data.throttle, 1)
+        self.entries["airspeed"] = round(data.airspeed, 1)
+        self.entries["groundspeed"] = round(data.groundspeed, 1)
+        self.entries["throttle"] = round(data.throttle, 1)
         self.entries["alt"] = round(data.altitude, 1)
 
     def get_GPS_coord(self, data):
@@ -98,9 +98,9 @@ class airdespatcher():
         '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''
         if data.channels[4] > 1200 or data.channels[5] > 1200 or data.channels[6] > 1200\
             or data.channels[7] > 1200:
-            self.entries["VTOL"] = 1
+            self.entries["vtol"] = 1
         else:
-            self.entries["VTOL"] = 0
+            self.entries["vtol"] = 0
 
     def get_status_text(self, data):
         '''Obtain status text messages from mavros/statustext/recv)'''
