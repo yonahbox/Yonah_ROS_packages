@@ -1,4 +1,4 @@
-<!-- launch file for Yonah main SMS Telemetry Node on Bone as a standalone (for testing purposes)-->
+<!-- launch file for Yonah main SMS Telemetry Node on GCS as a standalone (for testing purposes)-->
 
 <launch>
 
@@ -6,7 +6,7 @@
      and vice versa). Enclose it in '' to recognise it as a string (instead of int)-->
     <arg name="client_phone_no" default="'12345678'"/>
 
-    <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
+    <!-- phone numbers authorized to send commands to GCS. Whitelist should be in same folder as nodes-->
     <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/>
 
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
