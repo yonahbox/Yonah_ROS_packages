@@ -27,14 +27,21 @@ class gnddespatcher():
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', regular_payload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
-        self.msg = "" # Stores incoming Ground-to-Air message
-        self.recv_msg = "" # Stores outgoing Air-to-Ground message
+        self.msg = "" # Stores incoming Air-to-Ground message
+        self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################
 
-    #
+    def handle_outgoing_msgs(self, data):
+        '''Check that outgoing G2A messages are valid before forwarding them to the links'''
+        whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp"]
+        if data.data.split()[0] not in whitelisted_prefixes:
+            self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
+        else:
+            self.pub_to_sms.publish(data.data) # To-do: Add if-else statement to handle 3 links
+            self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
     
     ###########################################
     # Handle Air-to-Ground (A2G) messages
@@ -68,7 +75,7 @@ class gnddespatcher():
         return True
 
     def handle_ondemand_payload(self):
-        '''Publish on-demand messages to be displayed on rqt's console'''
+        '''Publish on-demand and miscellaneous messages to be displayed on rqt's console'''
         # To-do: Add some checking mechanism. Right now, all incoming msgs are strings with no fixed format
         self.pub_to_rqt_ondemand.publish(self.msg)
     
@@ -80,6 +87,7 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/to_despatcher", String, self.handle_outgoing_msgs)
         rospy.spin()
 
 if __name__=='__main__':
