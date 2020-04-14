@@ -15,7 +15,7 @@ import subprocess
 
 # ROS/Third-Party
 import rospy
-from despatcher.msg import regular_payload
+from despatcher.msg import RegularPayload
 from std_msgs.msg import String
 
 pub_to_despatcher = rospy.Publisher('ogc/to_despatcher', String, queue_size=5)
@@ -42,7 +42,7 @@ def send_msgs(data):
 
 def client():
     rospy.init_node('gnd_test', anonymous=False)
-    rospy.Subscriber('ogc/from_despatcher/regular', regular_payload, display_regular_payload)
+    rospy.Subscriber('ogc/from_despatcher/regular', RegularPayload, display_regular_payload)
     rospy.Subscriber('ogc/from_despatcher/ondemand', String, display_ondemand_payload)
     message_sender = rospy.Timer(rospy.Duration(0.5), send_msgs)
     rospy.spin()

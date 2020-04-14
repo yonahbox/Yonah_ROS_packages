@@ -8,7 +8,7 @@
 
 ## Msgs
 
-**regular_payload**, located in `msg` folder
+**RegularPayload**, located in `msg` folder
 
 ## Installation notes
 
@@ -36,7 +36,7 @@ Regular payload format:
 
 The air despatcher compiles A2G payloads by subscribing to the relevant mavros topics, and publishes the payloads to `ogc/to_sms`, `ogc/to_sbd` and `ogc/to_telegram` topics as strings
 
-The ground despatcher receives A2G payloads by subscribing to `ogc/from_sms`, `ogc/from_sbd` and `ogc/from_telegram` topics. For regular payloads, they are decoded and published to `ogc/from_despatcher/regular` topic as a `regular_payload` msg. All other incoming messages will be received and published to `ogc/from_despatcher/ondemand` as strings
+The ground despatcher receives A2G payloads by subscribing to `ogc/from_sms`, `ogc/from_sbd` and `ogc/from_telegram` topics. For regular payloads, they are decoded and published to `ogc/from_despatcher/regular` topic as a `RegularPayload` msg. All other incoming messages will be received and published to `ogc/from_despatcher/ondemand` as strings
 
 **Ground-to-Air commands**
 

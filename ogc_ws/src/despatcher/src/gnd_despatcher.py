@@ -15,7 +15,7 @@ import subprocess
 
 # ROS/Third-Party
 import rospy
-from despatcher.msg import regular_payload
+from despatcher.msg import RegularPayload
 from std_msgs.msg import String
 
 REGULAR_PAYLOAD_LEN = 9
@@ -26,7 +26,7 @@ class gnddespatcher():
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', regular_payload, queue_size=5)
+        self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.msg = "" # Stores incoming Air-to-Ground message
         self.recv_msg = "" # Stores outgoing Ground-to-Air message
@@ -62,7 +62,7 @@ class gnddespatcher():
         if not len(entries) == REGULAR_PAYLOAD_LEN:
             return False
         # Decode regular payload
-        msg = regular_payload()
+        msg = RegularPayload()
         msg.airspeed = float(entries[0])
         msg.alt = float(entries[1])
         msg.armed = bool(entries[2])
