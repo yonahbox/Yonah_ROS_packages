@@ -7,6 +7,7 @@ Bridge between RQT Ground Console and the Ops Ground Control Links (Telegram, SM
 
 Lau Yan Han and Yonah, Apr 2020
 
+Released under the GNU GPL version 3 or later
 '''
 
 # Standard Library

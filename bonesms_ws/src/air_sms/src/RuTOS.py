@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+'''
+RuTOS
+
+Commands to interact with RuT Teltonika routers (which use RuTOS).
+See https://wiki.teltonika-networks.com/view/Gsmctl_commands for more details
+
+Lau Yan Han and Yonah, Apr 2020
+
+Released under the GNU GPL version 3 or later
+'''
+
 import subprocess
     
 def send_msg(hostname, GCS_no, msg):

@@ -25,6 +25,10 @@ Breakdown of on-demand payload data:
     - Status Text Messages (msg): String
     - Vibration levels (vibe): m/s/s in x, y and z axes
     - Clipping Events (clipping): No units; x, y and z axes
+
+Lau Yan Han and Yonah, Mar 2020
+
+Released under the GNU GPL version 3 or later
 '''
 
 # Standard Library

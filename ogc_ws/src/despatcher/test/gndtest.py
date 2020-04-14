@@ -7,6 +7,7 @@ Test script to ensure that gnd_despatcher node works properly
 
 Lau Yan Han and Yonah, Apr 2020
 
+Released under the GNU GPL version 3 or later
 '''
 
 # Standard Library

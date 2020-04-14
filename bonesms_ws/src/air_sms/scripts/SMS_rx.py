@@ -30,7 +30,9 @@ Available commands:
 
 Commands are not case sensitive
 
-Lau Yan Han and Yonah, March 2020
+Lau Yan Han and Yonah, Mar 2020
+
+Released under the GNU GPL version 3 or later
 """
 
 # Standard Library
