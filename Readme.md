@@ -9,3 +9,7 @@
 * bonesms_ws: ROS workspace containing air_sms package that handles SMS Telemetry for technical development. See `bonesms_ws/src/air_sms/Readme.md` for more information
 * bonedata_ws: ROS workspace containing air_data package that handles Cellular Data Telemetry for technical development
 * ogc_ws: ROS workspace containing packages pertaining to development of Ops Ground Control (OGC)
+
+## License
+
+This repository is licensed under the GNU GPL version 3 license or later. Refer to the COPYING.txt file for more details
