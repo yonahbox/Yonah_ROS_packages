@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #    Copyright 2015 Makersnake
 # 
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +13,8 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+# 
+#    Original code: https://github.com/MakerSnake/pyRockBlock
    
 import glob
 import signal
@@ -170,7 +174,7 @@ class rockBlock(object):
           
             else:
                 
-                return 0;
+                return 0
                       
                             
     def sendMessage(self, msg):
@@ -310,9 +314,9 @@ class rockBlock(object):
     def _queueMessage(self, msg):
         self._ensureConnectionStatus()
                 
-        if( len(msg) > 340):
+        if( len(msg) > 50):
                
-            print "sendMessageWithBytes bytes should be <= 340 bytes"
+            print ("sendMessageWithBytes bytes should be <= 50 bytes")
             
             return False
         
@@ -520,7 +524,7 @@ class rockBlock(object):
                 break
                         
             
-            TIME_ATTEMPTS = TIME_ATTEMPTS - 1;
+            TIME_ATTEMPTS = TIME_ATTEMPTS - 1
             
             time.sleep(TIME_DELAY)
             
@@ -533,7 +537,7 @@ class rockBlock(object):
                         
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):
                 
-                print  "NO SIGNAL"
+                print  ("NO SIGNAL")
                                 
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
                     self.callback.rockBlockSignalFail()
@@ -547,7 +551,7 @@ class rockBlock(object):
                 if(self.callback != None and callable(self.callback.rockBlockSignalPass) ): 
                     self.callback.rockBlockSignalPass()
                                     
-                return True;
+                return True
             
             
             SIGNAL_ATTEMPTS = SIGNAL_ATTEMPTS - 1
@@ -564,7 +568,7 @@ class rockBlock(object):
           
         if( response == "OK" ):
         
-            print "No message content.. strange!"
+            print ("No message content.. strange!")
             
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
