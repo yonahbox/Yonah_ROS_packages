@@ -101,7 +101,7 @@ class rockBlock(object):
         command = "AT+CSQ"
         self.s.write((command + "\r").encode())
         if( self.s.readline().strip().decode() == command):
-            response = self.s.readline().strip()
+            response = self.s.readline().strip().decode()
             if( response.find("+CSQ") >= 0 ):
                 self.s.readline().strip()   #OK
                 self.s.readline().strip()   #BLANK
@@ -128,7 +128,7 @@ class rockBlock(object):
         command = "AT-MSSTM"
         self.s.write((command + "\r").encode())
         if(self.s.readline().strip().decode() == command):
-            response = self.s.readline().strip()
+            response = self.s.readline().strip().decode()
             self.s.readline().strip()  #BLANK
             self.s.readline().strip()  #OK
             if( not "no network service" in response ):
@@ -155,6 +155,7 @@ class rockBlock(object):
                 if(SESSION_ATTEMPTS == 0):
                     break
                 if( self._attemptSession() ):
+                    print ("Yay!") # Replace with a better msg...
                     return True
                 else:
                     time.sleep(SESSION_DELAY)       
@@ -169,7 +170,7 @@ class rockBlock(object):
         command = "AT+GSN"
         self.s.write((command + "\r").encode())
         if(self.s.readline().strip().decode() == command):
-            response = self.s.readline().strip()
+            response = self.s.readline().strip().decode()
             self.s.readline().strip()  #BLANK
             self.s.readline().strip() #OK
             return response
@@ -324,7 +325,7 @@ class rockBlock(object):
             self.s.write((command + "\r").encode())
             
             if( self.s.readline().strip().decode() == command ):
-                response = self.s.readline().strip()
+                response = self.s.readline().strip().decode()
                 if( response.find("+SBDIX:") >= 0 ):
                     self.s.readline()   #BLANK
                     self.s.readline()   #OK    
@@ -410,20 +411,22 @@ class rockBlock(object):
         '''Process incoming Mobile-Terminated (MT) msg'''
 
         self._ensureConnectionStatus()
-        self.s.write("AT+SBDRB\r".encode())
-        response = self.s.readline().strip().replace("AT+SBDRB\r","").strip()
+        command = "AT+SBDRB"
+        self.s.write((command + "\r").encode())
+        if (self.s.readline().strip().decode() == command): # Echo
+            response = self.s.readline().strip().decode()
 
-        if( response == "OK" ):
-            # Blank msg
-            print ("No message content.. strange!")
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, "")
-        else:
-            # Pass the MT msg to the callback object                                   
-            content = response[2:-2]
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, content)
-            self.s.readline()   #BLANK?
+            if( response == "OK" ):
+                # Blank msg
+                print ("No message content.. strange!")
+                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                    self.callback.rockBlockRxReceived(mtMsn, "")
+            else:
+                # Pass the MT msg to the callback object                                   
+                content = response[2:-2]
+                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                    self.callback.rockBlockRxReceived(mtMsn, content)
+                self.s.readline()   #BLANK?
                 
     
     def _isNetworkTimeValid(self):
@@ -434,7 +437,7 @@ class rockBlock(object):
         self.s.write((command + "\r").encode())
 
         if( self.s.readline().strip().decode() == command ):  #Echo
-            response = self.s.readline().strip()
+            response = self.s.readline().strip().decode()
             if( response.startswith("-MSSTM") ):    #-MSSTM: a5cb42ad / no network service
                 self.s.readline()   #OK
                 self.s.readline()   #BLANK
