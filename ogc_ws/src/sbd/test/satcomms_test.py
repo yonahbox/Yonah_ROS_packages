@@ -20,6 +20,12 @@ from rockBlock import rockBlockProtocol
 
 class satcommstest(rockBlockProtocol):
     
+    def __init__(self):
+        rospy.init_node('satcomms_test', anonymous=False)
+        self.portID = "/dev/ttyUSB0"
+        self.sbdsession = rockBlock.rockBlock(self.portID, self)
+        self.mt_count = 0
+    
     def rockBlockConnected(self):
         rospy.loginfo("Rockblock Connected")
 
@@ -58,18 +64,23 @@ class satcommstest(rockBlockProtocol):
 
     def rockBlockTxSuccess(self,momsn):
         rospy.loginfo("Rockblock msg sent")
+
+    def send_mo_msg(self, data):
+        momsg = input("Enter your MO msg: ")
+        self.sbdsession.sendMessage(momsg)
+    
+    def recv_mt_msg(self, data):
+        self.mt_count = self.mt_count + 1
+        rospy.loginfo("MT msg read attempt: " + str(self.mt_count))
+        self.sbdsession.messageCheck()
     
     def client(self):
-        portID = "/dev/ttyUSB0"
-        sbdsession = rockBlock.rockBlock(portID, self)
-        while True:
-            try:
-                momsg = input("Enter your MO msg: ")
-                sbdsession.sendMessage(momsg)
-            except (KeyboardInterrupt):
-                print("Shutting down")
-                sbdsession.close()
-                break;
+        message_sender = rospy.Timer(rospy.Duration(0.5), self.send_mo_msg)
+        message_receive = rospy.Timer(rospy.Duration(0.5), self.recv_mt_msg)
+        rospy.spin()
+        message_sender.shutdown()
+        message_receive.shutdown()
+        self.sbdsession.close()
 
 if __name__=='__main__':
     run = satcommstest()

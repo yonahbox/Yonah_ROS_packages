@@ -140,7 +140,7 @@ class rockBlock(object):
                       
                             
     def sendMessage(self, msg):
-        '''Send an MT msg, and return True/False depending on whether attempt was successful'''
+        '''Send an MO msg, and return True/False depending on whether attempt was successful'''
         self._ensureConnectionStatus()
 
         if(self.callback != None and callable(self.callback.rockBlockTxStarted) ):
@@ -413,20 +413,20 @@ class rockBlock(object):
         self._ensureConnectionStatus()
         command = "AT+SBDRB"
         self.s.write((command + "\r").encode())
-        if (self.s.readline().strip().decode() == command): # Echo
-            response = self.s.readline().strip().decode()
+        response = self.s.readline().strip().decode()
+        response = response.replace("AT+SBDRB\r","").strip() # response format is 
 
-            if( response == "OK" ):
-                # Blank msg
-                print ("No message content.. strange!")
-                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                    self.callback.rockBlockRxReceived(mtMsn, "")
-            else:
-                # Pass the MT msg to the callback object                                   
-                content = response[2:-2]
-                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                    self.callback.rockBlockRxReceived(mtMsn, content)
-                self.s.readline()   #BLANK?
+        if( response == "OK" ):
+            # Blank msg
+            print ("No message content.. strange!")
+            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                self.callback.rockBlockRxReceived(mtMsn, "")
+        else:
+            # Pass the MT msg to the callback object                                   
+            content = response[2:-2]
+            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                self.callback.rockBlockRxReceived(mtMsn, content)
+            self.s.readline()   #BLANK?
                 
     
     def _isNetworkTimeValid(self):
