@@ -52,7 +52,7 @@ Before running this package, make sure you are connected into the RUT cellular r
 
 To test the air side sms link, run `sms_airtest.launch`. In a separate terminal, launch mavros (to-do: Elaborate on this)
 
-To test the ground side sms link, run `sms_groundtest.launch`
+To test the ground side sms link, run `sms_gndtest.launch`
 
 **Opeational usage**
 

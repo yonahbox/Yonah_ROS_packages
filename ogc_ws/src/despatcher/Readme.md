@@ -42,7 +42,7 @@ Currently, the despatcher nodes only interact with the sms link, but provisions 
 
 To test the air side sms link, run `sms_airtest.launch` in the sms package. In a separate terminal, launch mavros (to-do: Elaborate on this)
 
-To test the ground side sms link, run `sms_groundtest.launch` in the sms package
+To test the ground side sms link, run `sms_gndtest.launch` in the sms package
 
 **Opeational usage**
 
