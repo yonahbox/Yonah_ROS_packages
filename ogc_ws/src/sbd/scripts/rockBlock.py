@@ -41,8 +41,8 @@ class rockBlockProtocol(object):
      
     #MO
     def rockBlockTxStarted(self):pass
-    def rockBlockTxFailed(self):pass
-    def rockBlockTxSuccess(self,momsn):pass
+    def rockBlockTxFailed(self, momsg):pass
+    def rockBlockTxSuccess(self,momsn, momsg):pass
     
 class rockBlockException(Exception):
     pass
@@ -59,6 +59,8 @@ class rockBlock(object):
         self.portId = portId
         self.callback = callback
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
+
+        self.mo_msg = "" # MO msg
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -110,11 +112,19 @@ class rockBlock(object):
         return -1   
      
     
-    def messageCheck(self):
-        '''Check for incoming MT msgs, and return true if successful'''
+    def messageCheck(self, momsg):
+        '''Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty'''
         self._ensureConnectionStatus()
         if(self.callback != None and callable(self.callback.rockBlockRxStarted) ):
             self.callback.rockBlockRxStarted()
+        # Clear any failed MO msgs from previous attempts
+        if (self._clearMoBuffer()):
+            print("MO Buffer Cleared")
+        self.mo_msg = ""
+        # If there is an MO msg waiting to be sent, queue it
+        if len(momsg) > 0 and not momsg == " ":
+            self.mo_msg = momsg
+            self._queueMessage()
         if( self._attemptConnection() and self._attemptSession() ):
             return True
         else:
@@ -146,7 +156,9 @@ class rockBlock(object):
         if(self.callback != None and callable(self.callback.rockBlockTxStarted) ):
             self.callback.rockBlockTxStarted()
 
-        if( self._queueMessage(msg) and self._attemptConnection()  ):
+        self.mo_msg = msg
+
+        if( self._queueMessage() and self._attemptConnection()  ):
             # Try a max of 3 unsuccessful times before giving up permanently
             SESSION_DELAY = 1
             SESSION_ATTEMPTS = 3
@@ -201,11 +213,9 @@ class rockBlock(object):
                     if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
                         # self.close()
                         return True
-                    
-        
-        
         return False        
     
+
     def close(self):
         '''Close Rockblock serial connection'''
         if(self.s != None):
@@ -236,23 +246,23 @@ class rockBlock(object):
     
         
     #Private Methods - Don't call these directly!
-    def _queueMessage(self, msg):
+    def _queueMessage(self):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
                 
-        if( len(msg) > 50):
+        if( len(self.mo_msg) > 50):
             print ("sendMessageWithBytes bytes should be <= 50 bytes")
             return False
-        
-        command = "AT+SBDWB=" + str( len(msg) )
+        print ("Inserting MO msg: " + self.mo_msg)
+        command = "AT+SBDWB=" + str( len(self.mo_msg) )
         self.s.write((command + "\r").encode())
         
         if(self.s.readline().strip().decode() == command):
             if(self.s.readline().strip().decode() == "READY"):
                 checksum = 0
-                for c in msg:
+                for c in self.mo_msg:
                     checksum = checksum + ord(c)   
-                self.s.write( str(msg).encode() )
+                self.s.write( str(self.mo_msg).encode() )
                 self.s.write( chr( checksum >> 8 ).encode() )
                 self.s.write( chr( checksum & 0xFF ).encode() )
                 self.s.readline().strip()  #BLANK
@@ -267,11 +277,9 @@ class rockBlock(object):
     
     def _configurePort(self):
         '''Initial setup of the serial port when opening connection to Rockblock'''
-        if( self._enableEcho() and self._disableFlowControl and self._disableRingAlerts() and self.ping() ):         
-            print("config port successful")
+        if( self._enableEcho() and self._disableFlowControl and self._disableRingAlerts() and self.ping() ):
             return True
         else:
-            print("config port unsuccessful")
             return False
         
         
@@ -344,11 +352,11 @@ class rockBlock(object):
                     if(moStatus <= 4):
                         self._clearMoBuffer()
                         if(self.callback != None and callable(self.callback.rockBlockTxSuccess) ):   
-                            self.callback.rockBlockTxSuccess( moMsn )
+                            self.callback.rockBlockTxSuccess( moMsn, self.mo_msg )
                         pass
                     else:
                         if(self.callback != None and callable(self.callback.rockBlockTxFailed) ): 
-                            self.callback.rockBlockTxFailed()
+                            self.callback.rockBlockTxFailed(self.mo_msg)
                     
                     # SBD message successfully received from the GSS.
                     if(mtStatus == 1 and mtLength > 0): 
@@ -375,8 +383,8 @@ class rockBlock(object):
         TIME_ATTEMPTS = 20
         TIME_DELAY = 1
        
-        SIGNAL_ATTEMPTS = 10
-        RESCAN_DELAY = 10                 
+        SIGNAL_ATTEMPTS = 5
+        RESCAN_DELAY = 1
         SIGNAL_THRESHOLD = 2
         
         # Wait for valid Network Time
@@ -414,7 +422,7 @@ class rockBlock(object):
         command = "AT+SBDRB"
         self.s.write((command + "\r").encode())
         response = self.s.readline().strip().decode()
-        response = response.replace("AT+SBDRB\r","").strip() # response format is 
+        response = response.replace("AT+SBDRB\r","").strip() # response format is "AT+SBDRB\r<message>\r"
 
         if( response == "OK" ):
             # Blank msg
