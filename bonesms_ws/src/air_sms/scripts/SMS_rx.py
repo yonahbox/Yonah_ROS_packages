@@ -1,36 +1,22 @@
 #!/usr/bin/env python3
 """
-SMS_rx
+SMS_rx: Read an SMS from Ground Control, extract and process the
+message inside, and send necessary commands to the aircraft.
 
-Read an SMS from Ground Control, extract and process the message inside, and send
-necessary commands to the aircraft.
+Copyright (C) 2020, Lau Yan Han and Yonah (yonahbox@gmail.com)
 
-Prerequisite: Please ensure the GCS number (GCS_no) in air.launch is correct
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Available commands:
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-- Arm the aircraft: "arm"
-- Disarm the aircraft: "disarm"
-- Mode change: "mode <flight mode>"
-- Set a specific waypoint number in an already-loaded mission file: "wp set <wp number>"
-- Load a waypoint file that is stored in the companion computer: "wp load < absolute path to waypoint file>"
-- Regular SMS update functions:
-    - Activate regular SMS updates: "sms true"
-    - Deactivate regular SMS updates: "sms false"
-    - Set long time intervals between each update: "sms long" (on bootup, interval is long by default)
-    - Set short time intervals between each update: "sms short"
-- On-demand SMS update functions:
-    - Request one SMS from the aircraft: "ping"
-    - Request flight mode: "ping mode"
-    - Request aircraft status text messages: "ping msg"
-    - Request vibration levels in x, y and z axes: "ping vibe"
-    - Request total number of clipping events in x, y and z axes: "ping clipping"
-    - Request for statustext messages to be sent to GCS: "statustext on"
-    - Request for statustext messages to not be sent to GCS: "statustext off"
-
-Commands are not case sensitive
-
-Lau Yan Han and Yonah, March 2020
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Standard Library

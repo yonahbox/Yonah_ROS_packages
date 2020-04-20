@@ -21,7 +21,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
 import subprocess
-    
+
+def hello_world_from_rutos():
+    '''Sanity Checks'''
+    print("My RuTOS module is alive and successfully imported")    
+
 def send_msg(hostname, GCS_no, msg):
     '''Send msg to the specified GCS number'''
     subprocess.call(["ssh", "%s"%(hostname), "gsmctl -S -s '%s %s'"%(GCS_no, msg)], shell=False)

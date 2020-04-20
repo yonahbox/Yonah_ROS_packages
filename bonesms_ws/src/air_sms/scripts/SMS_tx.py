@@ -1,30 +1,23 @@
 #!/usr/bin/env python3
 
 '''
-SMS_tx
+SMS_tx: Subscribe to various MAVROS topics, compile them into an SMS message
+and send it to Ground Control. MAVROS topics: http://wiki.ros.org/mavros
 
-Subscribe to various MAVROS topics, compile them into an SMS message and send it to Ground Control
-MAVROS topics: http://wiki.ros.org/mavros
+Copyright (C) 2020, Lau Yan Han and Yonah (yonahbox@gmail.com)
 
-Prerequisite: Please ensure the GCS number (GCS_no) in air.launch and sms_standalone.launch is correct
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Breakdown of regular payload data:
-    - Arm status (Arm): 1 or 0
-    - Airspeed (AS): m/s
-    - Gndspeed (GS): m/s
-    - Throttle (thr): Scaled between 0.0 and 1.0
-    - Altitude relative to home (alt): m
-    - Lat (lat)
-    - Lon (lon)
-    - Status of AWS Data Telemetry Node (AWS): 1 = alive, 0 = dead
-    - Waypoint that has been reached (wp): Integer
-    - Whether aircraft is in VTOL mode (VTOL): 1 = yes, 0 = no
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-Breakdown of on-demand payload data:
-    - Mode (mode): String
-    - Status Text Messages (msg): String
-    - Vibration levels (vibe): m/s/s in x, y and z axes
-    - Clipping Events (clipping): No units; x, y and z axes
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
 # Standard Library
