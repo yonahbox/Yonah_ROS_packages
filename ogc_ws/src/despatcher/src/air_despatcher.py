@@ -90,15 +90,16 @@ class airdespatcher():
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        self.entries["airspeed"] = round(data.airspeed, 1)
-        self.entries["groundspeed"] = round(data.groundspeed, 1)
-        self.entries["throttle"] = round(data.throttle, 1)
-        self.entries["alt"] = round(data.altitude, 1)
+        self.entries["airspeed"] = int(data.airspeed)
+        self.entries["groundspeed"] = int(data.groundspeed)
+        self.entries["throttle"] = int(data.throttle*10)
+        self.entries["alt"] = int(data.altitude)
 
     def get_GPS_coord(self, data):
         '''Obtain GPS latitude and longitude from mavros/global_position/global'''
-        self.entries["lat"] = round(data.latitude, 6)
-        self.entries["lon"] = round(data.longitude, 6)
+        # See https://en.wikipedia.org/wiki/Decimal_degrees for degree of precision of lat/lon
+        self.entries["lat"] = round(data.latitude, 5)
+        self.entries["lon"] = round(data.longitude, 5)
 
     def get_wp_reached(self, data):
         '''Obtain information on which waypoint has been reached'''
