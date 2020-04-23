@@ -260,11 +260,12 @@ class rockBlock(object):
         if(self.s.readline().strip().decode() == command):
             if(self.s.readline().strip().decode() == "READY"):
                 checksum = 0
-                for c in self.mo_msg:
-                    checksum = checksum + ord(c)   
-                self.s.write( str(self.mo_msg).encode() )
-                self.s.write( chr( checksum >> 8 ).encode() )
-                self.s.write( chr( checksum & 0xFF ).encode() )
+                # Yan Han: Next few comments used to understand what's going on
+                for c in self.mo_msg: # Stream through msg
+                    checksum = checksum + ord(c) # Add unicode of each msg character into checksum
+                self.s.write( str(self.mo_msg).encode() ) # Send msg binary to MO buffer
+                self.s.write( chr( checksum >> 8 ).encode() ) # Truncate checksum to upper 8 bits? https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
+                self.s.write( chr( checksum & 0xFF ).encode() ) # Truncate checksum to lower 8 bits https://stackoverflow.com/questions/49778347/what-does-int-0xff-in-a-checksum-do
                 self.s.readline().strip()  #BLANK
                 result = False 
                 if(self.s.readline().strip().decode() == "0"):
