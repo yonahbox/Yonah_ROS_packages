@@ -9,8 +9,9 @@
 # vscode files
 **/.vscode
 
-# rosbag files
+# rosbag and log files
 *.bag
+*.log
 
 #SSH private key files (for obvious reasons)
 *.pem
