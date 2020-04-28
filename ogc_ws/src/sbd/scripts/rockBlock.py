@@ -20,7 +20,7 @@ import glob
 import signal
 import sys
 import time
-import struct
+import rospy
 
 import serial
 
@@ -44,6 +44,7 @@ class rockBlockProtocol(object):
     def rockBlockTxStarted(self):pass
     def rockBlockTxFailed(self, momsg):pass
     def rockBlockTxSuccess(self,momsn, momsg):pass
+    def rockBlockTxBlankMsg(self):pass
     
 class rockBlockException(Exception):
     pass
@@ -119,14 +120,15 @@ class rockBlock(object):
         if(self.callback != None and callable(self.callback.rockBlockRxStarted) ):
             self.callback.rockBlockRxStarted()
         # Clear any failed MO msgs from previous attempts
-        if (self._clearMoBuffer()):
-            print("MO Buffer Cleared")
+        self._clearMoBuffer()
         self.mo_msg = ""
         # If there is an MO msg waiting to be sent, queue it
+        have_queued_msg = False
         if len(momsg) > 0 and not momsg == " ":
             self.mo_msg = momsg
-            self._queueMessage()
-        if( self._attemptConnection() and self._attemptSession() ):
+            if self._queueMessage():
+                have_queued_msg = True # msg was successfully queued
+        if( self._attemptConnection() and self._attemptSession(have_queued_msg) ):
             return True
         else:
             if(self.callback != None and callable(self.callback.rockBlockRxFailed) ):
@@ -147,6 +149,7 @@ class rockBlock(object):
                 utc = int((self.IRIDIUM_EPOCH + (utc * 90))/1000)
                 return utc
             else:
+                rospy.logwarn("No Iridium Network Service!")
                 return 0
                       
                             
@@ -167,8 +170,7 @@ class rockBlock(object):
                 SESSION_ATTEMPTS = SESSION_ATTEMPTS - 1
                 if(SESSION_ATTEMPTS == 0):
                     break
-                if( self._attemptSession() ):
-                    print ("Yay!") # Replace with a better msg...
+                if( self._attemptSession(True) ):
                     return True
                 else:
                     time.sleep(SESSION_DELAY)       
@@ -252,9 +254,9 @@ class rockBlock(object):
         self._ensureConnectionStatus()
                 
         if( len(self.mo_msg) > 50):
-            print ("sendMessageWithBytes bytes should be <= 50 bytes")
+            rospy.logwarn("sendMessageWithBytes bytes should be <= 50 bytes")
             return False
-        print ("Inserting MO msg: " + self.mo_msg)
+        rospy.loginfo("Inserting MO msg: " + self.mo_msg)
         command = "AT+SBDWB=" + str( len(self.mo_msg) )
         self.s.write((command + "\r").encode())
         
@@ -277,9 +279,17 @@ class rockBlock(object):
                 # Truncate checksum to lower 8 bits (i.e. send lower order byte) https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
                 self.s.write( chr( checksum & 0xFF ).encode() )
                 self.s.readline().strip()  #BLANK
-                result = False 
-                if(self.s.readline().strip().decode() == "0"):
-                    result = True                 
+                result = False
+                queuestatus = self.s.readline().strip().decode()
+                if queuestatus == "0":
+                    rospy.loginfo("MO msg queue success")
+                    result = True
+                elif queuestatus == "1":
+                    rospy.logwarn("MO msg write timeout")
+                elif queuestatus == "2":
+                    rospy.logwarn("MO msg corrupted")
+                elif queuestatus == "3":
+                    rospy.logwarn("MO msg too big")
                 self.s.readline().strip()  #BLANK
                 self.s.readline().strip() #OK
                 return result
@@ -328,8 +338,11 @@ class rockBlock(object):
         return False
                  
                  
-    def _attemptSession(self):
-        '''Try to establish an Iridium SBD session and perform mailbox check. Works for both MO and MT msgs'''
+    def _attemptSession(self, have_queued_msg):
+        '''
+        Try to establish an Iridium SBD session and perform mailbox check. Works for both MO and MT msgs
+        have_queued_msg determines whether there are MO msgs (that are successfully queued) waiting to be sent
+        '''
 
         self._ensureConnectionStatus()
         SESSION_ATTEMPTS = 3
@@ -360,10 +373,14 @@ class rockBlock(object):
                     mtQueued = int(parts[5])
                     
                     # Check for Mobile-Originated msgs
-                    if(moStatus <= 4):
+                    if(moStatus <= 4 and have_queued_msg):
                         self._clearMoBuffer()
                         if(self.callback != None and callable(self.callback.rockBlockTxSuccess) ):   
                             self.callback.rockBlockTxSuccess( moMsn, self.mo_msg )
+                        pass
+                    elif (moStatus <= 4 and not have_queued_msg):
+                        if(self.callback != None and callable(self.callback.rockBlockTxSuccess) ):   
+                            self.callback.rockBlockTxBlankMsg()
                         pass
                     else:
                         if(self.callback != None and callable(self.callback.rockBlockTxFailed) ): 
@@ -379,8 +396,8 @@ class rockBlock(object):
                     
                     #There are additional MT messages to queued to download
                     if(mtQueued > 0 and self.autoSession == True):
-                        self.mo_msg = "" # Clear MO msg buffer to avoid it resending msgs twice
-                        self._attemptSession()
+                        self.mo_msg = "" # Clear MO buffer to avoid sending same MO msg twice
+                        self._attemptSession(False)
                     
                     if(moStatus <= 4):                     
                         return True
@@ -413,8 +430,7 @@ class rockBlock(object):
         #Wait for acceptable signal strength (strength of 2 and above considered acceptable)
         while True:
             signal = self.requestSignalStrength()
-            if(SIGNAL_ATTEMPTS == 0 or signal < 0):
-                print  ("NO SIGNAL")     
+            if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
                     self.callback.rockBlockSignalFail()
                 return False
@@ -438,7 +454,7 @@ class rockBlock(object):
 
         if( response == "OK" ):
             # Blank msg
-            print ("No message content.. strange!")
+            rospy.logwarn("No message content.. strange!")
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
         else:

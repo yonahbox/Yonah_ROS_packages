@@ -87,6 +87,9 @@ class satcomms(rockBlockProtocol):
     def rockBlockTxSuccess(self,momsn, momsg):
         rospy.loginfo("Rockblock msg sent: " + momsg)
 
+    def rockBlockTxBlankMsg(self):
+        rospy.loginfo("Rockblock sent blank msg")
+
     ############################
     # MO/MT msg calls
     ############################
