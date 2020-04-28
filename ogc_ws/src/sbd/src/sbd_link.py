@@ -33,9 +33,11 @@ class satcomms(rockBlockProtocol):
         rospy.init_node('sbd_link', anonymous=False)
         self.portID = "/dev/ttyUSB0"
         self.sbdsession = rockBlock.rockBlock(self.portID, self)
-        self.mt_count = 0
+        self.count = 0
         self.buffer = ""
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
+        self.interval = 0.5 # sleep interval between mailbox checks
+        self.client_serial = "19466"
 
     ################################
     # pyrockBlock callback functions
@@ -86,17 +88,23 @@ class satcomms(rockBlockProtocol):
     ############################
     
     def get_mo_msg(self, data):
-        '''Get MO msg from to_sbd topic and put it in MO buffer'''
-        self.buffer = data.data
+        '''
+        Get MO msg from to_sbd topic and put it in MO buffer
+        Note that MO msg will only be sent on next loop of check_sbd_mailbox
+        '''
+        self.buffer = "RB00" + self.client_serial + data.data
     
     def check_sbd_mailbox(self, data):
-        self.mt_count = self.mt_count + 1
-        rospy.loginfo("Mailbox read attempt: " + str(self.mt_count))
+        '''Initiate an SBD mailbox check'''
+        self.count = self.count + 1
+        rospy.loginfo("Mailbox read attempt: " + str(self.count))
+        # Send MO msg only if required
         if self.buffer == "":
             self.sbdsession.messageCheck(" ")
         else:
             self.sbdsession.messageCheck(self.buffer)
             self.buffer = "" # Clear MO buffer (on sbd_link side, not on rockBlock side)
+            #^problematic: It will clear buffer that is filled by get_mo_msg
 
     ############################
     # "Main" function
@@ -104,7 +112,7 @@ class satcomms(rockBlockProtocol):
     
     def client(self):
         rospy.Subscriber("ogc/to_sbd", String, self.get_mo_msg)
-        message_handler = rospy.Timer(rospy.Duration(0.5), self.check_sbd_mailbox)
+        message_handler = rospy.Timer(rospy.Duration(self.interval), self.check_sbd_mailbox)
         rospy.spin()
         message_handler.shutdown()
         self.sbdsession.close()
