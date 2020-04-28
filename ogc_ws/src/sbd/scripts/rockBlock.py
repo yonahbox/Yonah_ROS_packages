@@ -260,12 +260,21 @@ class rockBlock(object):
         if(self.s.readline().strip().decode() == command):
             if(self.s.readline().strip().decode() == "READY"):
                 checksum = 0
-                # Yan Han: Next few comments used to understand what's going on
-                for c in self.mo_msg: # Stream through msg
-                    checksum = checksum + ord(c) # Add unicode of each msg character into checksum
-                self.s.write( str(self.mo_msg).encode() ) # Send msg binary to MO buffer
-                self.s.write( chr( checksum >> 8 ).encode() ) # Truncate checksum to upper 8 bits? https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
-                self.s.write( chr( checksum & 0xFF ).encode() ) # Truncate checksum to lower 8 bits https://stackoverflow.com/questions/49778347/what-does-int-0xff-in-a-checksum-do
+                # Yan Han: Next few comments used to understand how to calculate checksum
+                # From Iridium AT command reference sheet:
+                # The checksum is the least significant 2-bytes of the summation of the entire SBD
+                # message. The high order byte must be sent first. For example if the FA were to send the
+                # word “hello” encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
+                for c in self.mo_msg:
+                    # Add unicode of each msg character into checksum
+                    checksum = checksum + ord(c)
+                # Send msg binary to MO buffer
+                self.s.write( str(self.mo_msg).encode() )
+                # Remove least significant 8-bits from checksum (i.e. send higher order byte) https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
+                # Assumption: Checksum not more than 16 bits (2 bytes), or a value of 65535 (always true for msgs < 340 characters)
+                self.s.write( chr( checksum >> 8 ).encode() )
+                # Truncate checksum to lower 8 bits (i.e. send lower order byte) https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
+                self.s.write( chr( checksum & 0xFF ).encode() )
                 self.s.readline().strip()  #BLANK
                 result = False 
                 if(self.s.readline().strip().decode() == "0"):
