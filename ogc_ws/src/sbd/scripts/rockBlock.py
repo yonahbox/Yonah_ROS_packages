@@ -20,6 +20,7 @@ import glob
 import signal
 import sys
 import time
+import struct
 
 import serial
 
@@ -378,6 +379,7 @@ class rockBlock(object):
                     
                     #There are additional MT messages to queued to download
                     if(mtQueued > 0 and self.autoSession == True):
+                        self.mo_msg = "" # Clear MO msg buffer to avoid it resending msgs twice
                         self._attemptSession()
                     
                     if(moStatus <= 4):                     

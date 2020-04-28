@@ -19,6 +19,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+# Standard Library
+import datetime
+
 # ROS/Third-Party
 import rospy
 from std_msgs.msg import String
@@ -35,6 +38,7 @@ class satcomms(rockBlockProtocol):
         self.sbdsession = rockBlock.rockBlock(self.portID, self)
         self.count = 0
         self.buffer = ""
+        self.buffer_write_time = ""
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
         self.interval = 0.5 # sleep interval between mailbox checks
         self.client_serial = "19466"
@@ -93,6 +97,7 @@ class satcomms(rockBlockProtocol):
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
         self.buffer = "RB00" + self.client_serial + data.data
+        self.buffer_write_time = datetime.datetime.now()
     
     def check_sbd_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
@@ -102,9 +107,11 @@ class satcomms(rockBlockProtocol):
         if self.buffer == "":
             self.sbdsession.messageCheck(" ")
         else:
+            mailchk_time = datetime.datetime.now()
             self.sbdsession.messageCheck(self.buffer)
-            self.buffer = "" # Clear MO buffer (on sbd_link side, not on rockBlock side)
-            #^problematic: It will clear buffer that is filled by get_mo_msg
+            # Clear buffer if no new MO msgs were received after sending the previous MO msg
+            if self.buffer_write_time < mailchk_time:
+                self.buffer = ""
 
     ############################
     # "Main" function
