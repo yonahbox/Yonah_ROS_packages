@@ -168,7 +168,6 @@ class rockBlock(object):
                 utc = int((self.IRIDIUM_EPOCH + (utc * 90))/1000)
                 return utc
             else:
-                rospy.logwarn("No Iridium Network Service!")
                 return 0
                       
                             
@@ -440,6 +439,7 @@ class rockBlock(object):
         # Wait for valid Network Time
         while True:
             if(TIME_ATTEMPTS == 0):
+                rospy.logerr("No Iridium Network Service!")
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
                     self.callback.rockBlockSignalFail()
                 return False

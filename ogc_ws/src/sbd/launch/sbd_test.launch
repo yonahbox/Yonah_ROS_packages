@@ -5,9 +5,21 @@
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
+    <!-- Serial port that Rockblock is connected to-->
+    <arg name="portID" default="/dev/ttyUSB0"/>
+
+    <!-- Rockblock serial no of the client (e.g. if running this on air, fill in ground serial no, and vice versa)-->
+    <arg name="client_serial" default="12345"/>
+
+    <!-- Sleep interval between SBD mailbox checks -->
+    <arg name="interval_3" default="0.5"/>
+
     <!-- sbd link node -->
     <node pkg="sbd" type="sbd_link.py" name="sbd_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="portID" value="$(arg portID)" />
+        <param name="client_serial" value="$(arg client_serial)" />
+        <param name="interval" value="%(arg interval_3)" />
     </node>
 
     <!-- satcomms test node -->
