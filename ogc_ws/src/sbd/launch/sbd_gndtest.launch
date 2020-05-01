@@ -22,8 +22,13 @@
         <param name="interval" value="$(arg interval_3)" />
     </node>
 
-    <!-- satcomms test node -->
-    <node pkg="sbd" type="satcomms_test.py" name="satcomms_test"
+    <!-- ground_despatcher node -->
+    <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+    </node>
+
+    <!-- ground test node -->
+    <node pkg="despatcher" type="gndtest.py" name="gnd_test"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
     </node>
 

@@ -55,7 +55,7 @@ class rockBlockProtocol(object):
     
     #MT
     def rockBlockRxStarted(self):pass
-    def rockBlockRxFailed(self):pass
+    def rockBlockRxFailed(self,mo_msg):pass
     def rockBlockRxReceived(self,mtmsn,data):pass
     def rockBlockRxMessageQueue(self,count):pass
      
@@ -151,7 +151,10 @@ class rockBlock(object):
             return True
         else:
             if(self.callback != None and callable(self.callback.rockBlockRxFailed) ):
-                self.callback.rockBlockRxFailed()
+                if have_queued_msg:
+                    self.callback.rockBlockRxFailed(self.mo_msg)
+                else:
+                    self.callback.rockBlockRxFailed(" ")
                 
         
     def networkTime(self):

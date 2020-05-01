@@ -47,6 +47,7 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
         self.msg = "" # Stores outgoing msg Air-to-Ground message
         self.recv_msg = "" # Stores incoming Ground-to-Air message
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
@@ -145,6 +146,10 @@ class airdespatcher():
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             self.recv_msg = data.data
+            # Remove 9-character prefix if it is an SBD msg
+            if self.recv_msg.startswith("RB"):
+                self.recv_msg = self.recv_msg[9:]
+            rospy.loginfo("Received \"" + self.recv_msg + "\"")
             if "ping" in self.recv_msg:
                 self.check_ping()
             elif "sms" in self.recv_msg:
@@ -263,13 +268,10 @@ class airdespatcher():
     def send_regular_payload_sms(self):
         '''Send regular payload over sms link'''
         self.pub_to_sms.publish(self.msg)
-        # Sleep for the specified interval. Note that rospy.Timer
-        # will not allow the time interval to go below min_interval
-        sleep(self.sms_interval)
     
     def send_regular_payload_sbd(self):
         '''Send regular payload over SBD Satcomms link'''
-        pass
+        self.pub_to_sbd.publish(self.msg)
 
     def send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
@@ -280,12 +282,16 @@ class airdespatcher():
             return
         '''Send regular payload over one of the three links: SMS, SBD or Telegram'''
         self.truncate_regular_payload()
-        #rospy.loginfo(self.msg)
         self.send_regular_payload_sms() # To-do: Replace with if-else statement
+        self.send_regular_payload_sbd()
+        # Sleep for the specified interval. Note that rospy.Timer
+        # will not allow the time interval to go below min_interval
+        sleep(self.sms_interval)
     
     def sendmsg(self):
         '''Send any msg that's not a regular payload'''
         self.pub_to_sms.publish(self.msg) # To-do: Replace with if-else statement
+        self.pub_to_sbd.publish(self.msg)
     
     ############################
     # "Main" function

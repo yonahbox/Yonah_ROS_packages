@@ -40,6 +40,7 @@ class satcomms(rockBlockProtocol):
         self.portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self.buffer = self.buffer_write_time = "" # MO msg buffer and buffer write time
         self.sbdsession = rockBlock.rockBlock(self.portID, self) # Connect to Rockblock
+        self.count = 0 # Mailbox check counter
 
     ################################
     # pyrockBlock callback functions
@@ -59,17 +60,20 @@ class satcomms(rockBlockProtocol):
         rospy.loginfo("Rockblock signal strength good")
 
     def rockBlockSignalFail(self):
-        rospy.logwarn("Rockblock signal strength poor")
+        self.pub_to_despatcher.publish("Mailbox check failed, signal strength low")
     
     #MT
     def rockBlockRxStarted(self):
-        rospy.loginfo("Rockblock ready to receive msg")
+        self.pub_to_despatcher.publish("Starting mailbox check attempt " + str(self.count))
 
-    def rockBlockRxFailed(self):
-        rospy.logwarn("Rockblock unable to check for incoming msg")
+    def rockBlockRxFailed(self, mo_msg):
+        if mo_msg == " ":
+            self.pub_to_despatcher.publish("Mailbox check " + str(self.count) + " failed")
+        else:
+            self.pub_to_despatcher.publish("Mailbox check " + str(self.count) + " failed, message \'" +\
+                mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
-        rospy.loginfo("Rockblock msg received: " + data)
         self.pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
@@ -83,10 +87,10 @@ class satcomms(rockBlockProtocol):
         rospy.logwarn("Rockblock msg not sent: " + momsg)
 
     def rockBlockTxSuccess(self,momsn, momsg):
-        rospy.loginfo("Rockblock msg sent: " + momsg)
+        self.pub_to_despatcher.publish("SBD message sent: " + momsg)
 
     def rockBlockTxBlankMsg(self):
-        rospy.loginfo("Rockblock sent blank msg")
+        self.pub_to_despatcher.publish("Mailbox check " + str(self.count) + " complete")
 
     ############################
     # MO/MT msg calls
@@ -103,6 +107,7 @@ class satcomms(rockBlockProtocol):
     def check_sbd_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
         # Send MO msg only if required
+        self.count = self.count + 1
         if self.buffer == "":
             self.sbdsession.messageCheck(" ")
         else:
