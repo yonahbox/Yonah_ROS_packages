@@ -106,16 +106,13 @@ class satcomms(rockBlockProtocol):
     
     def check_sbd_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
-        # Send MO msg only if required
         self.count = self.count + 1
-        if self.buffer == "":
-            self.sbdsession.messageCheck(" ")
-        else:
-            mailchk_time = datetime.datetime.now()
-            self.sbdsession.messageCheck(self.buffer)
-            # Clear buffer if no new MO msgs were received after sending the previous MO msg
-            if self.buffer_write_time < mailchk_time:
-                self.buffer = ""
+        mailchk_time = datetime.datetime.now()
+        # If no MO msg, buffer will be empty
+        self.sbdsession.messageCheck(self.buffer)
+        # Clear buffer if no new MO msgs were received after sending the previous MO msg
+        if self.buffer_write_time < mailchk_time:
+            self.buffer = ""
 
     ############################
     # "Main" function

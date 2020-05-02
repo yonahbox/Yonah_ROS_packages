@@ -143,7 +143,7 @@ class rockBlock(object):
         self.mo_msg = ""
         # If there is an MO msg waiting to be sent, queue it
         have_queued_msg = False
-        if len(momsg) > 0 and not momsg == " ":
+        if momsg:
             self.mo_msg = momsg
             if self._queueMessage():
                 have_queued_msg = True # msg was successfully queued
