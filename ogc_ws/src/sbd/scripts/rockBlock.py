@@ -471,10 +471,13 @@ class rockBlock(object):
         '''Process incoming Mobile-Terminated (MT) msg'''
 
         self._ensureConnectionStatus()
-        command = "AT+SBDRB"
+        command = "AT+SBDRT"
         self.s.write((command + "\r").encode())
-        response = self.s.readline().strip().decode()
-        response = response.replace("AT+SBDRB\r","").strip() # response format is "AT+SBDRB\r<message>\r"
+        self.s.readline() # AT+SBDRT
+        self.s.readline() # SBDRT: 
+        response = self.s.readline() # Actual text msg
+        rospy.loginfo(response)
+        response = response.decode()
 
         if( response == "OK" ):
             # Blank msg
