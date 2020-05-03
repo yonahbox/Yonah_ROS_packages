@@ -41,6 +41,7 @@ class satcomms(rockBlockProtocol):
         self.buffer = self.buffer_write_time = "" # MO msg buffer and buffer write time
         self.sbdsession = rockBlock.rockBlock(self.portID, self) # Connect to Rockblock
         self.count = 0 # Mailbox check counter
+        self.buffer_write_time = datetime.datetime.now()
 
     ################################
     # pyrockBlock callback functions
