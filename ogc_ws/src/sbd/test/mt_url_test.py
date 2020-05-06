@@ -16,10 +16,11 @@ msg = msg.encode()
 values['data'] = binascii.hexlify(msg).decode()
 
 # Insert IMEI and credentials
-fp = open('whitelist.txt', 'r') # replace whitelist with a better name
-values['imei'] = fp.readline().replace('\n','')
-values['username'] = fp.readline().replace('\n','')
-values['password'] = fp.readline().replace('\n','')
+with open('login.txt', 'r') as fp:
+    fp.readline() # EC2 Server, we don't need this
+    values['imei'] = fp.readline().replace('\n','')
+    values['username'] = fp.readline().replace('\n','')
+    values['password'] = fp.readline().replace('\n','')
 
 #print(values)
 
