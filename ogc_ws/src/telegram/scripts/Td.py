@@ -101,6 +101,23 @@ class Td():
 				},
 				'@extra': 'sent from Td.py'
 			})
+
+	def send_image(self, path):
+		if self.selected_chat is None:
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self.selected_chat.chat_id,
+				'input_message_content': {
+					'@type': 'inputMessagePhoto',
+					'photo': {
+						'@type': 'inputFileLocal',
+						'path': path
+					}
+				}
+			})
 	
 	def get_chats(self):
 		self.send({
