@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# This script should be placed in our web server.
+# This script should be placed in our web server. Will eventually move it to Yonah_scripts repo
 
 import binascii
 import cgi, cgitb
@@ -43,5 +43,5 @@ params["data"] = binascii.unhexlify(params["data"]).decode()
 # Pre-req: Make sure apache server has read-write permissions to the file and its folder
 # See https://www.simplified.guide/apache/change-user-and-group
 # and https://stackoverflow.com/questions/33622113/python-cgi-script-permission-denied-when-writing-file
-with open("/test_folder/test.txt", 'w+') as fp:
+with open("/satcomms_server/buffer.txt", 'w+') as fp:
     fp.write(str(params) + "\n")

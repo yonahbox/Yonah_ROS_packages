@@ -19,14 +19,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# This script should be placed in our web server
+# This script should be placed in our web server. Will eventually move it to Yonah_scripts repo
 
 import binascii
 import cgi, cgitb
 
 form = cgi.FieldStorage()
 if form["pw"].value == "testpw": # We cannot use our account pw, because http is unencrypted...
-    with open("/test_folder/test.txt", 'r') as fp: # Where MO msg is stored. File can only hold 1 msg at a time...
+    with open("/satcomms_server/buffer.txt", 'r') as fp: # Where MO msg is stored. File can only hold 1 msg at a time...
         data = fp.readline().replace("\n","")
 
 # Send data to GCS
