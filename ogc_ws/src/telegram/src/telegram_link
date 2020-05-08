@@ -21,6 +21,7 @@ from std_msgs.msg import String
 import sys
 import os
 from threading import Thread
+import json
 
 from Td import Td, Chat
 
@@ -33,17 +34,23 @@ def tdlib_recv():
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
-			if event['@type'] == 'updateNewMessage':
+			if event['@type'] == 'chatMembers':
+				rospy.loginfo(json.dumps(event))
+			if event['@type'] == 'updateNewMessage' and event['message']['sender_user_id'] in td.command_user_ids:
+				if event['message']['is_outgoing'] == True:
+					return
 				message = event['message']['content']['text']['text']
-				# from_tel_pub.publish(event['message']['content']['text']['text'])
 				from_tele_pub.publish(message)
+				rospy.loginfo("Incoming message from command user: %s", message)
 
 if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")
 		chat_name = rospy.get_param("~monitored_chat")
-		td = Td(tdlib_dir, chat_name)
+		command_users = rospy.get_param("~command_whitelist")
+		rospy.loginfo(command_users)
+		td = Td(tdlib_dir, chat_name, command_users)
 
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True
@@ -55,9 +62,10 @@ if __name__ == '__main__':
 		rate = rospy.Rate(1)
 		while not td.setup_complete():
 			td.get_chats()
-			rospy.loginfo('setup complete')
-			# td.receive()
 			rate.sleep()
+
+		rospy.loginfo('setup complete')
+		td.send_message('setup coplete')
 
 		rospy.spin()
 
@@ -69,4 +77,3 @@ if __name__ == '__main__':
 		sys.stdout.flush()
 		td.destroy()
 		exit()
-	

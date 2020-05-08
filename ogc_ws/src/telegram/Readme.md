@@ -9,6 +9,7 @@ Currently there is only one launch file `telegram.launch` that has to be run
 
 tdlib_auth_dir: location of the telegram client instance
 monitored_chat: Name of the telegram chat (or group) the node will listen to/send messages to. Currently only supports one chat
+command_whitelist: List of users the node will listen to. Currently requires the users first name
 
 ### Node files
 
