@@ -47,6 +47,7 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to telegram node
         self.msg = "" # Stores outgoing msg Air-to-Ground message
         self.recv_msg = "" # Stores incoming Ground-to-Air message
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
@@ -272,7 +273,7 @@ class airdespatcher():
 
     def send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        pass
+        self.pub_to_telegram.publish(self.msg)
     
     def send_regular_payload(self, data):
         if self.regular_payload_flag == False:
@@ -285,7 +286,7 @@ class airdespatcher():
     def sendmsg(self):
         '''Send any msg that's not a regular payload'''
         self.pub_to_sms.publish(self.msg) # To-do: Replace with if-else statement
-    
+        self.pub_to_telegram.publish(self.msg)
     ############################
     # "Main" function
     ############################

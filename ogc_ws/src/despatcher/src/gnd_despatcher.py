@@ -35,6 +35,7 @@ class gnddespatcher():
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5)
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.msg = "" # Stores incoming Air-to-Ground message
@@ -52,7 +53,8 @@ class gnddespatcher():
         else:
             self.pub_to_sms.publish(data.data) # To-do: Add if-else statement to handle 3 links
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
-    
+            self.pub_to_telegram.publish(data.data)
+            
     ###########################################
     # Handle Air-to-Ground (A2G) messages
     ###########################################

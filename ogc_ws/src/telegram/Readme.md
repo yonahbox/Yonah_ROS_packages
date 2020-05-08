@@ -21,9 +21,9 @@ The `scripts/` directory contains `Td.py` which is contains all the telegram spe
 
 ## Working
 
-The node listens to `/ogc/to_telegram` and outputs all the received messages from that topic into the telegram chat specified in the launch file.
+The node listens to `ogc/to_telegram` and outputs all the received messages from that topic into the telegram chat specified in the launch file.
 
-Any messages received from the telegram chat is published onto the `/ogc/from_telegram` topic
+Any messages received from the telegram chat is published onto the `ogc/from_telegram` topic
 
 
 # License
