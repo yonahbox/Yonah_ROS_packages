@@ -119,6 +119,23 @@ class Td():
 				}
 			})
 
+	def send_video(self, path):
+		if not self.setup_complete():
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self.selected_chat.chat_id,
+				'input_message_content': {
+					'@type': 'inputMessageVideo',
+					'video': {
+						'@type': 'inputFileLocal',
+						'path': path
+					}
+				}
+			})
+
 	def send_location(self, title, coordinates):
 		if not self.setup_complete():
 			self.get_chats()

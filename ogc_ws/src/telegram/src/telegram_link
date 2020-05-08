@@ -42,11 +42,13 @@ def tdlib_recv():
 				message = event['message']['content']['text']['text']
 				from_tele_pub.publish(message)
 				rospy.loginfo("Incoming message from command user: %s", message)
+				
 				if message.lower() == 'pic':
 					td.send_image('/home/ubuntu/test_pic.jpg')
 				if message.lower() == 'loc':
 					td.send_location('kompiam', (-5.38333333,143.92250000))
-
+				if message.lower() == 'vid':
+					td.send_video('/home/ubuntu/test_vid.mp4')
 
 if __name__ == '__main__':
 	try:
