@@ -118,6 +118,29 @@ class Td():
 					}
 				}
 			})
+
+	def send_location(self, title, coordinates):
+		if not self.setup_complete():
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self.selected_chat.chat_id,
+				'input_message_content': {
+					'@type': 'inputMessageVenue',
+					'venue': {
+						'@type': 'venue',
+						'title': title,
+						'location': {
+							'@type': 'location',
+							'latitude': coordinates[0],
+							'longitude': coordinates[1]
+						}
+					}
+				}
+			})
+
 	
 	def get_chats(self):
 		self.send({

@@ -34,14 +34,19 @@ def tdlib_recv():
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
-			if event['@type'] == 'chatMembers':
-				rospy.loginfo(json.dumps(event))
+			if event['@type'] == 'error':
+				rospy.logwarn(json.dumps(event))
 			if event['@type'] == 'updateNewMessage' and event['message']['sender_user_id'] in td.command_user_ids:
 				if event['message']['is_outgoing'] == True:
 					return
 				message = event['message']['content']['text']['text']
 				from_tele_pub.publish(message)
 				rospy.loginfo("Incoming message from command user: %s", message)
+				if message.lower() == 'pic':
+					td.send_image('/home/ubuntu/test_pic.jpg')
+				if message.lower() == 'loc':
+					td.send_location('kompiam', (-5.38333333,143.92250000))
+
 
 if __name__ == '__main__':
 	try:
@@ -65,17 +70,8 @@ if __name__ == '__main__':
 			rate.sleep()
 
 		rospy.loginfo('setup complete')
-		td.send_message('setup coplete')
-		# rospy.loginfo()
-		# td.receive()
-		for user in td.selected_chat.group_members:
-			rospy.loginfo(user.first_name)
-			rospy.loginfo(user.last_name)
-			rospy.loginfo(user.user_name)
-			rospy.loginfo(user.user_id)
-			rospy.loginfo(user.phone_number)
-		rospy.loginfo(td.command_user_ids)
-
+		td.send_message('setup complete')
+		
 		rospy.spin()
 
 	except rospy.ROSInterruptException:

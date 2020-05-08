@@ -3,7 +3,9 @@
 ## Files
 
 ### Launch files
-Currently there is only one launch file `telegram.launch` that has to be run
+`telegram_air.launch` is to be run on the air side
+`telegram_gnd.launch` is to be run on the ground side
+`telegram.launch` is for testing purposes
 
 #### Argurments
 
