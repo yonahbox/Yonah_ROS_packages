@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 import time
@@ -18,16 +18,16 @@ def main():
 	ssh.load_system_host_keys()
 	ssh.connect('192.168.1.1', username='root')
 	print("Connected.")
-	pub.publish("CONNECTED")
+	pub.publish("CONNECTED.")
 
 	while True:
 		# Get the button state from the router
 		digin, digout, digerr = ssh.exec_command('gpio.sh get DIN1')
-		digital_input = int(str(digout.readlines())[3])
+		digital_input = int(str(digout.readlines())[2])
 
 		# Get fuel level from router
 		anain, anaout, anaerr = ssh.exec_command('analog_calc')
-		analog_input = float(str(anaout.readlines())[3:-6])
+		analog_input = float(str(anaout.readlines())[2:-5])
 
 		# Publish button state
 		if digital_input == 0:
@@ -60,6 +60,8 @@ def main():
 		time.sleep(0.5)
 
 	ssh.close()
+	print("Disconnected.")
+	pub.publish("DISCONNECTED.")
 
 if __name__=='__main__':
 	main()
