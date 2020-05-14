@@ -27,11 +27,11 @@ class MyPlugin(Plugin):
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
-        ################################################
-        # # Process standalone plugin command-line arguments
-        # from argparse import ArgumentParser
-        # parser = ArgumentParser()
-        # # Add argument(s) to the parser.
+        ###############################################
+        # Process standalone plugin command-line arguments
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
+        # Add argument(s) to the parser.
         # parser.add_argument("-q", "--quiet", action="store_true",
         #               dest="quiet",
         #               help="Put plugin in silent mode")
@@ -39,7 +39,7 @@ class MyPlugin(Plugin):
         # if not args.quiet:
         #     print('arguments: ', args)
         #     print('unknowns: ', unknowns)
-        ################################################
+        ###############################################
 
         # Create QWidget
         # Get path to UI file which should be in the "resource" folder of this package
@@ -124,19 +124,24 @@ class MyPlugin(Plugin):
         self._widget.airspeed_textedit.setText(airspeed)
 
     def waypoint_total_display(self, total, sequence):
-        total = len(total)
-        display = str(round(float(sequence)/float(total)*100, 1))
-        print (display)
-        self._widget.wp_textedit.setText(display + '%')
+        print('total wp list: ' + str(total))
+        print('current wp: ' + str(sequence))
+        print('------------------------------------')
+        total = len(total) - 1
+        
+        self._widget.progressBar.setRange(0,total)
+        self._widget.progressBar.setValue(sequence)
+        self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
+
 
     # def waypoint_index_display(self, index):
     #     print ('index:::: ' + str(index)
     #     self.waypoint_list[1] = index
         
 
-    def waypoint_display(self, waypoint):
+    # def waypoint_display(self, waypoint):
         
-        self._widget.wp_textedit.setText(str(waypoint+1))
+    #     self._widget.wp_textedit.setText(str(waypoint+1))
 
     def arm_status_display(self, arm_status):
         if arm_status == False:
