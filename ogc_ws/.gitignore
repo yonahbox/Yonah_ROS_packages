@@ -1,0 +1,2 @@
+# obviously we don't want to leak our whitelisted numbers to the public
+whitelist.txt

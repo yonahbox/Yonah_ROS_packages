@@ -14,10 +14,14 @@
 
     <arg name="log_output"/>
 
+    <!-- hostname and IP of onboard cellular router. Enclose it in '' to recognise it as a string (instead of int)-->
+    <arg name="router_hostname"/>
+
     <!-- SMS_rx node: Receive SMS from Ground Control and send commands to aircraft/SMS_tx if necessary-->
     <node pkg="air_sms" type="SMS_rx.py" name="SMS_rx"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="whitelist" value="$(arg whitelist)" />
+        <param name="router_hostname" value="$(arg router_hostname)" />
     </node>
 
     <!--SMS_tx node: Send SMS containing key aircraft info to Ground Control.
@@ -28,6 +32,7 @@
         <param name="GCS_no" value="$(arg GCS_no)" />
         <param name="short_interval" value="$(arg short_interval)" />
         <param name="long_interval" value="$(arg long_interval)" />
+        <param name="router_hostname" value="$(arg router_hostname)" />
     </node>
 
 </launch>
