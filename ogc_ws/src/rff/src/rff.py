@@ -3,18 +3,18 @@
 import time
 import rospy
 import csv
+from pathlib import Path
 from std_msgs.msg import String
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointPush
-from mavros_msgs.srv import WaypointClear
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.msg import WaypointList
 from mavros_msgs.msg import Waypoint
 
-loop = True
-
-wplist = []
+missionlist = []
+waypoints = []
+waitforbutton = True
 
 class WP(object):
 
@@ -36,7 +36,7 @@ class WP(object):
 					pastheaderline = True
 
 			else:
-				wplist.append(Waypoint(
+				waypoints.append(Waypoint(
 					is_current = bool(int(data[1])),
 					frame = int(data[2]),
 					command = int(data[3]),
@@ -56,6 +56,12 @@ class RFF:
 	def __init__(self):
 		rospy.Subscriber('buttonpress', String, self.subscribe)
 		self.start_return_flight = False
+		f = open("missionlist.txt", "r")
+		for line in f:
+			missionlist.append(line.rstrip())
+		rospy.loginfo("Missions:")
+		for i in missionlist:
+			rospy.loginfo(i)
 
 	def subscribe(self, state):
 		self.start_return_flight = state.data
@@ -66,40 +72,47 @@ class RFF:
 		self.main()
 
 	def main(self):
-		global loop
-		print(self.start_return_flight)
+		global waitforbutton
 		if self.start_return_flight == True:
-			rospy.loginfo("received true")
-			# clearwp = rospy.ServiceProxy('mavros/mission/clear', WaypointClear)
-			# clearwp()
-			# rospy.loginfo("cleared waypoints")
+			rospy.loginfo("Button pressed.")
+			# rospy.wait_for_service('mavros/mission/push')
 			wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-			wp(0, wplist)
-			rospy.loginfo("should have sent wp")
+			wp(0, waypoints)
+			rospy.loginfo("Waypoints loaded")
+			# rospy.wait_for_service('mavros/mission/set_current')
 			wpset = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-			wpset(0)
+			wpset(1)
+			# rospy.wait_for_service('mavros/set_mode')
 			mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
 			mode(custom_mode = "AUTO")
-			rospy.loginfo("should have become auto")
+			rospy.loginfo("MODE = AUTO")
+			rospy.loginfo("Arming in 10 seconds")
+			time.sleep(10)
+			# rospy.wait_for_service('mavros/cmd/arming')
 			arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 			arm(1)
-			rospy.loginfo("should have armed")
-			loop = False
+			rospy.loginfo("THROTTLE ARMED")
+			time.sleep(1)
+			waitforbutton = False
 
 
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
-	loadwaypoints = WP()
-	loadwaypoints.read("way.txt")
 	rff = RFF()
-	
+
 	try:
-
-		while loop == True:
-			rff.main()
-
-			time.sleep(1)
-		print("reached end")
+		for i in range(len(missionlist)):
+			wpfile = missionlist[i]
+			readwp = WP()
+			readwp.read(wpfile)
+			while waitforbutton == True:
+				rff.main()
+				time.sleep(1)
+			rospy.loginfo("Mission started. Loading next mission.")
+			waypoints = []
+			waitforbutton = True
+		
+		print("All missions finished")
 
 	except KeyboardInterrupt:
 		pass
