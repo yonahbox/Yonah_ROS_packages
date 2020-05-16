@@ -39,7 +39,7 @@ class satcomms(rockBlockProtocol):
         self.client_serial = rospy.get_param("~client_serial", "12345") # Rockblock serial no of client
         self.portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self.buffer = self.buffer_write_time = "" # MO msg buffer and buffer write time
-        self.sbdsession = rockBlock.rockBlock(self.portID, self) # Connect to Rockblock
+        self.sbdsession = rockBlock.rockBlock(self.portID, self, self.client_serial) # Connect to Rockblock
         self.count = 0 # Mailbox check counter
         self.buffer_write_time = datetime.datetime.now()
 
@@ -102,7 +102,7 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in MO buffer
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        self.buffer = "RB00" + str(self.client_serial) + data.data
+        self.buffer = data.data
         self.buffer_write_time = datetime.datetime.now()
     
     def check_sbd_mailbox(self, data):

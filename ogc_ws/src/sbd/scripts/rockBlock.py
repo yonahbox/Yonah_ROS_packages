@@ -37,6 +37,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
    
 import glob
 import signal
+import struct
 import sys
 import time
 import rospy
@@ -72,7 +73,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback):
+    def __init__(self, portId, callback, client_serial):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -82,6 +83,7 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
+        self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -273,31 +275,44 @@ class rockBlock(object):
     def _queueMessage(self):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
-                
-        if( len(self.mo_msg) > 50):
-            rospy.logwarn("sendMessageWithBytes bytes should be <= 50 bytes")
-            return False
+
         rospy.loginfo("Inserting MO msg: " + self.mo_msg)
-        command = "AT+SBDWB=" + str( len(self.mo_msg) )
+
+        # Pack prefix to send to another Rockblock. To do: Turn this functionality on and off
+        pre_1 = (b'RB',)
+        s1 = struct.Struct('2s')
+        packed_1 = s1.pack(*pre_1)
+        pre_2 = (self.client_serial,)
+        s2 = struct.Struct('> I')
+        packed_2 = s2.pack(*pre_2)
+        packed_2 = packed_2[1:] # Rock Seven insists that serial no is packed into 3 bytes, big endian
+        
+        # Pack regular payload. To do: Have different formats for regular/nonregular payload
+        li = self.mo_msg.split(" ")
+        li = list(map(int, li)) # Convert all str to int
+        i = 0
+        struct_cmd = '>' # Standardize all to same endianess (easier to unpack)
+        while i < len(li):
+            struct_cmd = struct_cmd + ' H'
+            i = i + 1
+        s3 = struct.Struct(struct_cmd)
+        packed_data = s3.pack(*li)
+        
+        command = "AT+SBDWB=" + str(s1.size + s2.size-1 + s3.size)
         self.s.write((command + "\r").encode())
         
         if(self.s.readline().strip().decode() == command):
             if(self.s.readline().strip().decode() == "READY"):
-                checksum = 0
-                # From Iridium AT command reference sheet:
-                # The checksum is the least significant 2-bytes of the summation of the entire SBD
+                self.s.write(packed_1 + packed_2 + packed_data)
+                # Calculate checksum. Checksum is least significant 2-bytes of the summation of the entire SBD
                 # message. The high order byte must be sent first. For example if the FA were to send the
                 # word “hello” encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
                 # Updated checksum calculation formula from https://stackoverflow.com/questions/46813077/2-byte-checksum-in-python-for-iridium-sbd
-                for c in self.mo_msg:
-                    # Add unicode of each msg character into checksum
-                    checksum = checksum + ord(c)
-                # Send msg binary to MO buffer
-                self.s.write( str(self.mo_msg).encode() )
-                # Remove least significant 8-bits from checksum (i.e. get higher order byte) https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
+                # >> 8 to get higher order byte, see https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
+                # & 0xFF to get lower order byte, see https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
                 # Assumption: Checksum not more than 16 bits (2 bytes), or a value of 65535 (always true for msgs < 340 characters)
+                checksum = sum(packed_1 + packed_2 + packed_data)
                 a = checksum >> 8
-                # Truncate checksum to lower 8 bits (i.e. get lower order byte) https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
                 b = checksum & 0xFF
                 checksum = bytes([a,b])
                 self.s.write(checksum)
