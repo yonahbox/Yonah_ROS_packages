@@ -34,7 +34,6 @@ def main():
 			if Button_State == False:
 				timedown = time.time()
 				rospy.loginfo("Button pressed.")
-				pub.publish("True")
 			Button_State = True
 			
 		elif digital_input == 1:
@@ -45,23 +44,24 @@ def main():
 				# Blink the button if held for more than 2 seconds. (Should be 
 				# changed to blink after return routine is started in the future)
 				if timeheld >= 2:
+					pub.publish("True")
 					for i in range(20):
 						stdin, stdout, stderr = ssh.exec_command('gpio.sh invert DOUT1')
 						time.sleep(0.5)
 			Button_State = False
+			pub.publish("False")
 			
 		# Publish fuel state (Should be moved to another node once testing is done)
-		if 4.5 <= analog_input <= 5.5:
-			rospy.loginfo("Fuel level normal.")
+		# if 4.5 <= analog_input <= 5.5:
+		# 	rospy.loginfo("Fuel level normal.")
 
-		elif 0 <= analog_input <= 3:
-			rospy.loginfo("Fuel level low.")
+		# elif 0 <= analog_input <= 3:
+		# 	rospy.loginfo("Fuel level low.")
 
 		time.sleep(0.5)
 
 	ssh.close()
 	print("Disconnected.")
-	pub.publish("DISCONNECTED.")
 
 if __name__=='__main__':
 	main()
