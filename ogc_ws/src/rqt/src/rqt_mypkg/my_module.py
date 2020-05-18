@@ -14,54 +14,50 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
-from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter
+from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
 from python_qt_binding.QtSvg import QSvgGenerator
+from second_window import NewWindow
 
+#[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
-    def __init__(self, context):
-        super(MyPlugin, self).__init__(context)
-        # Give QObjects reasonable names
-        self.setObjectName('MyPlugin')
-        self._widget = QWidget()
-        if context.serial_number():
-            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
-        # Add widget to the user interface
-        ###############################################
-        # Process standalone plugin command-line arguments
-        from argparse import ArgumentParser
-        parser = ArgumentParser()
-        # Add argument(s) to the parser.
-        # parser.add_argument("-q", "--quiet", action="store_true",
-        #               dest="quiet",
-        #               help="Put plugin in silent mode")
-        # args, unknowns = parser.parse_known_args(context.argv())
-        # if not args.quiet:
-        #     print('arguments: ', args)
-        #     print('unknowns: ', unknowns)
-        ###############################################
+    def __init__(self, context): #[DA] the class MyPlugin takes in context as a variable
+        #[DA] super means it inherits the parent class' init() property
+        #[DA] In this case the parent class requires context as a parameter for its init
+        super(MyPlugin, self).__init__(context) ### this syntax means that it is a python 2 syntax and not python 3
+        # from argparse import ArgumentParser
+        # args = self._parse_args(context.argv()) #[DA] Need to investigate what parse args does
 
-        # Create QWidget
+        # Give QObjects reasonable names
+        self.setObjectName('main_window') #this is inherited from QObject class which sets name of the object
+        self._widget = QWidget() # this defines the attribute of MyPlugin class. QWidget is a method in QtWidget
+        
         # Get path to UI file which should be in the "resource" folder of this package
-        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MyPlugin.ui')
+        #[DA] os.path.join is a method that joins paths, it concatenates various path components with a
+        #[DA] directory separator (/) sollowing each non-empty part except the last component
+        #[DA] the code means get directory to the folder 'rqt_mypkg' and then navigate to resource then access main_window.ui
+        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'main_window.ui')
         # Extend the widget with all attributes and children from UI file
+        #[DA] there is actually a third param available if we have custom class in our widget, but I think we can ignore this
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
-        self._widget.setObjectName('MyPluginUi') #[DK] what does this line do?
+        self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
         # plugin at once, these lines add number to make it easy to 
         # tell from pane to pane.
+        # if context.serial_number():
+        #     self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        self.NewWindow = NewWindow()
         self.waypoint_list = [0,0]
-
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
         self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
         self._widget.mode_auto_pushbutton.pressed.connect(self.mode_auto)
         self._widget.load_mission_pushbutton.pressed.connect(self.load_mission)
         self._widget.check_mission_pushbutton.pressed.connect(self.check_mission)
-        self._widget.checklist_pushbutton.pressed.connect(self.checklist)
+        self._widget.checklist_pushbutton.pressed.connect(self.NewWindow.show)
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
@@ -124,9 +120,6 @@ class MyPlugin(Plugin):
         self._widget.airspeed_textedit.setText(airspeed)
 
     def waypoint_total_display(self, total, sequence):
-        print('total wp list: ' + str(total))
-        print('current wp: ' + str(sequence))
-        print('------------------------------------')
         total = len(total) - 1
         
         self._widget.progressBar.setRange(0,total)
@@ -154,8 +147,7 @@ class MyPlugin(Plugin):
     #     return 0
 
     def arming (self):
-        print ('arming pushbutton successful')
-        print ('a')
+        print('arming successful')
         
     def transfer_control (self):
         print ('transfer control successful')
@@ -168,14 +160,19 @@ class MyPlugin(Plugin):
     def check_mission(self):
         print ('checked mission')
     def checklist(self):
-        print ('BTO BPO checklist')
+        print('checklist is pressed')
+        NewWindow()
+        print('checklist finished processing')
+
     def armingbox(self):
         print ('successful!')
 
     
     def shutdown_plugin(self):
-        self.sub.unregister()
-        pass
+        # TODO find a working shutdown mechanism, now it is 
+        # working but shows error that widget does not have
+        # shutdown all property
+        self._widget.shutdown_all()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -203,4 +200,6 @@ class Communicate (QObject):
     altitude_signal = Signal(float)
     airspeed_signal = Signal(float)
     waypoint_list_signal = Signal(list, int)
-    #waypoint_index_signal = Signal(int)
+    waypoint_index_signal = Signal(int)
+
+
