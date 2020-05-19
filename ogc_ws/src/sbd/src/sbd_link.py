@@ -21,7 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Standard Library
 import datetime
-import struct
 
 # ROS/Third-Party
 import rospy
@@ -76,7 +75,7 @@ class satcomms(rockBlockProtocol):
                 mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
-        self.pub_to_despatcher.publish(self.unpack_regular_payload(data))
+        self.pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
         rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
@@ -97,24 +96,6 @@ class satcomms(rockBlockProtocol):
     ############################
     # MO/MT msg calls
     ############################
-
-    def unpack_regular_payload(self, packed_data):
-        '''Unpack a binary-compressed regular payload received by another Rockblock'''
-        own_serial = 12345 # Rockbock's own serial, to be replaced with a ros param
-        serial_0 = (own_serial >> 16) & 0xFF
-        serial_1 = (own_serial >> 8) & 0xFF
-        serial_2 = own_serial & 0xFF
-        #rospy.loginfo("Unpack regular payload read:")
-        #rospy.loginfo(packed_data)
-        # If prefix shows it is from another Rockblock, unpack it
-        if packed_data[0] == ord('R') and packed_data[1] == ord('B'):
-            if serial_0 == packed_data[2] and serial_1 == packed_data[3] and serial_2 == packed_data[4]:
-                packed_data = packed_data[5:]
-                #rospy.loginfo("After stripping RB prefix:")
-                #rospy.loginfo(packed_data)
-                struct_cmd = "> H H H H H H H H H H H"
-                return str(struct.unpack(struct_cmd, packed_data))
-        return "Not Regular Payload!"
     
     def get_mo_msg(self, data):
         '''

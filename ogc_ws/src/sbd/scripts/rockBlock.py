@@ -489,18 +489,29 @@ class rockBlock(object):
         command = "AT+SBDRB"
         self.s.write((command + "\r").encode())
         response = self.s.readline()
-        #response = response.replace("AT+SBDRB\r","").strip() # response format is "AT+SBDRB\r<message>\r"
 
-        # Modified code to receive a binary-compressed Regular Payload. To-do: Make it work for non-compressed data
-        #rospy.loginfo("Raw response is:")
-        #rospy.loginfo(response)
-        response = response[9:]
-        content = response[2:]
-        #rospy.loginfo("Stripped response is:")
-        #rospy.loginfo(content)
-        if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-            self.callback.rockBlockRxReceived(mtMsn, content)
-            self.s.readline()
+        # Modified code to receive a binary-compressed Regular Payload.
+        # To-do: Break out this whole thing into a separate function, and break out regular payload features
+        response = response[11:] # response format is "AT+SBDRB\r<two pad bytes><message>\r"
+        # Strip out prefix (RB + serial)
+        own_serial = 12345 # Our own Rockblock serial, to be replaced with a ros param
+        serial_0 = (own_serial >> 16) & 0xFF
+        serial_1 = (own_serial >> 8) & 0xFF
+        serial_2 = own_serial & 0xFF
+        if response[0] == ord('R') and response[1] == ord('B')\
+        and response[2] == serial_0 and response[3] == serial_1 and response[4] == serial_2:
+            response = response[5:]
+            struct_cmd = "> H H H H H H H H H H H" # Compressed format of regular payload
+            reg_len = 22 # Length of a regular payload
+            while len(response) < reg_len:
+                response = response + self.s.readline() # Keep reading until entire regular payload collected
+            content = str(struct.unpack(struct_cmd, response))
+        # Pass msg back to sbd link
+            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                self.callback.rockBlockRxReceived(mtMsn, content)
+                self.s.readline()
+        else:
+            rospy.logwarn("Not from another Rockblock")
 
         #if( response == "OK" ):
         #    # Blank msg
