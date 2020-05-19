@@ -8,8 +8,9 @@ project(rff)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  mavros_msgs
+  roscpp
   rospy
-  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -69,7 +70,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   mavros_msgs
 # )
 
 ################################################
@@ -104,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES rff
-#  CATKIN_DEPENDS rospy std_msgs
+#  CATKIN_DEPENDS mavros_msgs roscpp rospy
 #  DEPENDS system_lib
 )
 

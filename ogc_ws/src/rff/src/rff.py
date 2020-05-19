@@ -14,10 +14,10 @@ from mavros_msgs.msg import State
 
 missionlist = []
 waypoints = []
-waypointsfolder = "/home/Waypoints/"
 
 class WP(object):
 
+	# Creates a csv dialect to read the waypoint file properly
 	class CSVDialect(csv.Dialect):
 		delimiter = '\t'
 		doublequote = False
@@ -27,6 +27,7 @@ class WP(object):
 
 	def read(self, wpfile):
 		f = open(wpfile, "r")
+		# There are header lines which identify waypoint files
 		pastheaderline = False
 		for data in csv.reader(f, self.CSVDialect):
 			if not pastheaderline:
@@ -36,6 +37,7 @@ class WP(object):
 					pastheaderline = True
 
 			else:
+				# Convert waypoints into Waypoint format
 				waypoints.append(Waypoint(
 					is_current = bool(int(data[1])),
 					frame = int(data[2]),
@@ -53,37 +55,51 @@ class WP(object):
 class RFF:
 
 	def __init__(self):
+		# Check arm status of aircraft
 		rospy.Subscriber('/mavros/state', State, self.checkDisarm)
+		# Path to missionlist.txt which contains all missions in a flight in order
 		path = str(waypointsfolder + "missionlist.txt")
 		f = open(path, "r")
 		for line in f:
+			# Ignores # comments
+			if line.startswith('#'):
+				continue
 			missionlist.append(line.rstrip())
+		# Prints the missions for operator to check
 		rospy.loginfo("Missions for this flight:")
 		for i in missionlist:
 			rospy.loginfo(i)
-		# Assumes armed
+		# Assumes armed for safety
 		self.armStatus = True
 
 	def main(self):
 		rospy.loginfo("Loading waypoints.")
-		# rospy.wait_for_service('mavros/mission/push')
+		rospy.wait_for_service('mavros/mission/push', timeout=10)
 		wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-		wp(0, waypoints)
+		while not wp(0, waypoints).success:
+			rospy.logerr("Failed to load waypoints. Trying again.")
+			time.sleep(3)
 		rospy.loginfo("Waypoints loaded.")
-		# rospy.wait_for_service('mavros/mission/set_current')
+		rospy.wait_for_service('mavros/mission/set_current', timeout=10)
 		wpset = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-		wpset(1)
-		# rospy.wait_for_service('mavros/set_mode')
+		while not wpset(1).success:
+			rospy.logerr("Failed to set current waypoint. Trying again.")
+			time.sleep(3)
+		rospy.wait_for_service('mavros/set_mode', timeout=10)
 		mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
-		mode(custom_mode = "AUTO")
+		while not mode(custom_mode = "AUTO").mode_sent:
+			rospy.logerr("Failed to set mode to AUTO. Trying again.")
+			time.sleep(3)
 		rospy.loginfo("MODE = AUTO")
 		rospy.loginfo("Arming in 10 seconds. Please stand clear.")
 		time.sleep(10)
-		# rospy.wait_for_service('mavros/cmd/arming')
+		rospy.wait_for_service('mavros/cmd/arming', timeout=10)
 		arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
-		arm(1)
+		while not arm(1).success:
+			rospy.logwarn("Failed to arm throttle. Trying again. Please continue to stay clear of aircraft.")
+			time.sleep(3)
 		rospy.loginfo("THROTTLE ARMED")
-		time.sleep(1)
+		self.armStatus = True
 
 	def checkDisarm(self, data):
 		self.armStatus = data.armed
@@ -91,11 +107,23 @@ class RFF:
 class Button:
 
 	def __init__(self):
+		self.router_hostname = rospy.get_param('~router_hostname','root@192.168.1.1')
+		index = self.router_hostname.index('@')
+		self.ip = self.router_hostname[index+1:]
+		self.user = self.router_hostname[0:index]
 		self.Button_State = False
 		self.ssh = paramiko.SSHClient()
 		self.ssh.load_system_host_keys()
-		self.ssh.connect('192.168.1.1', username='root')
+		self.ssh.connect(self.ip, username=self.user)
 		rospy.loginfo("Monitoring button")
+
+	def warn(self):
+		# blink and sound led and buzzer using threading
+		pass
+
+	def stopwarn(self):
+		# stop led and buzzer
+		pass
 
 	def press(self):
 		while True:
@@ -113,15 +141,21 @@ class Button:
 					timeup = time.time()
 					timeheld = timeup - timedown
 					if timeheld >= 2:
+						button.warn()
 						rff.main()
+						button.stopwarn()
 						break
 					rospy.loginfo("Button not held for at least 2 seconds. Continuing to monitor.")
 				self.Button_State = False
 
 			time.sleep(0.5)
 
+		self.ssh.close()
+		rospy.loginfo("Disconnected from button.")
+
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
+	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
 	rff = RFF()
 
 	try:
@@ -129,6 +163,7 @@ if __name__ == "__main__":
 			wpfile = str(waypointsfolder + missionlist[i])
 			readwp = WP()
 			readwp.read(wpfile)
+			# Do nothing if aircraft is armed
 			while rff.armStatus:
 				time.sleep(5)
 			rospy.loginfo("Plane has been disarmed. Starting button monitoring. ")
@@ -137,7 +172,7 @@ if __name__ == "__main__":
 			rospy.loginfo(missionlist[i] + " started.")
 			waypoints = []
 		
-		print("All missions finished")
+		rospy.loginfo("All missions finished")
 
 	except KeyboardInterrupt:
-		pass
+		rospy.signal_shutdown("Shutting down")
