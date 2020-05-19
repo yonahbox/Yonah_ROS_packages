@@ -16,7 +16,7 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstra
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
 from python_qt_binding.QtSvg import QSvgGenerator
-from second_window import NewWindow
+from checklist_window import ChecklistWindow
 
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
@@ -49,7 +49,7 @@ class MyPlugin(Plugin):
         # tell from pane to pane.
         # if context.serial_number():
         #     self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
-        self.NewWindow = NewWindow()
+        self.ChecklistWindow = ChecklistWindow()
         self.waypoint_list = [0,0]
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
@@ -57,7 +57,7 @@ class MyPlugin(Plugin):
         self._widget.mode_auto_pushbutton.pressed.connect(self.mode_auto)
         self._widget.load_mission_pushbutton.pressed.connect(self.load_mission)
         self._widget.check_mission_pushbutton.pressed.connect(self.check_mission)
-        self._widget.checklist_pushbutton.pressed.connect(self.NewWindow.show)
+        self._widget.checklist_pushbutton.pressed.connect(self.ChecklistWindow.show)
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
@@ -159,11 +159,6 @@ class MyPlugin(Plugin):
         print ('mission loaded')
     def check_mission(self):
         print ('checked mission')
-    def checklist(self):
-        print('checklist is pressed')
-        NewWindow()
-        print('checklist finished processing')
-
     def armingbox(self):
         print ('successful!')
 
@@ -172,6 +167,7 @@ class MyPlugin(Plugin):
         # TODO find a working shutdown mechanism, now it is 
         # working but shows error that widget does not have
         # shutdown all property
+        ChecklistWindow.ok_clicked(ChecklistWindow)
         self._widget.shutdown_all()
 
     def save_settings(self, plugin_settings, instance_settings):

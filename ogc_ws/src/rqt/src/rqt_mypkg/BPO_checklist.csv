@@ -1,0 +1,66 @@
+Mech,
+Wing Nuts,Tight
+Tail Nuts,Tight
+Landing Gear,Secure
+Boom,"Secure, Tilt"
+Quad Battery,"Secure, Batt checker"
+CAS,Secure
+Fuel Tank Vent,"Secure, Open"
+Fuel Tank,Fuel Up To Level
+24V line,IN
+Ignition Battery,IN
+Starter Battery,IN
+CG,Location
+Manual Logs,Record
+Onboard Camera,IN
+,
+Avionics,
+Rack,Secure
+Antenna mount,Secure
+GPS mount,Secure
+LIDAR mount,Secure
+Cables,"Secure, IN"
+Avionics Battery,IN
+Wifi Link,Connection
+Data Link,Connection
+SMS Link,Connection
+Arm Check,Enable All
+Arm Test,Successful
+GPS Lock,Check Sat Num
+Airspeed,Nominal
+Compass,Nominal
+LIDAR,Nominal
+Cube Temp,55C and above
+Servo,Movement
+FBWA - Stick,Direction
+FBWA - PID,Direction
+QLOITER - Stick,Direction
+QLOITER - PID,Direction
+Quad batteries,Out
+Payload,Secure
+Mission,Loaded
+Quad Prop,"Direction, Secure"
+,
+Engine Warm-up,
+Quad batteries,Out
+Tachometer,Connect
+Flight Mode,FBWA
+Engine Control,Load param for TX
+Hatch,Closed
+Tail Anchor,Secure
+Arm Status,ARMED
+Throttle response,Correct
+FOD,Clear
+"Choke, Thr","Close, 0%"
+Ignition,ON
+Fuel Line,"Primed, No leak"
+Starter On,Hear Pop
+"Choke, Thr","Open, 0%"
+Starter On,Engine Idle
+Cylinder Temp,60C
+RPM Min/Max,Nominal
+Idle,Sustain after WOT
+Ignition,Kill
+Arm Status,DISARMED
+Tachometer,Remove
+Engine Control,Load for AUTO
