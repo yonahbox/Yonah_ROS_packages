@@ -12,25 +12,7 @@ If you haven't done so already, clone this repository and check out onto the bra
 cd ogc_ws
 catkin_make
 ```
-
-Create the sms package, but first move out the existing despatcher folder (catkin will throw an error when it tries to create a package but the package folder already exists). After package creation, move everything in the original sms folder back into the newly created package:
-
-```
-cd src/
-mv despatcher ~/
-catkin_create_pkg despatcher std_msgs rospy
-mv ~/despatcher/* ./despatcher/
-rm -r ~/despatcher
-```
-
-After this step, the despatcher nodes, launchfiles, CMakelists.txt and package.xml should be in the package folder. Navigate back to the ogc workspace and rerun catkin_make:
-
-```
-cd ../
-catkin_make
-```
-
-Finally, source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
+Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
 
 ## Usage
 
