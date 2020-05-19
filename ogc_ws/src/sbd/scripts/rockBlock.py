@@ -486,25 +486,33 @@ class rockBlock(object):
         '''Process incoming Mobile-Terminated (MT) msg'''
 
         self._ensureConnectionStatus()
-        command = "AT+SBDRT"
+        command = "AT+SBDRB"
         self.s.write((command + "\r").encode())
-        self.s.readline() # AT+SBDRT
-        self.s.readline() # SBDRT: 
-        response = self.s.readline() # Actual text msg
-        rospy.loginfo(response)
-        response = response.decode()
+        response = self.s.readline()
+        #response = response.replace("AT+SBDRB\r","").strip() # response format is "AT+SBDRB\r<message>\r"
 
-        if( response == "OK" ):
-            # Blank msg
-            rospy.logwarn("No message content.. strange!")
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, "")
-        else:
-            # Pass the MT msg to the callback object                                   
-            content = response[2:-2]
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, content)
-            self.s.readline()   #BLANK?
+        # Modified code to receive a binary-compressed Regular Payload. To-do: Make it work for non-compressed data
+        #rospy.loginfo("Raw response is:")
+        #rospy.loginfo(response)
+        response = response[9:]
+        content = response[2:]
+        #rospy.loginfo("Stripped response is:")
+        #rospy.loginfo(content)
+        if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+            self.callback.rockBlockRxReceived(mtMsn, content)
+            self.s.readline()
+
+        #if( response == "OK" ):
+        #    # Blank msg
+        #    rospy.logwarn("No message content.. strange!")
+        #    if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+        #        self.callback.rockBlockRxReceived(mtMsn, "")
+        #else:
+        #    # Pass the MT msg to the callback object                                   
+        #    content = response[2:-2]
+        #    if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+        #        self.callback.rockBlockRxReceived(mtMsn, content)
+        #    self.s.readline()   #BLANK?
                 
     
     def _isNetworkTimeValid(self):
