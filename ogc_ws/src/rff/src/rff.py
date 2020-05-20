@@ -4,6 +4,7 @@ import time
 import rospy
 import paramiko
 import csv
+import threading
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointPush
@@ -112,18 +113,18 @@ class Button:
 		self.ip = self.router_hostname[index+1:]
 		self.user = self.router_hostname[0:index]
 		self.Button_State = False
+		self.stopwarn = False
 		self.ssh = paramiko.SSHClient()
 		self.ssh.load_system_host_keys()
 		self.ssh.connect(self.ip, username=self.user)
 		rospy.loginfo("Monitoring button")
 
-	def warn(self):
-		# blink and sound led and buzzer using threading
-		pass
-
-	def stopwarn(self):
-		# stop led and buzzer
-		pass
+	def blink(self):
+		while True:
+			stdin, stdout, stderr = self.ssh.exec_command('gpio.sh invert DOUT1')
+			time.sleep(0.5)
+			if self.stopwarn:
+				break
 
 	def press(self):
 		while True:
@@ -141,9 +142,11 @@ class Button:
 					timeup = time.time()
 					timeheld = timeup - timedown
 					if timeheld >= 2:
-						button.warn()
+						blinker = threading.Thread(target = self.blink)
+						blinker.start()
 						rff.main()
-						button.stopwarn()
+						self.stopwarn = True
+						blinker.join()
 						break
 					rospy.loginfo("Button not held for at least 2 seconds. Continuing to monitor.")
 				self.Button_State = False
