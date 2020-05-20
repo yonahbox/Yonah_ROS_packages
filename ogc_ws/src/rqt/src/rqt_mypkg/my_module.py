@@ -126,16 +126,6 @@ class MyPlugin(Plugin):
         self._widget.progressBar.setValue(sequence)
         self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
 
-
-    # def waypoint_index_display(self, index):
-    #     print ('index:::: ' + str(index)
-    #     self.waypoint_list[1] = index
-        
-
-    # def waypoint_display(self, waypoint):
-        
-    #     self._widget.wp_textedit.setText(str(waypoint+1))
-
     def arm_status_display(self, arm_status):
         if arm_status == False:
             text_to_display = 'DISARMED'
@@ -187,9 +177,9 @@ class MyPlugin(Plugin):
 
    
 class Communicate (QObject):
-    #technically, all the signals that has the same input, such as string
-    #can be combined into one variable. However, for clarity purpose,
-    #I split each variable for each display we need to make
+    # technically, all the signals that has the same input, such as string
+    # can be combined into one variable. However, for clarity purpose,
+    # I split each variable for each display we need to make
     status_text_signal = Signal(str)
     arm_signal = Signal(bool)
     mode_signal = Signal(str)

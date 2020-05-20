@@ -1,9 +1,10 @@
 # TODO streamline the import files and only include those that are really needed
 import csv
+from confirmation_window import ConfirmationWindow
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QLabel
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
-from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem
+from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 
 
@@ -13,11 +14,10 @@ class ChecklistWindow(QWidget):
         super(ChecklistWindow, self).__init__()
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
-
+        self.move(200,100)
         # absolute path for the default BPO and BTO checklist
         self.BPO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BPO_checklist.csv')
         self.BTO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BTO_checklist.csv')
-        
         # create the layout
         self.layout = QVBoxLayout(self)
         self.buttons_layout = QHBoxLayout(self)
@@ -46,8 +46,6 @@ class ChecklistWindow(QWidget):
         self.buttons_layout.addWidget(self.ok_button)
         self.tree_widget_layout.addWidget(self.tree_widget)
         self.setLayout(self.layout)
-        
-
 
     def create_tree(self):
         print('create tree is called again')
@@ -82,7 +80,7 @@ class ChecklistWindow(QWidget):
             child = QTreeWidgetItem(parent)
             child.setFlags(child.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
             child.setText(0, section_header[j])
-            child.setExpanded(True)
+            # child.setExpanded(True)
             while k < len(list):
                 if list[k][0] in section_header:
                     # when the while loop encounters the first title, continue the loop
@@ -113,13 +111,19 @@ class ChecklistWindow(QWidget):
             return checklist            
 
     def ok_clicked(self):
-        self.close()
-        pass
+        if self.BPO_header.checkState(0) != 2 or self.BTO_header.checkState(0) != 2:
+            self.dialog_window("Some items in the checklist are still unchecked", "Do you still want to continue?", True)
+        else:
+            self.close()
+        
 
     def cancel_clicked(self):
-        self.BTO_header.setCheckState(0, Qt.Unchecked)
-        self.BPO_header.setCheckState(0, Qt.Unchecked)
-        self.close()
+        if self.BPO_header.checkState(0) != 0 or self.BTO_header.checkState(0) != 0:
+            self.dialog_window('Some of your items are checked. Cancelling will uncheck all your items', 'Do you still want to continue?', False)
+        else:
+            self.BTO_header.setCheckState(0, Qt.Unchecked)
+            self.BPO_header.setCheckState(0, Qt.Unchecked)
+            self.close()
     
     def load_clicked(self):
         filenames = QFileDialog.getOpenFileNames(
@@ -146,3 +150,33 @@ class ChecklistWindow(QWidget):
         self.ok_button.deleteLater()
         self.cancel_button.deleteLater()
         self.load_button.deleteLater()
+    
+    def dialog_window(self, message, detail, check):
+        print('show dialog is present')
+        self.message = QMessageBox()
+        self.message.setIcon(QMessageBox.Warning)
+        self.message.setText(message)
+        self.message.setInformativeText(detail)
+        self.message.setWindowTitle("Items are unchecked")
+        self.message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        self.message.show()
+        if check == True:
+            self.message.buttonClicked.connect(self.message_action)
+        else:
+            self.message.buttonClicked.connect(self.message_action_uncheck)
+    
+    def message_action(self, i):
+        if i.text() == '&Yes':
+            self.close()
+        else:
+            self.message.close()
+    
+    def message_action_uncheck(self, i):
+        self.response = i.text()
+        if self.response == '&Yes':
+            self.BTO_header.setCheckState(0, Qt.Unchecked)
+            self.BPO_header.setCheckState(0, Qt.Unchecked)
+            self.close()
+        else:
+            self.message.close()
+
