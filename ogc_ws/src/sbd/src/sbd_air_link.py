@@ -35,7 +35,7 @@ class satcomms(rockBlockProtocol):
     def __init__(self):
         rospy.init_node('sbd_link', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
-        self.interval = 0.5 #rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
+        self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         self.client_serial = rospy.get_param("~client_serial", "12345") # Rockblock serial no of client
         self.portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self.buffer = self.buffer_write_time = "" # MO msg buffer and buffer write time
@@ -97,7 +97,7 @@ class satcomms(rockBlockProtocol):
     # MO/MT msg calls
     ############################
     
-    def get_mo_msg(self, data):
+    def sbd_get_mo_msg(self, data):
         '''
         Get MO msg from to_sbd topic and put it in MO buffer
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
@@ -105,7 +105,7 @@ class satcomms(rockBlockProtocol):
         self.buffer = data.data
         self.buffer_write_time = datetime.datetime.now()
     
-    def check_sbd_mailbox(self, data):
+    def sbd_check_sbd_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
         self.count = self.count + 1
         mailchk_time = datetime.datetime.now()
@@ -120,8 +120,8 @@ class satcomms(rockBlockProtocol):
     ############################
     
     def client(self):
-        rospy.Subscriber("ogc/to_sbd", String, self.get_mo_msg)
-        message_handler = rospy.Timer(rospy.Duration(self.interval), self.check_sbd_mailbox)
+        rospy.Subscriber("ogc/to_sbd", String, self.sbd_get_mo_msg)
+        message_handler = rospy.Timer(rospy.Duration(self.interval), self.sbd_check_sbd_mailbox)
         rospy.spin()
         message_handler.shutdown()
         self.sbdsession.close()

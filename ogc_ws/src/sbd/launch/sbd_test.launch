@@ -15,7 +15,7 @@
     <arg name="interval_3" default="0.5"/>
 
     <!-- sbd link node -->
-    <node pkg="sbd" type="sbd_link.py" name="sbd_link"
+    <node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="portID" value="$(arg portID)" />
         <param name="client_serial" value="$(arg client_serial)" />
