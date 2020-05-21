@@ -34,6 +34,7 @@ class satcomms(rockBlockProtocol):
 
     def __init__(self):
         rospy.init_node('sbd_link', anonymous=False)
+        self._is_air = True # True = Node runs on aircraft, False = Node runs on GCS
         self._init_variables()
     
     def _init_variables(self):
@@ -41,11 +42,14 @@ class satcomms(rockBlockProtocol):
         self._interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         self._buffer = "" # MO msg buffer
         self._buffer_write_time = datetime.datetime.now()
+        self._thr_server = False # True = Comm through web server; False = Comm through gnd Rockblock
 
         # Rockblock Comms
+        self._own_serial = rospy.get_param("~own_serial", "12345")
         self._client_serial = rospy.get_param("~client_serial", "12345") # Rockblock serial no of client
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
-        self._sbdsession = rockBlock.rockBlock(self._portID, self, self._client_serial) # Connect to Rockblock
+        self._sbdsession = rockBlock.rockBlock(self._portID, self, self._is_air, \
+            self._own_serial, self._client_serial) # Connect to Rockblock
         self._count = 0 # Mailbox check counter
 
     ################################
@@ -112,10 +116,14 @@ class satcomms(rockBlockProtocol):
     
     def _sbd_check_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
+        # If no MO msg, buffer will be empty
         self._count = self._count + 1
         mailchk_time = datetime.datetime.now()
-        # If no MO msg, buffer will be empty
-        self._sbdsession.messageCheck(self._buffer)
+        # If buffer starts with "R ", it is a regular payload
+        is_regular = False
+        if self._buffer.startswith("R "):
+            is_regular = True
+        self._sbdsession.messageCheck(self._buffer, self._thr_server, is_regular)
         # Clear buffer if no new MO msgs were received after sending the previous MO msg
         if self._buffer_write_time < mailchk_time:
             self._buffer = ""

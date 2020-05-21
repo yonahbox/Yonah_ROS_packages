@@ -14,7 +14,8 @@
     <!-- Serial port that Rockblock is connected to-->
     <arg name="portID" default="/dev/ttyUSB0"/>
 
-    <!-- Rockblock serial no of the client (e.g. if running this on air, fill in ground serial no, and vice versa)-->
+    <!-- Rockblock serial no of ourselves and the client-->
+    <arg name="own_serial" default="12345"/>
     <arg name="client_serial" default="12345"/>
 
     <!-- sbd link node -->
@@ -23,6 +24,7 @@
         <param name="interval" value="$(arg interval_3)" />
         <param name="credentials" value="$(arg credentials)" />
         <param name="portID" value="$(arg portID)" />
+        <param name="own_serial" value="$(arg own_serial)" />
         <param name="client_serial" value="$(arg client_serial)" />
     </node>
 

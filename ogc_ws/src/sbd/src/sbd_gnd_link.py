@@ -41,7 +41,7 @@ class satcommsgnd(satcomms):
     
     def __init__(self):
         rospy.init_node('sbd_gnd_link', anonymous=False)
-        self.__thr_server = False # True = Comm through web server; False = Comm through gnd Rockblock
+        self._is_air = False # True = Node runs on aircraft, False = Node runs on GCS
         self.__server_url = "" # Our web server url
         self.__prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
         self.__mt_cred = dict() # Credentials required to post MT data to Rock 7 server
@@ -75,9 +75,12 @@ class satcommsgnd(satcomms):
     def __server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
-        # Decode the binary-compressed regular payload. To-do: Add in ability to turn this on/off
-        struct_cmd = "> H H H H H H H H H H H" # Compressed format of regular payload
-        return str(struct.unpack(struct_cmd, response))
+        if msg[0] == ord('R'):
+            # Unpack if it is binary-compressed regular payload
+            struct_cmd = "> R H H H H H H H H H H H" # To-do: Break this into regular payload module
+            return str(struct.unpack(struct_cmd, response))
+        else:
+            return response
     
     def __server_send_msg(self, data):
         '''Post MT msg to the Rock 7 server'''
@@ -109,14 +112,14 @@ class satcommsgnd(satcomms):
 
     def send_msg(self, data):
         '''Handle MO msgs'''
-        if self.__thr_server:
+        if self._thr_server:
             self.__server_send_msg(data)
         else:
             self._sbd_get_mo_msg(data)
     
     def recv_msg(self, data):
         '''Handle MT msgs'''
-        if self.__thr_server:
+        if self._thr_server:
             self.__server_recv_msg()
         else:
             self._sbd_check_mailbox("") # "" is placeholder for data variable

@@ -73,7 +73,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback, client_serial):
+    def __init__(self, portId, callback, is_air, own_serial, client_serial):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -83,7 +83,13 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
+        self.is_air = is_air
         self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
+        
+        # Three-bytes of our own Rockblock serial number
+        self.serial_0 = (own_serial >> 16) & 0xFF
+        self.serial_1 = (own_serial >> 8) & 0xFF
+        self.serial_2 = own_serial & 0xFF
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -135,8 +141,14 @@ class rockBlock(object):
         return -1   
      
     
-    def messageCheck(self, momsg):
-        '''Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty'''
+    def messageCheck(self, momsg, thr_server, is_regular):
+        '''
+        Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty
+        Arguments:
+        momsg: Mobile Originated (MO) msg
+        thr_server: True if communicating through web server. False if communicating through ground Rockblock
+        is_regular: True if the momsg is a regular payload 
+        '''
         self._ensureConnectionStatus()
         if(self.callback != None and callable(self.callback.rockBlockRxStarted) ):
             self.callback.rockBlockRxStarted()
@@ -147,7 +159,7 @@ class rockBlock(object):
         have_queued_msg = False
         if momsg:
             self.mo_msg = momsg
-            if self._queueMessage():
+            if self._queueMessage(thr_server, is_regular):
                 have_queued_msg = True # msg was successfully queued
         if( self._attemptConnection() and self._attemptSession(have_queued_msg) ):
             return True
@@ -176,7 +188,7 @@ class rockBlock(object):
                 return 0
                       
                             
-    def sendMessage(self, msg):
+    def sendMessage(self, msg, thr_server, is_regular):
         '''Send an MO msg, and return True/False depending on whether attempt was successful'''
         self._ensureConnectionStatus()
 
@@ -185,7 +197,7 @@ class rockBlock(object):
 
         self.mo_msg = msg
 
-        if( self._queueMessage() and self._attemptConnection()  ):
+        if( self._queueMessage(thr_server, is_regular) and self._attemptConnection()  ):
             # Try a max of 3 unsuccessful times before giving up permanently
             SESSION_DELAY = 1
             SESSION_ATTEMPTS = 3
@@ -272,38 +284,49 @@ class rockBlock(object):
     
         
     #Private Methods - Don't call these directly!
-    def _queueMessage(self):
+    def _queueMessage(self, thr_server, is_regular):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
         rospy.loginfo("Inserting MO msg: " + self.mo_msg)
 
-        # Pack prefix to send to another Rockblock. To do: Turn this functionality on and off
-        pre_1 = (b'RB',)
-        s1 = struct.Struct('2s')
-        packed_1 = s1.pack(*pre_1)
-        pre_2 = (self.client_serial,)
-        s2 = struct.Struct('> I')
-        packed_2 = s2.pack(*pre_2)
-        packed_2 = packed_2[1:] # Rock Seven insists that serial no is packed into 3 bytes, big endian
+        msg = ""
+        msglen = 0
+
+        # If communicating through gnd Rockblock, prepare client Rockblock prefix
+        # To-do: Do this only once during initialization
+        if not thr_server:
+            # Pack in binary if regular payload, else pack in plaintext
+            if is_regular:
+                pre_1 = (b'RB',)
+                s1 = struct.Struct('2s')
+                packed_1 = s1.pack(*pre_1)
+                pre_2 = (self.client_serial,)
+                s2 = struct.Struct('> I')
+                packed_2 = s2.pack(*pre_2)
+                msg = packed_1 + packed_2[1:] # Rock Seven insists that serial no is packed into 3 bytes, big endian
+                msglen = s1.size + s2.size - 1 # -1 because serial number truncated to 3 bytes, not 4
+            else:
+                msg = "RB00" + str(self.client_serial)
+                msglen = len(msg)
         
-        # Pack regular payload. To do: Have different formats for regular/nonregular payload
-        li = self.mo_msg.split(" ")
-        li = list(map(int, li)) # Convert all str to int
-        i = 0
-        struct_cmd = '>' # Standardize all to same endianess (easier to unpack)
-        while i < len(li):
-            struct_cmd = struct_cmd + ' H'
-            i = i + 1
-        s3 = struct.Struct(struct_cmd)
-        packed_data = s3.pack(*li)
+        # Pack regular payload. To-do: Break out packing functions into separate module
+        if is_regular:
+            li = self.mo_msg.split(" ")
+            li = [li[0],] + list(map(int, li[1:])) # Convert all str to int (except prefix)
+            struct_cmd = "> R H H H H H H H H H H H" # Standardize all to same endianess
+            s3 = struct.Struct(struct_cmd)
+            msg = msg + s3.pack(*li)
+            msglen = msglen + s3.size
+        else:
+            msg = self.mo_msg
         
-        command = "AT+SBDWB=" + str(s1.size + s2.size-1 + s3.size)
+        command = "AT+SBDWB=" + str(msglen)
         self.s.write((command + "\r").encode())
         
         if(self.s.readline().strip().decode() == command):
             if(self.s.readline().strip().decode() == "READY"):
-                self.s.write(packed_1 + packed_2 + packed_data)
+                self.s.write(msg)
                 # Calculate checksum. Checksum is least significant 2-bytes of the summation of the entire SBD
                 # message. The high order byte must be sent first. For example if the FA were to send the
                 # word “hello” encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
@@ -311,7 +334,12 @@ class rockBlock(object):
                 # >> 8 to get higher order byte, see https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
                 # & 0xFF to get lower order byte, see https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
                 # Assumption: Checksum not more than 16 bits (2 bytes), or a value of 65535 (always true for msgs < 340 characters)
-                checksum = sum(packed_1 + packed_2 + packed_data)
+                if is_regular:
+                    checksum = sum(msg)
+                else:
+                    checksum = 0
+                    for i in msg:
+                        checksum = checksum + ord(i)
                 a = checksum >> 8
                 b = checksum & 0xFF
                 checksum = bytes([a,b])
@@ -494,14 +522,10 @@ class rockBlock(object):
         # To-do: Break out this whole thing into a separate function, and break out regular payload features
         response = response[11:] # response format is "AT+SBDRB\r<two pad bytes><message>\r"
         # Strip out prefix (RB + serial)
-        own_serial = 12345 # Our own Rockblock serial, to be replaced with a ros param
-        serial_0 = (own_serial >> 16) & 0xFF
-        serial_1 = (own_serial >> 8) & 0xFF
-        serial_2 = own_serial & 0xFF
         if response[0] == ord('R') and response[1] == ord('B')\
-        and response[2] == serial_0 and response[3] == serial_1 and response[4] == serial_2:
+        and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
             response = response[5:]
-            struct_cmd = "> H H H H H H H H H H H" # Compressed format of regular payload
+            struct_cmd = "> R H H H H H H H H H H H" # Compressed format of regular payload
             reg_len = 22 # Length of a regular payload
             while len(response) < reg_len:
                 response = response + self.s.readline() # Keep reading until entire regular payload collected

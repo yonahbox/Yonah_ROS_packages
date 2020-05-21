@@ -8,7 +8,8 @@
     <!-- Serial port that Rockblock is connected to-->
     <arg name="portID" default="/dev/ttyUSB0"/>
 
-    <!-- Rockblock serial no of the client (e.g. if running this on air, fill in ground serial no, and vice versa)-->
+    <!-- Rockblock serial no of ourselves and the client-->
+    <arg name="own_serial" default="12345"/>
     <arg name="client_serial" default="12345"/>
 
     <!-- Sleep interval between SBD mailbox checks -->
@@ -20,6 +21,7 @@
     <node pkg="sbd" type="sbd_link.py" name="sbd_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="portID" value="$(arg portID)" />
+        <param name="own_serial" value="$(arg own_serial)" />
         <param name="client_serial" value="$(arg client_serial)" />
         <param name="interval" value="$(arg interval_3)" />
     </node>
