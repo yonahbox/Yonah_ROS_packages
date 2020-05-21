@@ -20,3 +20,6 @@
 *.tlog
 *.tlog.raw
 *.parm
+
+# Other auto-generated files
+**/__pycache__
