@@ -120,10 +120,10 @@ class satcomms(rockBlockProtocol):
         self._count = self._count + 1
         mailchk_time = datetime.datetime.now()
         # If buffer starts with "R ", it is a regular payload
-        is_regular = False
+        mo_is_regular = False
         if self._buffer.startswith("R "):
-            is_regular = True
-        self._sbdsession.messageCheck(self._buffer, self._thr_server, is_regular)
+            mo_is_regular = True
+        self._sbdsession.messageCheck(self._buffer, self._thr_server, mo_is_regular)
         # Clear buffer if no new MO msgs were received after sending the previous MO msg
         if self._buffer_write_time < mailchk_time:
             self._buffer = ""
@@ -137,7 +137,7 @@ class satcomms(rockBlockProtocol):
         message_handler = rospy.Timer(rospy.Duration(self._interval), self._sbd_check_mailbox)
         rospy.spin()
         message_handler.shutdown()
-        self.sbdsession.close()
+        self._sbdsession.close()
 
 if __name__=='__main__':
     run = satcomms()

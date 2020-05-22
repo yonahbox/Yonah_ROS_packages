@@ -46,8 +46,12 @@ class satcommsgnd(satcomms):
         self.__prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
         self.__mt_cred = dict() # Credentials required to post MT data to Rock 7 server
         self.__cred_file = rospy.get_param("~credentials") # Text file containing credentials
+
         self.__get_credentials()
         self._init_variables()
+        self.__serial_1 = (self._own_serial >> 16) & 0xFF
+        self.__serial_2 = (self._own_serial >> 8) & 0xFF
+        self.__serial_3 = self._own_serial & 0xFF
 
     def __get_credentials(self):
         '''Obtain Rock 7's required credentials from login.txt file'''
@@ -77,7 +81,10 @@ class satcommsgnd(satcomms):
         response = binascii.unhexlify(msg)
         if msg[0] == ord('R'):
             # Unpack if it is binary-compressed regular payload
-            struct_cmd = "> R H H H H H H H H H H H" # To-do: Break this into regular payload module
+            if msg[1] == ord('B') and msg[2] == self.__serial_1\
+                and msg[3] == self.__serial_2 and msg[4] == self.__serial_3:
+                msg = msg[5:] # Strip Rockblock 2 Rockblock prefix if present
+            struct_cmd = "> s H H H H H H H H H H H" # To-do: Break this into regular payload module
             return str(struct.unpack(struct_cmd, response))
         else:
             return response
