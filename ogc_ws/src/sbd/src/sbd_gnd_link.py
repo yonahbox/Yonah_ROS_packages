@@ -41,7 +41,6 @@ class satcommsgnd(satcomms):
     
     def __init__(self):
         rospy.init_node('sbd_gnd_link', anonymous=False)
-        self._is_air = False # True = Node runs on aircraft, False = Node runs on GCS
         self.__server_url = "" # Our web server url
         self.__prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
         self.__mt_cred = dict() # Credentials required to post MT data to Rock 7 server
@@ -79,12 +78,13 @@ class satcommsgnd(satcomms):
     def __server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
-        if msg[0] == ord('R'):
+        if response[0] == ord('R'):
             # Unpack if it is binary-compressed regular payload
-            if msg[1] == ord('B') and msg[2] == self.__serial_1\
-                and msg[3] == self.__serial_2 and msg[4] == self.__serial_3:
-                msg = msg[5:] # Strip Rockblock 2 Rockblock prefix if present
-            struct_cmd = "> s H H H H H H H H H H H" # To-do: Break this into regular payload module
+            if response[1] == ord('B') and response[2] == self.__serial_1\
+                and response[3] == self.__serial_2 and response[4] == self.__serial_3:
+                # Strip Rockblock 2 Rockblock prefix if present
+                response = response[5:]
+            struct_cmd = "> s H H H H H H H H H H H" # Note: First decoded character will be in bytes format
             return str(struct.unpack(struct_cmd, response))
         else:
             return response
@@ -140,6 +140,7 @@ class satcommsgnd(satcomms):
         message_handler = rospy.Timer(rospy.Duration(self._interval), self.recv_msg)
         rospy.spin()
         message_handler.shutdown()
+        self._sbdsession.close()
 
 if __name__=='__main__':
     run = satcommsgnd()

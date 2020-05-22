@@ -73,7 +73,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback, is_air, own_serial, client_serial):
+    def __init__(self, portId, callback, own_serial, client_serial):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -83,7 +83,6 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
-        self.is_air = is_air
         self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
         
         # Three-bytes of our own Rockblock serial number
@@ -501,6 +500,7 @@ class rockBlock(object):
             signal = self.requestSignalStrength()
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
+                    rospy.logwarn("Low signal: " + str(signal))
                     self.callback.rockBlockSignalFail()
                 return False
             self.callback.rockBlockSignalUpdate( signal )
@@ -543,8 +543,10 @@ class rockBlock(object):
 
         else:
             # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
+            rospy.logdebug(response)
             content = response.strip().decode()
-            if content.startswith("RB00" + self.own_serial):
+            rospy.logdebug(content) # To-do: We have troubles decoding some of the msgs
+            if content.startswith("RB00" + str(self.own_serial)):
                 # Remove Rockblock to Rockblock prefix if needed
                 content = content[9:]
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
