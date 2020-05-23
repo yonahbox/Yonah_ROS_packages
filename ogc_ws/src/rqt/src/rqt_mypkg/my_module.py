@@ -37,8 +37,9 @@ class MyPlugin(Plugin):
         #[DA] directory separator (/) sollowing each non-empty part except the last component
         #[DA] the code means get directory to the folder 'rqt_mypkg' and then navigate to resource then access main_window.ui
         ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'main_window.ui')
+        
         # Extend the widget with all attributes and children from UI file
-        #[DA] there is actually a third param available if we have custom class in our widget, but I think we can ignore this
+        # there is actually a third param available if we have custom class in our widget, but I think we can ignore this
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
         self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
@@ -47,10 +48,10 @@ class MyPlugin(Plugin):
         # plugins at once. Also if you open multiple instances of your 
         # plugin at once, these lines add number to make it easy to 
         # tell from pane to pane.
-        # if context.serial_number():
-        #     self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        if context.serial_number():
+            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
         self.ChecklistWindow = ChecklistWindow()
-        self.waypoint_list = [0,0]
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
         self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
@@ -68,8 +69,11 @@ class MyPlugin(Plugin):
         #rospy.Subscriber("mavros/global_position/global", NavSatFix, self.GPS_data)
         #rospy.Subscriber('ogc/from_despatcher/regular', RegularPayload, self.despatcher_message)
 
+        # Publisher List
+        self.arming_publisher = rospy.Publisher('sendarming', String, queue_size = 5)
+        #rospy.init_node('arming_command', anonymous=False)
+        self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
-
 
     def status_text(self, data):
         status = Communicate()
@@ -104,7 +108,8 @@ class MyPlugin(Plugin):
         status = Communicate()
         status.waypoint_list_signal.connect(self.waypoint_total_display)
         status.waypoint_list_signal.emit(data.waypoints, data.current_seq)
-
+    
+    # All functions with _display are the functions that takes the information and display it to the UI
     def status_text_display(self, status_text):
         self._widget.message_textedit.append(status_text)
     
@@ -128,17 +133,18 @@ class MyPlugin(Plugin):
 
     def arm_status_display(self, arm_status):
         if arm_status == False:
-            text_to_display = 'DISARMED'
+            self.text_to_display = 'DISARMED'
         else:
-            text_to_display = 'ARMED'
-        self._widget.arming_textedit.setText(str(text_to_display))
-
-    # def despatcher_message(self,data):
-    #     return 0
+            self.text_to_display = 'ARMED'
+        self._widget.arming_textedit.setText(str(self.text_to_display))
 
     def arming (self):
+        if self.text_to_display == 'DISARMED':
+            self.arming.publish('ARM')
+        elif self.text_to_display == 'ARMED':
+            self.arming.publish('DISARM')
+            print('Now disarm it')
         print('arming successful')
-        
     def transfer_control (self):
         print ('transfer control successful')
     def mode_manual (self):
@@ -151,14 +157,9 @@ class MyPlugin(Plugin):
         print ('checked mission')
     def armingbox(self):
         print ('successful!')
-
     
     def shutdown_plugin(self):
-        # TODO find a working shutdown mechanism, now it is 
-        # working but shows error that widget does not have
-        # shutdown all property
-        ChecklistWindow.ok_clicked(ChecklistWindow)
-        self._widget.shutdown_all()
+        self.ChecklistWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -174,7 +175,6 @@ class MyPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-
    
 class Communicate (QObject):
     # technically, all the signals that has the same input, such as string

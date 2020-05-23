@@ -15,9 +15,11 @@ class ChecklistWindow(QWidget):
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
         self.move(200,100)
+        
         # absolute path for the default BPO and BTO checklist
         self.BPO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BPO_checklist.csv')
         self.BTO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BTO_checklist.csv')
+        
         # create the layout
         self.layout = QVBoxLayout(self)
         self.buttons_layout = QHBoxLayout(self)
@@ -25,6 +27,7 @@ class ChecklistWindow(QWidget):
         
         # create the widgets
         self.create_widget()
+        self.has_message_opened = 0
 
         # add the widgets into the layouts
         self.layout.addLayout(self.tree_widget_layout)
@@ -48,7 +51,6 @@ class ChecklistWindow(QWidget):
         self.setLayout(self.layout)
 
     def create_tree(self):
-        print('create tree is called again')
         # set up the main tree widget
         self.tree_widget = QTreeWidget()
         self.tree_widget.setColumnCount(2)
@@ -115,7 +117,6 @@ class ChecklistWindow(QWidget):
             self.dialog_window("Some items in the checklist are still unchecked", "Do you still want to continue?", True)
         else:
             self.close()
-        
 
     def cancel_clicked(self):
         if self.BPO_header.checkState(0) != 0 or self.BTO_header.checkState(0) != 0:
@@ -152,8 +153,8 @@ class ChecklistWindow(QWidget):
         self.load_button.deleteLater()
     
     def dialog_window(self, message, detail, check):
-        print('show dialog is present')
         self.message = QMessageBox()
+        self.has_message_opened = 1
         self.message.setIcon(QMessageBox.Warning)
         self.message.setText(message)
         self.message.setInformativeText(detail)
@@ -180,3 +181,8 @@ class ChecklistWindow(QWidget):
         else:
             self.message.close()
 
+    def shutdown(self):
+        self.close()
+        if self.has_message_opened == 1:
+            print('message is visible')
+            self.message.close()
