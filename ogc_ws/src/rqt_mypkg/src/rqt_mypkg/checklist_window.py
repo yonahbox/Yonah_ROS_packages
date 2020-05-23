@@ -1,5 +1,7 @@
 # TODO streamline the import files and only include those that are really needed
 import csv
+import os
+import rospkg
 from confirmation_window import ConfirmationWindow
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QLabel
@@ -16,9 +18,15 @@ class ChecklistWindow(QWidget):
         self.resize(500, 700)
         self.move(200,100)
         
-        # absolute path for the default BPO and BTO checklist
-        self.BPO_checklist = self.excel_parser('/home/dani/Yonah_ROS_packages/ogc_ws/src/rqt_mypkg/src/rqt_mypkg/BPO_checklist.csv')
-        self.BTO_checklist = self.excel_parser('/home/dani/Yonah_ROS_packages/ogc_ws/src/rqt_mypkg/src/rqt_mypkg/BTO_checklist.csv')
+        # relative path for the default BPO and BTO checklist
+        BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')
+        BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BTO_checklist.csv')
+        try:
+            self.BPO_checklist = self.excel_parser(BPO_checklist_file)
+            self.BTO_checklist = self.excel_parser(BTO_checklist_file)
+        except:
+            print("\033[91m ERROR: Checklist files are missing or named wrongly. Please follow the original directory and naming")
+            exit()
         
         # create the layout
         self.layout = QVBoxLayout(self)
