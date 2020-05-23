@@ -17,8 +17,8 @@ class ChecklistWindow(QWidget):
         self.move(200,100)
         
         # absolute path for the default BPO and BTO checklist
-        self.BPO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BPO_checklist.csv')
-        self.BTO_checklist = self.excel_parser('/home/dani/catkin_ws/src/rqt_mypkg/src/rqt_mypkg/BTO_checklist.csv')
+        self.BPO_checklist = self.excel_parser('/home/dani/Yonah_ROS_packages/ogc_ws/src/rqt_mypkg/src/rqt_mypkg/BPO_checklist.csv')
+        self.BTO_checklist = self.excel_parser('/home/dani/Yonah_ROS_packages/ogc_ws/src/rqt_mypkg/src/rqt_mypkg/BTO_checklist.csv')
         
         # create the layout
         self.layout = QVBoxLayout(self)
@@ -184,5 +184,4 @@ class ChecklistWindow(QWidget):
     def shutdown(self):
         self.close()
         if self.has_message_opened == 1:
-            print('message is visible')
             self.message.close()
