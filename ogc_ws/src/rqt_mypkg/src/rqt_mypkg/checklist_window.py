@@ -7,7 +7,7 @@ from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QC
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
 from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-from my_module import MyPlugin
+#from my_module import MyPlugin
 
 class ChecklistWindow(QWidget):
     def __init__(self):
@@ -173,7 +173,7 @@ class ChecklistWindow(QWidget):
     def message_action(self, i):
         if i.text() == '&Yes':
             self.close()
-            # MyPlugin.status_text_display('Checklist has been uploaded')
+            #MyPlugin.status_text_display('Checklist has been uploaded')
         else:
             self.message.close()
     
