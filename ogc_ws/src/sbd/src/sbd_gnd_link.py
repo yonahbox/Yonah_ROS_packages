@@ -87,7 +87,7 @@ class satcommsgnd(satcomms):
             struct_cmd = "> s H H H H H H H H H H H" # Note: First decoded character will be in bytes format
             return str(struct.unpack(struct_cmd, response))
         else:
-            return response
+            return response.decode()
     
     def __server_send_msg(self, data):
         '''Post MT msg to the Rock 7 server'''

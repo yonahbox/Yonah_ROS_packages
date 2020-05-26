@@ -41,7 +41,7 @@ class satcomms(rockBlockProtocol):
         self._interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         self._buffer = "" # MO msg buffer
         self._buffer_write_time = datetime.datetime.now()
-        self._thr_server = False # True = Comm through web server; False = Comm through gnd Rockblock
+        self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
 
         # Rockblock Comms
         self._own_serial = rospy.get_param("~own_serial", "12345")

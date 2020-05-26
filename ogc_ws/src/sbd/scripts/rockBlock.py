@@ -543,9 +543,8 @@ class rockBlock(object):
 
         else:
             # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
-            rospy.logdebug(response)
-            content = response.strip().decode()
-            rospy.logdebug(content) # To-do: We have troubles decoding some of the msgs
+            # Encoded response is suffixed with \r\n and two pad bytes
+            content = response.strip()[:-2].decode()
             if content.startswith("RB00" + str(self.own_serial)):
                 # Remove Rockblock to Rockblock prefix if needed
                 content = content[9:]
