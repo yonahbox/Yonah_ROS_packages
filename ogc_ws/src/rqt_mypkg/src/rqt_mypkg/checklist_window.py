@@ -2,14 +2,12 @@
 import csv
 import os
 import rospkg
-from confirmation_window import ConfirmationWindow
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QLabel
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
 from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-
-
+from my_module import MyPlugin
 
 class ChecklistWindow(QWidget):
     def __init__(self):
@@ -17,7 +15,6 @@ class ChecklistWindow(QWidget):
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
         self.move(200,100)
-        
         # relative path for the default BPO and BTO checklist
         BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')
         BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BTO_checklist.csv')
@@ -43,7 +40,6 @@ class ChecklistWindow(QWidget):
         
     def create_widget(self):
         self.create_tree()
-        
         # declare buttons and connect each of them to a function
         self.load_button = QPushButton('Load')
         self.ok_button = QPushButton('OK')
@@ -177,6 +173,7 @@ class ChecklistWindow(QWidget):
     def message_action(self, i):
         if i.text() == '&Yes':
             self.close()
+            # MyPlugin.status_text_display('Checklist has been uploaded')
         else:
             self.message.close()
     

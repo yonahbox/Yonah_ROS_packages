@@ -52,6 +52,7 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
         self.ChecklistWindow = ChecklistWindow()
+        self.checklist_opened = 0
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
         self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
@@ -70,8 +71,10 @@ class MyPlugin(Plugin):
         #rospy.Subscriber('ogc/from_despatcher/regular', RegularPayload, self.despatcher_message)
 
         # Publisher List
-        self.arming_publisher = rospy.Publisher('sendarming', String, queue_size = 5)
-        #rospy.init_node('arming_command', anonymous=False)
+        self.arming_publisher = rospy.Publisher('send_arming', String, queue_size = 5)
+        self.transfer_control_publisher = rospy.Publisher('transfer_control', String, queue_size = 5)
+        self.mode_publisher = rospy.Publisher('mode_change', String, queue_size = 5)
+        self.mission_publisher = rospy.Publisher('load_mission', String, queue_size = 5)
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
 
@@ -126,7 +129,6 @@ class MyPlugin(Plugin):
 
     def waypoint_total_display(self, total, sequence):
         total = len(total) - 1
-        
         self._widget.progressBar.setRange(0,total)
         self._widget.progressBar.setValue(sequence)
         self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
@@ -139,12 +141,15 @@ class MyPlugin(Plugin):
         self._widget.arming_textedit.setText(str(self.text_to_display))
 
     def arming (self):
-        if self.text_to_display == 'DISARMED':
-            self.arming.publish('ARM')
-        elif self.text_to_display == 'ARMED':
-            self.arming.publish('DISARM')
-            print('Now disarm it')
-        print('arming successful')
+        print(self.checklist_opened)
+        self.arming_publisher.publish('ARM')
+        self.status_text_display('Arming message sent')
+        # if self.text_to_display == 'DISARMED':
+        #     self.arming.publish('ARM')
+        # elif self.text_to_display == 'ARMED':
+        #     self.arming.publish('DISARM')
+        #     print('Now disarm it')
+
     def transfer_control (self):
         print ('transfer control successful')
     def mode_manual (self):
