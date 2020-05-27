@@ -118,6 +118,7 @@ class satcomms(rockBlockProtocol):
         self._count = self._count + 1
         mailchk_time = datetime.datetime.now()
         # If buffer starts with "R ", it is a regular payload
+        # To-do: Integrate this check with regular.py and make it more robust
         mo_is_regular = False
         if self._buffer.startswith("R "):
             mo_is_regular = True

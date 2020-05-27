@@ -44,6 +44,8 @@ import rospy
 
 import serial
 
+import regular
+
 class rockBlockProtocol(object):
     
     def rockBlockConnected(self):pass
@@ -84,12 +86,14 @@ class rockBlock(object):
 
         self.mo_msg = "" # MO msg
         self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
+        self.own_serial = own_serial # Own Rockblock serial no
         
-        # Three-bytes of our own Rockblock serial number
-        self.own_serial = own_serial
-        self.serial_0 = (own_serial >> 16) & 0xFF
+        # Init steps related to packing and unpacking of binary regular payload
+        self.serial_0 = (own_serial >> 16) & 0xFF # Three bytes of own serial number (for MT msg)
         self.serial_1 = (own_serial >> 8) & 0xFF
         self.serial_2 = own_serial & 0xFF
+        self.rb_pre, self.rb_pre_len = self._packBinaryPrefix() # Pack the Rockblock binary prefix first
+        self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -284,6 +288,21 @@ class rockBlock(object):
     
         
     #Private Methods - Don't call these directly!
+    def _packBinaryPrefix(self):
+        '''
+        Binary-compress the prefix required to send msg to another Rockblock
+        Returns the compressed prefix and length of the compressed prefix
+        '''
+        pre_1 = (b'RB',)
+        s1 = struct.Struct('2s')
+        packed_1 = s1.pack(*pre_1)
+        pre_2 = (self.client_serial,)
+        s2 = struct.Struct('> I')
+        packed_2 = s2.pack(*pre_2)
+        # Rock Seven insists that serial no is packed into 3 bytes, big endian. So remove one byte
+        return packed_1 + packed_2[1:], s1.size + s2.size - 1
+
+
     def _queueMessage(self, thr_server, mo_is_regular):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
@@ -294,28 +313,23 @@ class rockBlock(object):
         msglen = 0
 
         # If communicating through gnd Rockblock, prepare client Rockblock prefix
-        # To-do: Do this only once during initialization
         if not thr_server:
-            # Pack in binary if regular payload, else pack in plaintext
             if mo_is_regular:
-                pre_1 = (b'RB',)
-                s1 = struct.Struct('2s')
-                packed_1 = s1.pack(*pre_1)
-                pre_2 = (self.client_serial,)
-                s2 = struct.Struct('> I')
-                packed_2 = s2.pack(*pre_2)
-                msg = packed_1 + packed_2[1:] # Rock Seven insists that serial no is packed into 3 bytes, big endian
-                msglen = s1.size + s2.size - 1 # -1 because serial number truncated to 3 bytes, not 4
+                # For regular payload: RB prefix already compressed for us during initialization
+                msg = self.rb_pre
+                msglen = self.rb_pre_len
             else:
                 msg = "RB00" + str(self.client_serial)
         
         if mo_is_regular:
             # Pack regular payload
-            li = self.mo_msg.split(" ")
-            li = [li[0].encode(),] + list(map(int, li[1:])) # Convert all str to int (except prefix)
-            struct_cmd = "> s H H H H H H H H H H H" # Standardize all to same endianess
-            s3 = struct.Struct(struct_cmd)
-            msg = msg + s3.pack(*li)
+            li = regular.convert_regular_payload(self.mo_msg)
+            s3 = struct.Struct(regular.struct_cmd)
+            if len(msg) == 0:
+                # msg is empty string if Rockblock prefix was previously not added
+                msg = s3.pack(*li)
+            else:
+                msg = msg + s3.pack(*li)
             msglen = msglen + s3.size
         else:
             msg = msg + self.mo_msg
@@ -476,7 +490,7 @@ class rockBlock(object):
         '''Ensure valid network time and sufficient signal strength'''
         self._ensureConnectionStatus()
 
-        TIME_ATTEMPTS = 20
+        TIME_ATTEMPTS = 5
         TIME_DELAY = 1
        
         SIGNAL_ATTEMPTS = 5
@@ -527,16 +541,14 @@ class rockBlock(object):
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
 
-        if response[0] == ord('R') and response[1] == ord('B')\
+        if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
         and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
             # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
             response = response[5:]
-            struct_cmd = "> s H H H H H H H H H H H"
-            reg_len = 23
-            while len(response) < reg_len:
+            while len(response) < self.reg_len:
                 # Keep reading until entire regular payload collected
                 response = response + self.s.readline()
-            content = str(struct.unpack(struct_cmd, response))
+            content = str(struct.unpack(regular.struct_cmd, response))
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, content)
                 self.s.readline() # OK

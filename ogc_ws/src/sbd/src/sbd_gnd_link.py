@@ -32,6 +32,7 @@ from std_msgs.msg import String
 
 # Local
 from sbd_air_link import satcomms
+from regular import struct_cmd
 
 class satcommsgnd(satcomms):
 
@@ -78,15 +79,21 @@ class satcommsgnd(satcomms):
     def __server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
+        if len(response) > 4 and response[0] == ord('R')and response[1] == ord('B') and \
+        response[2] == self.__serial_1 and response[3] == self.__serial_2 and response[4] == self.__serial_3:
+            # Sometimes, msgs sent to another Rockblock also end up in the web server
+            # Hence, strip Rockblock 2 Rockblock prefix if present
+            response = response[5:]
         if response[0] == ord('R'):
-            # Unpack if it is binary-compressed regular payload
-            if response[1] == ord('B') and response[2] == self.__serial_1\
-                and response[3] == self.__serial_2 and response[4] == self.__serial_3:
-                # Strip Rockblock 2 Rockblock prefix if present
-                response = response[5:]
-            struct_cmd = "> s H H H H H H H H H H H" # Note: First decoded character will be in bytes format
+            # Check if msg is a binary-compressed regular payload
+            # Note: First decoded character will be in bytes format
             return str(struct.unpack(struct_cmd, response))
         else:
+            # Everything else is non-regular-payload in ASCII form
+            if response.startswith("RB00" + str(self._client_serial)):
+                # Strip Rockblock 2 Rockblock prefix if present
+                response = response[9:]
+            # To-do: Catch decode exceptions (e.g. accidental or malicious errors)
             return response.decode()
     
     def __server_send_msg(self, data):
