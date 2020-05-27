@@ -3,70 +3,20 @@
 import rospy
 from std_msgs.msg import String
 from mavros_msgs.msg import StatusText
+from statustext.msg import YonahStatusText
 
-typetable = {
-	0 : "Throttle", 
-	1 : "Mission", 
-	2 : "Waypoint", 
-	3 : "Transition", 
-	4 : "Land", 
-	5 : "Prearm", 
-	6 : "", 
-	7 : "", 
-	8 : "", 
-	9 : "", 
 
-}
-
-navcommandtable = {
-	16 : "Waypoint", 
-	17 : "Loiter Unlimited", 
-	18 : "Loiter Turns", 
-	19 : "Loiter Time", 
-	20 : "Return to Launch", 
-	21 : "Land", 
-	22 : "Takeoff", 
-	30 : "Continue Change Alt", 
-	31 : "Loiter to Alt", 
-	83 : "Altitude Wait", 
-	84 : "VTOL Takeoff", 
-	85 : "VTOL Land", 
-	112 : "Delay", 
-	113 : "Distance", 
-	176 : "Set Mode", 
-	177 : "Jump", 
-	178 : "Change Speed", 
-	179 : "Set Home", 
-	181 : "Set Relay", 
-	182 : "Repeat Relay", 
-	183 : "Set Servo", 
-	184 : "Repeat Servo", 
-	189 : "Land Start", 
-	200 : "Control Video", 
-	201 : "Set ROI", 
-	202 : "Digicam Configure", 
-	205 : "Mount Control", 
-	206 : "Set Cam Trigger Distance", 
-	207 : "Fence Enable", 
-	208 : "Parachute", 
-	210 : "Inverted Flight", 
-	212 : "Autotune Enable", 
-	223 : "Engine Control", 
-	3000 : "VTOL Transition", 
-}
-
-class Handler:
+class StatusTextHandler:
 
 	def __init__(self):
-		self.msg = ""
-		self.prefix = ""
-		rospy.init_node('statustext', anonymous=True)
-		rospy.Subscriber("/mavros/statustext/recv/", StatusText, self.callback)
-		rospy.spin()
-
+		rospy.init_node('air_statustext', anonymous=False)
+		self.pub = rospy.Publisher('ogc/statustext', YonahStatusText, queue_size=5)
+				
 	def callback(self, data):
+		# Information
+		self.details = 0
 		if data.severity >= 6:
-			self.prefix = "I"
+			self.prefix = 2
 			if data.text.startswith("Throttle"):
 				self.type = 0
 				self.throttletext(data.text)
@@ -86,55 +36,83 @@ class Handler:
 			elif data.text.startswith("Land"):
 				self.type = 4
 				self.landtext(data.text)
+		
+		# Warning
 		elif data.severity >= 4:
-			self.prefix = "W"
+			self.prefix = 1
 			# print(data.text)
+		
+		# Emergency
 		else:
-			self.prefix = "E"
+			self.prefix = 0
 			if data.text.startswith("PreArm"):
 				self.type = 5
 				print("Cannot arm at the moment")
 			else:
 				print("This is emergency " + str(data.text))
 
+    ############
+    # Handling #
+    ############	
+
 	def throttletext(self,text):
-		self.throttlestatus = text.split()[1]
-		print("Throttle " + str(self.throttlestatus))
+		text.split()[1]
+		if text.split()[1] == "armed":
+			self.status = 1
+		elif text.split()[1] == "disarmed":
+			self.status = 0
+		self.publishtext()
 
 	def missiontext(self, text):
-		self.currentmission = int(text.split()[-1][1:])
-		print("Current mission: " + navcommandtable.get(self.currentmission))
-		
+		self.status = int(text.split()[-1][1:])
+		self.publishtext()
+				
 	# Plane 4.0
 	# def missiontext4(self, text):
-	# 	For plane 4.0
 	# 	self.missionitem = text.split()[1]
 	# 	self.missiondefine = text.split()[2]
 	# 	print("Starting mission item " + str(self.missionitem) + ": " + str(self.missiondefine))
 		
 	def waypointtext(self, text):
-		print("Reached waypoint " + str(text.split()[2][1:]))
+		self.status = int(text.split()[2][1:])
+		self.details = int(text.split()[4][:-1])
+		self.publishtext()
 
 	def transitiontext(self, text):
 		if len(text) > 15:
-			self.transitionspeed = text.split()[3]
-			print("Transitioning speed " + self.transitionspeed + "m/s")
+			self.status = 1
+			self.details = round(float(text.split()[3]),2)
 		else:
-			print("Transition done")
+			self.status = 0
+		self.publishtext()
 
 	def landtext(self,text):
 		if text.split()[1] == "descend":
-			print("Land descend started")
+			self.status = 2
 		elif text.split()[1] == "final":
-			print("Land final started")
+			self.status = 1
 		else:
-			print("Land complete")
+			self.status = 0
+		self.publishtext()
+
+	def publishtext(self):
+		yonahtext = YonahStatusText()
+		yonahtext.prefix = self.prefix
+		yonahtext.type = self.type
+		yonahtext.status = self.status
+		yonahtext.details = self.details
+		self.pub.publish(yonahtext)
+
+	def main(self):
+		rospy.Subscriber("/mavros/statustext/recv/", StatusText, self.callback)
+		rospy.spin()
 
 
 if __name__ == '__main__':
 	
 	try:
-		statustexthandler = Handler()
+		statustexthandler = StatusTextHandler()
+		statustexthandler.main()
 
 	except rospy.ROSInterruptException:
 		pass
