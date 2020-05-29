@@ -29,7 +29,6 @@ from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
 from mavros_msgs.msg import WaypointReached
-from mavros_msgs.msg import StatusText
 from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
 from mavros_msgs.srv import CommandBool
@@ -51,7 +50,6 @@ class airdespatcher():
         self.msg = "" # Stores outgoing msg Air-to-Ground message
         self.recv_msg = "" # Stores incoming Ground-to-Air message
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
-        self.statustext_flag = False # Whether we should send status texts to Ground Control
         self.interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
         self.interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
         self.sms_interval = self.interval_2 # Interval (seconds) for regular payload over sms
@@ -114,14 +112,6 @@ class airdespatcher():
         else:
             self.entries["vtol"] = 0
 
-    def get_status_text(self, data):
-        '''Obtain status text messages from mavros/statustext/recv)'''
-        self.ping_entries["msg"] = data.text
-        # Send new status texts to Ground Control
-        if self.statustext_flag == True:
-            self.msg = self.ping_entries["msg"]
-            self.sendmsg()
-
     def get_vibration_status(self, data):
         '''Obtain vibration data from mavros/vibration/raw/vibration'''
         bad_vibes = 30 # Vibrations above this level (m/s/s) are considered bad
@@ -154,8 +144,6 @@ class airdespatcher():
                 self.check_ping()
             elif "sms" in self.recv_msg:
                 self.check_sms()
-            elif "statustext" in self.recv_msg:
-                self.check_statustext()
             elif "arm" in self.recv_msg:
                 self.check_arming()
             elif "mode" in self.recv_msg:
@@ -194,17 +182,6 @@ class airdespatcher():
         self.msg = self.ack + self.recv_msg
         self.sendmsg()
 
-    def check_statustext(self):
-        '''Check for statustext commands from Ground Control'''
-        if self.recv_msg == "statustext true":
-            self.statustext_flag = True
-        elif self.recv_msg == "statustext false":
-            self.statustext_flag = False
-        else:
-            return
-        self.msg = self.ack + self.recv_msg
-        self.sendmsg()
-    
     def check_arming(self):
         """Check for Arm/Disarm commands from Ground Control"""
         arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
@@ -303,7 +280,6 @@ class airdespatcher():
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
-        rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
