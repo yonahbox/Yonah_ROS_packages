@@ -36,18 +36,29 @@ class StatusTextHandler:
 			elif data.text.startswith("Land"):
 				self.type = 4
 				self.landtext(data.text)
+			elif data.text.startswith("Baro") or data.text.endswith("barometer"):
+				self.type = 5
+				self.barotext(data.text)
+			elif data.text.startswith("GPS"):
+				self.type = 6
+				self.GPStext(data.text)
 		
 		# Warning
 		elif data.severity >= 4:
 			self.prefix = 1
-			# print(data.text)
+			if data.text.startswith("VTOL") or data.text.endswith("mode"):
+				self.type = 7
+				self.VTOLtext(data.text)
 		
 		# Emergency
 		else:
 			self.prefix = 0
 			if data.text.startswith("PreArm"):
-				self.type = 5
-				print("Cannot arm at the moment")
+				self.type = 8
+				self.status = 0
+			elif data.text.startswith("Mag"):
+				self.type = 9
+				self.status = 0
 			else:
 				print("This is emergency " + str(data.text))
 
@@ -79,19 +90,47 @@ class StatusTextHandler:
 		self.publishtext()
 
 	def transitiontext(self, text):
-		if len(text) > 15:
+		if text.split()[-1] == "wait":
+			self.status = 2
+		elif len(text) > 15:
 			self.status = 1
 			self.details = round(float(text.split()[3]),2)
 		else:
 			self.status = 0
 		self.publishtext()
 
-	def landtext(self,text):
+	def landtext(self, text):
 		if text.split()[1] == "descend":
 			self.status = 2
 		elif text.split()[1] == "final":
 			self.status = 1
 		else:
+			self.status = 0
+		self.publishtext()
+
+	def barotext(self, text):
+		if text.split()[0] == "Calibrating":
+			self.status = 2
+		elif text.split()[1] == "skipping":
+			self.status = 1
+		elif text.split()[-1] == "complete":
+			self.status = 0
+		self.publishtext()
+
+	def GPStext(self, text):
+		if text.split()[3] == "not":
+			self.status = 0
+			self.details = text.split()[1][:-1]
+		self.publishtext()
+
+	def VTOLtext(self, text):
+		if text == "VTOL not available":
+			self.status = 3
+		elif text == "VTOL transition only in AUTO":
+			self.status = 2
+		elif text.startswith("Entered"):
+			self.status = 1
+		elif text.startswith("Exited"):
 			self.status = 0
 		self.publishtext()
 
