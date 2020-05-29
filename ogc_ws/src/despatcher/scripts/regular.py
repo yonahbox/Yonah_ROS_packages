@@ -52,19 +52,19 @@ def get_compressed_len():
                 ("Forbidden value " + i + " in struct cmd. Allowed values: s, B, b, H, h, I, i")
     return size
 
-def convert_regular_payload(mo_msg):
+def convert_to_list(mo_msg):
     '''Convert regular payload msg from string to list for easy struct packing'''
     li = mo_msg.split()
     return [li[0].encode(),] + list(map(int, li[1:])) # Convert all str to int (except prefix)
 
-def is_regular_payload(entries):
+def is_regular(entries):
     '''Check if entries (msg converted to list) is regular payload, return True if it is'''
     global no_of_entries
     if len(entries) == no_of_entries and entries[0] == 'r':
         return True
     return False
 
-def interpret_gnd_regular_payload(entries):
+def convert_to_rosmsg(entries):
     '''Transform entries (msg converted to list) into a RegularPayload ros msg'''
     rosmsg = RegularPayload()
     rosmsg.header.frame_id = entries[0]

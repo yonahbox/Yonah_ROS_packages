@@ -62,8 +62,9 @@ class gnddespatcher():
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         entries = data.data.split()
-        if regular.is_regular_payload(entries):
-            msg = regular.interpret_gnd_regular_payload(entries)
+        if regular.is_regular(entries):
+            # Check if it is regular payload
+            msg = regular.convert_to_rosmsg(entries)
             self.pub_to_rqt_regular.publish(msg)
         else:
             self.pub_to_rqt_ondemand.publish(data.data)

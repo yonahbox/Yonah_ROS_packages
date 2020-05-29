@@ -323,7 +323,7 @@ class rockBlock(object):
         
         if mo_is_regular:
             # Pack regular payload
-            li = regular.convert_regular_payload(self.mo_msg)
+            li = regular.convert_to_list(self.mo_msg)
             s3 = struct.Struct(regular.struct_cmd)
             if len(msg) == 0:
                 # msg is empty string if Rockblock prefix was previously not added
