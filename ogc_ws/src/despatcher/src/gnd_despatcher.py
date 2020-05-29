@@ -27,7 +27,8 @@ import rospy
 from despatcher.msg import RegularPayload
 from std_msgs.msg import String
 
-REGULAR_PAYLOAD_LEN = 9
+# Local
+import regular
 
 class gnddespatcher():
 
@@ -38,7 +39,6 @@ class gnddespatcher():
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
-        self.msg = "" # Stores incoming Air-to-Ground message
         self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
     ###########################################
@@ -61,35 +61,12 @@ class gnddespatcher():
 
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
-        self.msg = data.data
-        if not self.handle_regular_payload():
-            self.handle_ondemand_payload()
-
-    def handle_regular_payload(self):
-        '''Check if incoming message is a regular payload, and handle it accordingly'''
-        global REGULAR_PAYLOAD_LEN
-        entries = self.msg.split()
-        # Check if incoming message is of the regular payload format
-        if not len(entries) == REGULAR_PAYLOAD_LEN:
-            return False
-        # Decode regular payload
-        msg = RegularPayload()
-        msg.airspeed = float(entries[0])
-        msg.alt = float(entries[1])
-        msg.armed = bool(entries[2])
-        msg.groundspeed = float(entries[3])
-        msg.lat = float(entries[4])
-        msg.lon = float(entries[5])
-        msg.throttle = float(entries[6])
-        msg.vtol = bool(entries[7])
-        msg.wp = int(entries[8])
-        self.pub_to_rqt_regular.publish(msg)
-        return True
-
-    def handle_ondemand_payload(self):
-        '''Publish on-demand and miscellaneous messages to be displayed on rqt's console'''
-        # To-do: Add some checking mechanism. Right now, all incoming msgs are strings with no fixed format
-        self.pub_to_rqt_ondemand.publish(self.msg)
+        entries = data.data.split()
+        if regular.is_regular_payload(entries):
+            msg = regular.interpret_gnd_regular_payload(entries)
+            self.pub_to_rqt_regular.publish(msg)
+        else:
+            self.pub_to_rqt_ondemand.publish(data.data)
     
     ############################
     # "Main" function

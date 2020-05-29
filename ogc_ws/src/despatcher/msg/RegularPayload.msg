@@ -1,13 +1,19 @@
 # Message content of a regular payload
 
+# Header includes the timestamp and msg prefix type (under frame ID)
 std_msgs/Header header
 
-float32 airspeed
-float32 alt
+# Prefix
+bool is_aircraft
+uint8 vehicle_no
+
+# Data
+uint8 airspeed
+uint16 alt
 bool armed
-float32 groundspeed
+uint16 groundspeed
 float32 lat
 float32 lon
 float32 throttle
 bool vtol
-int16 wp
+uint8 wp

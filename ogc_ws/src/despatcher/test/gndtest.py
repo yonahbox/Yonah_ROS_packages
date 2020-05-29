@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Standard Library
 import subprocess
+from datetime import datetime
 
 # ROS/Third-Party
 import rospy
@@ -31,6 +32,10 @@ pub_to_despatcher = rospy.Publisher('ogc/to_despatcher', String, queue_size=5)
 
 def display_regular_payload(data):
     '''Receive input from ogc/from_despatcher topic and print it to terminal'''
+    if data.is_aircraft:
+        rospy.loginfo("Msg from Aircraft " + str(data.vehicle_no))
+    else:
+        rospy.loginfo("Msg from GCS " + str(data.vehicle_no))
     rospy.loginfo("Airspeed: " + str(data.airspeed))
     rospy.loginfo("Altitude: " + str(data.alt))
     rospy.loginfo("Armed: " + str(data.armed))
@@ -39,6 +44,7 @@ def display_regular_payload(data):
     rospy.loginfo("Throttle: " + str(data.throttle))
     rospy.loginfo("VTOL Status: " + str(data.vtol))
     rospy.loginfo("WP Reached: " + str(data.wp))
+    rospy.loginfo("Transmit Time: " + str(datetime.fromtimestamp(data.header.stamp.secs)))
 
 def display_ondemand_payload(data):
     '''Receive input from ogc/from_despatcher topic and print it to terminal'''
