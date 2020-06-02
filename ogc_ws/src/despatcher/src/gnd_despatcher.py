@@ -63,8 +63,8 @@ class gnddespatcher():
             #msg = self.severity + " " + str(self.is_air) + " " + str(self.id) + \
             #    " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
-            self.pub_to_sms.publish(msg)
-            self.pub_to_sbd.publish(msg)
+            self.pub_to_sms.publish(data.data)
+            self.pub_to_sbd.publish(data.data)
     
     ###########################################
     # Handle Air-to-Ground (A2G) messages
