@@ -21,12 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from despatcher.msg import RegularPayload
 
-# The regular payload should comprise only of short integers/characters
-# with the exception of the first (R msg prefix) and last (Unix timestamp)
-# Everything is standardized to big endian to keep in line with Rock 7's requirements
-struct_cmd = "> s H H H H H H H H H H H H H I"
-no_of_entries = len(struct_cmd.split()[1:])
-
 class RegularPayloadException(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -34,6 +28,16 @@ class RegularPayloadException(Exception):
 
     def __str__(self):
         return self.msg
+
+########################################
+# Packing/Unpacking of regular payload
+########################################
+
+# The regular payload should comprise only of short integers/characters
+# with the exception of the first (R msg prefix) and last (Unix timestamp)
+# Everything is standardized to big endian to keep in line with Rock 7's requirements
+struct_cmd = "> s H H H H H H H H H H H H H I"
+no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
     '''Return length of compressed regular payload based on struct_cmd'''
@@ -56,6 +60,10 @@ def convert_to_list(mo_msg):
     '''Convert regular payload msg from string to list for easy struct packing'''
     li = mo_msg.split()
     return [li[0].encode(),] + list(map(int, li[1:])) # Convert all str to int (except prefix)
+
+########################################
+# Gnd despatcher
+########################################
 
 def is_regular(entries):
     '''Check if entries (msg converted to list) is regular payload, return True if it is'''
@@ -81,3 +89,65 @@ def convert_to_rosmsg(entries):
     rosmsg.wp = int(entries[13])
     rosmsg.header.stamp.secs = int(entries[14])
     return rosmsg
+
+########################################
+# air despatcher
+########################################
+
+class air_payload():
+
+    def __init__(self):
+        self.entries = dict()
+        self.ping_entries = {
+            "vibe": (0.0, 0.0, 0.0),
+            "clipping": (0,0,0)
+        }
+
+    def get_mode_and_arm_status(self, data):
+        '''Obtain mode and arm status from mavros/state'''
+        self.entries["arm"] = int(data.armed)
+        self.ping_entries["mode"] = data.mode
+    
+    def get_VFR_HUD_data(self, data):
+        '''Obtain VFR_HUD data from mavros/vfr_hud'''
+        self.entries["airspeed"] = int(data.airspeed)
+        self.entries["groundspeed"] = int(data.groundspeed)
+        self.entries["throttle"] = int(data.throttle*10)
+        self.entries["alt"] = int(data.altitude)
+
+    def get_GPS_coord(self, data):
+        '''Obtain GPS latitude and longitude from mavros/global_position/global'''
+        # See https://en.wikipedia.org/wiki/Decimal_degrees for degree of precision of lat/lon
+        self.entries["lat1"] = int(data.latitude)
+        self.entries["lat2"] = int(10000*(data.latitude - self.entries["lat1"]))
+        self.entries["lon1"] = int(data.longitude)
+        self.entries["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
+
+    def get_wp_reached(self, data):
+        '''Obtain information on which waypoint has been reached'''
+        self.entries["wp"] = data.wp_seq
+
+    def get_VTOL_mode(self, data):
+        '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''
+        if data.channels[4] > 1200 or data.channels[5] > 1200 or data.channels[6] > 1200\
+            or data.channels[7] > 1200:
+            self.entries["vtol"] = 1
+        else:
+            self.entries["vtol"] = 0
+    
+    def get_vibe_status(self, data):
+        '''Obtain vibration data from mavros/vibration/raw/vibration'''
+        self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
+            round(data.vibration.z, 2))
+        self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
+    
+    def truncate_regular_payload(self):
+        '''Remove unnecessary characters from regular payload'''
+        msg = str(sorted(self.entries.items())) # Sort entries and convert to string
+        bad_char = ",[]()'"
+        for i in bad_char:
+            msg = msg.replace(i,"") # Remove unnecessary characters
+        for k in self.entries.keys():
+            k = k + " "
+            msg = msg.replace(k,"") # Remove entry descriptions
+        return msg
