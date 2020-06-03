@@ -36,7 +36,8 @@ class RegularPayloadException(Exception):
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements
-struct_cmd = "> s H H H H H H H H H H H H H I"
+# Example payload: r 1 1 30 226 1 30 2 2315 102 6857 4 0 0 1591089280
+struct_cmd = "> s B B B H B B B H B H B H B I"
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -60,6 +61,16 @@ def convert_to_list(mo_msg):
     '''Convert regular payload msg from string to list for easy struct packing'''
     li = mo_msg.split()
     return [li[0].encode(),] + list(map(int, li[1:])) # Convert all str to int (except prefix)
+
+def convert_to_str(mo_msg):
+    '''Convert regular payload msg from list to string after struct unpacking, to standardize with other links'''
+    # Example: (b'r', 1, 1, 0, 226, 0, 0, 2, 2315, 102, 6857, 0, 0, 0, 1591159898)
+    string = str(mo_msg)
+    string = string.replace('b\'r\'', 'r', 1) # The 'r' msg prefix is still byte encoded
+    bad_char = ",()"
+    for i in bad_char:
+        string = string.replace(i,"") # Remove unnecessary characters
+    return string
 
 ########################################
 # Gnd despatcher
@@ -97,7 +108,19 @@ def convert_to_rosmsg(entries):
 class air_payload():
 
     def __init__(self):
-        self.entries = dict()
+        self.entries = {
+            "airspeed": 0,
+            "alt": 0,
+            "arm": 0,
+            "groundspeed": 0,
+            "lat1": 0,
+            "lat2": 0,
+            "lon1": 0,
+            "lon2": 0,
+            "throttle": 0,
+            "wp": 0,
+            "vtol": 0
+        }
         self.ping_entries = {
             "vibe": (0.0, 0.0, 0.0),
             "clipping": (0,0,0)

@@ -19,9 +19,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-# Standard Library
-import datetime
-
 # ROS/Third-Party
 import rospy
 from std_msgs.msg import String
@@ -40,7 +37,7 @@ class satcomms(rockBlockProtocol):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
         self._interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         self._buffer = "" # MO msg buffer
-        self._buffer_write_time = datetime.datetime.now()
+        self._buffer_write_time = rospy.get_rostime().secs
         self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
 
         # Rockblock Comms
@@ -110,17 +107,17 @@ class satcomms(rockBlockProtocol):
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
         self._buffer = data.data
-        self._buffer_write_time = datetime.datetime.now()
+        self._buffer_write_time = rospy.get_rostime().secs
     
     def _sbd_check_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
         # If no MO msg, buffer will be empty
         self._count = self._count + 1
-        mailchk_time = datetime.datetime.now()
-        # If buffer starts with "R ", it is a regular payload
+        mailchk_time = rospy.get_rostime().secs
+        # If buffer starts with "r ", it is a regular payload
         # To-do: Integrate this check with regular.py and make it more robust
         mo_is_regular = False
-        if self._buffer.startswith("R "):
+        if self._buffer.startswith("r "):
             mo_is_regular = True
         self._sbdsession.messageCheck(self._buffer, self._thr_server, mo_is_regular)
         # Clear buffer if no new MO msgs were received after sending the previous MO msg

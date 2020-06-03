@@ -32,7 +32,7 @@ from std_msgs.msg import String
 
 # Local
 from sbd_air_link import satcomms
-from regular import struct_cmd
+from regular import struct_cmd, convert_to_str
 
 class satcommsgnd(satcomms):
 
@@ -68,7 +68,7 @@ class satcommsgnd(satcomms):
     
     def __server_is_new_msg(self, transmit_time):
         '''See if MO msg from server is a new message'''
-        # Convert string to datetime
+        # To-do: Standardize this to use the UNIX timestamp + rospy time
         new_time = datetime.datetime.strptime(transmit_time, "%y-%m-%d %H:%M:%S")
         # Msg is new if its transmit time is later than last recorded transmit time
         if new_time > self.__prev_time:
@@ -84,10 +84,9 @@ class satcommsgnd(satcomms):
             # Sometimes, msgs sent to another Rockblock also end up in the web server
             # Hence, strip Rockblock 2 Rockblock prefix if present
             response = response[5:]
-        if response[0] == ord('R'):
-            # Check if msg is a binary-compressed regular payload
-            # Note: First decoded character will be in bytes format
-            return str(struct.unpack(struct_cmd, response))
+        if response[0] == ord('r'):
+            # If msg is binary compressed regular payload, unpack it accordingly
+            return convert_to_str(struct.unpack(struct_cmd, response))
         else:
             # Everything else is non-regular-payload in ASCII form
             if response.startswith("RB00" + str(self._client_serial)):

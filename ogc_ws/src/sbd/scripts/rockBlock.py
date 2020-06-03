@@ -490,7 +490,7 @@ class rockBlock(object):
         '''Ensure valid network time and sufficient signal strength'''
         self._ensureConnectionStatus()
 
-        TIME_ATTEMPTS = 5
+        TIME_ATTEMPTS = 20
         TIME_DELAY = 1
        
         SIGNAL_ATTEMPTS = 5
@@ -548,10 +548,16 @@ class rockBlock(object):
             while len(response) < self.reg_len:
                 # Keep reading until entire regular payload collected
                 response = response + self.s.readline()
-            content = str(struct.unpack(regular.struct_cmd, response))
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, content)
-                self.s.readline() # OK
+            try:
+                # Encoded response is suffixed with \r\n and two pad bytes
+                response = response.strip()[:-2]
+                content = str(struct.unpack(regular.struct_cmd, response))
+                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                    self.callback.rockBlockRxReceived(mtMsn, regular.convert_to_str(content))
+                    self.s.readline() # OK
+            except struct.error:
+                rospy.logwarn("Error when unpacking binary msg: ")
+                rospy.logwarn(response)
 
         else:
             # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
