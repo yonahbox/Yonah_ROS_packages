@@ -5,6 +5,12 @@ from std_msgs.msg import String
 from mavros_msgs.msg import StatusText
 from statustext.msg import YonahStatusText
 
+prefixtable = {
+	"i" : "[INFO]", 
+	"w" : "[WARNING]", 
+	"e" : "[ERROR]", 
+}
+
 texttable = {
 	# Throttle
 	0 : {
@@ -96,24 +102,24 @@ class StatusTextGround:
 
 	def __init__(self):
 		rospy.init_node('gnd_statustext', anonymous=False)
-		self.pub = rospy.Publisher('ogc/statustext_decoded', String, queue_size=5)
+		self.pub = rospy.Publisher('ogc/yonahtext', String, queue_size=5)
 		self.message = ""
 
 	def callback(self, data):
 		try: 
 			if data.type == 1:
-				print("Executing " + texttable[data.type][data.status])
+				self.pub.publish(prefixtable[data.prefix] + " Executing " + texttable[data.type][data.status])
 			elif data.type == 2:
-				print("Reached waypoint " + str(data.status) + " dist " + str(data.details))
+				self.pub.publish(prefixtable[data.prefix] + " Reached waypoint " + str(data.status) + " dist " + str("%.0f" % data.details))
 			elif data.type == 3 and data.status == 1:
-				print(texttable[data.type][data.status] + str(data.detils))
+				self.pub.publish(prefixtable[data.prefix] + " " + texttable[data.type][data.status] + str("%.1f" % data.details))
 			else:
-				print(texttable[data.type][data.status])
+				self.pub.publish(prefixtable[data.prefix] + " " + texttable[data.type][data.status])
 		except KeyError:
-			print("Unknown command")
+			self.pub.publish("Unknown statustext")
 
 	def main(self):
-		rospy.Subscriber("ogc/statustext", YonahStatusText, self.callback)
+		rospy.Subscriber("ogc/from_despatcher/statustext", YonahStatusText, self.callback)
 		rospy.spin()
 
 if __name__ == '__main__':

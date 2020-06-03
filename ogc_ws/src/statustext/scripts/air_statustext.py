@@ -16,7 +16,7 @@ class StatusTextHandler:
 		# Information
 		self.details = 0
 		if data.severity >= 6:
-			self.prefix = 2
+			self.prefix = "i"
 			if data.text.startswith("Throttle"):
 				self.type = 0
 				self.throttletext(data.text)
@@ -45,22 +45,22 @@ class StatusTextHandler:
 		
 		# Warning
 		elif data.severity >= 4:
-			self.prefix = 1
+			self.prefix = "w"
 			if data.text.startswith("VTOL") or data.text.endswith("mode"):
 				self.type = 7
 				self.VTOLtext(data.text)
 		
-		# Emergency
+		# Error
 		else:
-			self.prefix = 0
+			self.prefix = "e"
 			if data.text.startswith("PreArm"):
 				self.type = 8
 				self.status = 0
+				self.publishtext()
 			elif data.text.startswith("Mag"):
 				self.type = 9
 				self.status = 0
-			else:
-				print("This is emergency " + str(data.text))
+				self.publishtext()
 
     ############
     # Handling #
@@ -70,9 +70,10 @@ class StatusTextHandler:
 		text.split()[1]
 		if text.split()[1] == "armed":
 			self.status = 1
+			self.publishtext()
 		elif text.split()[1] == "disarmed":
 			self.status = 0
-		self.publishtext()
+			self.publishtext()
 
 	def missiontext(self, text):
 		self.status = int(text.split()[-1][1:])
@@ -92,47 +93,57 @@ class StatusTextHandler:
 	def transitiontext(self, text):
 		if text.split()[-1] == "wait":
 			self.status = 2
-		elif len(text) > 15:
+			self.publishtext()
+		elif text.startswith("Transition airspeed reached"):
 			self.status = 1
-			self.details = round(float(text.split()[3]),2)
-		else:
+			self.details = round(float(text.split()[3]), 1)
+			self.publishtext()
+		elif text == "Transition done":
 			self.status = 0
-		self.publishtext()
+			self.publishtext()
 
 	def landtext(self, text):
 		if text.split()[1] == "descend":
 			self.status = 2
+			self.publishtext()
 		elif text.split()[1] == "final":
 			self.status = 1
+			self.publishtext()
 		else:
 			self.status = 0
-		self.publishtext()
+			self.publishtext()
 
 	def barotext(self, text):
 		if text.split()[0] == "Calibrating":
 			self.status = 2
+			self.publishtext()
 		elif text.split()[1] == "skipping":
 			self.status = 1
+			self.publishtext()
 		elif text.split()[-1] == "complete":
 			self.status = 0
-		self.publishtext()
+			self.publishtext()
 
 	def GPStext(self, text):
 		if text.split()[3] == "not":
+			print(text)
 			self.status = 0
 			self.details = text.split()[1][:-1]
-		self.publishtext()
+			self.publishtext()
 
 	def VTOLtext(self, text):
 		if text == "VTOL not available":
 			self.status = 3
+			self.publishtext()
 		elif text == "VTOL transition only in AUTO":
 			self.status = 2
+			self.publishtext()
 		elif text.startswith("Entered"):
 			self.status = 1
+			self.publishtext()
 		elif text.startswith("Exited"):
 			self.status = 0
-		self.publishtext()
+			self.publishtext()
 
 	def publishtext(self):
 		yonahtext = YonahStatusText()
