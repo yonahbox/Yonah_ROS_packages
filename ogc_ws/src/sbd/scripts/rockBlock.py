@@ -69,7 +69,12 @@ class rockBlockProtocol(object):
     def rockBlockTxBlankMsg(self):pass
     
 class rockBlockException(Exception):
-    pass
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(self.msg)
+
+    def __str__(self):
+        return self.msg
     
 class rockBlock(object):
     
@@ -105,9 +110,9 @@ class rockBlock(object):
                         self.callback.rockBlockConnected()
                         return
             self.close()
-            raise rockBlockException()
+            raise rockBlockException("Error when initializing Rockblock")
         except (Exception):
-            raise rockBlockException
+            raise rockBlockException("Error when initializing Rockblock")
         
     
     def ping(self):
@@ -126,7 +131,7 @@ class rockBlock(object):
         self._ensureConnectionStatus()
         self.s.timeout = 5
         if(self.ping() == False):
-            raise rockBlockException
+            raise rockBlockException("Unable to ping Rockblock")
         self.s.timeout = 60
             
     
@@ -512,6 +517,8 @@ class rockBlock(object):
         #Wait for acceptable signal strength (strength of 2 and above considered acceptable)
         while True:
             signal = self.requestSignalStrength()
+            if signal < 0:
+                raise rockBlockException("Signal read error; the pySerial readline order may have messed up!")
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
                     rospy.logwarn("Low signal: " + str(signal))
@@ -541,34 +548,45 @@ class rockBlock(object):
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
 
-        if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
-        and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
-            # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
-            response = response[5:]
-            while len(response) < self.reg_len:
-                # Keep reading until entire regular payload collected
-                response = response + self.s.readline()
-            try:
+        try:
+            if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
+            and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
+                # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
+                # There should be 2nd check for msg prefix = 'r', but luckily for us, a RB + serial in binary compressed
+                # only occurs for binary compressed regular payloads! This saves on an additional check
+                response = response[5:]
+                while len(response) < self.reg_len:
+                    # Keep reading until entire regular payload collected
+                    response = response + self.s.readline()
                 # Encoded response is suffixed with \r\n and two pad bytes
                 response = response.strip()[:-2]
                 content = str(struct.unpack(regular.struct_cmd, response))
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                     self.callback.rockBlockRxReceived(mtMsn, regular.convert_to_str(content))
-                    self.s.readline() # OK
-            except struct.error:
-                rospy.logwarn("Error when unpacking binary msg: ")
-                rospy.logwarn(response)
-
-        else:
-            # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
-            # Encoded response is suffixed with \r\n and two pad bytes
-            content = response.strip()[:-2].decode()
-            if content.startswith("RB00" + str(self.own_serial)):
-                # Remove Rockblock to Rockblock prefix if needed
-                content = content[9:]
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
-                self.callback.rockBlockRxReceived(mtMsn, content)
-                self.s.readline() # OK
+            else:
+                # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
+                # Encoded response is suffixed with \r\n and two pad bytes
+                content = response.strip()[:-2].decode()
+                if content.startswith("RB00" + str(self.own_serial)):
+                    # Remove Rockblock to Rockblock prefix if needed
+                    content = content[9:]
+                if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+                    self.callback.rockBlockRxReceived(mtMsn, content)
+        except struct.error:
+            rospy.logerr("Error when unpacking binary msg")
+            rospy.logerr(response)
+        except IndexError:
+            rospy.logerr("Binary msg is too short")
+            rospy.logerr(response)
+        except UnicodeDecodeError:
+            rospy.logerr("Error in decoding msg")
+            rospy.logerr(response)
+        
+        while True:
+            # Exit when we see OK response, otherwise the serial readlines will go out of sync and
+            # affect future msg checks
+            if self.s.readline() == b'OK\r\n':
+                break
                 
     
     def _isNetworkTimeValid(self):
@@ -604,4 +622,4 @@ class rockBlock(object):
     def _ensureConnectionStatus(self):
         '''Make sure that the serial connection to Rockblock is open'''
         if(self.s == None or self.s.isOpen() == False):
-            raise rockBlockException()
+            raise rockBlockException("Serial connection is down")

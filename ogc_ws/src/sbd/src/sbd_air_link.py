@@ -25,7 +25,7 @@ from std_msgs.msg import String
 
 # Local
 import rockBlock
-from rockBlock import rockBlockProtocol
+from rockBlock import rockBlockProtocol, rockBlockException
 
 class satcomms(rockBlockProtocol):
 
@@ -44,8 +44,11 @@ class satcomms(rockBlockProtocol):
         self._own_serial = rospy.get_param("~own_serial", "12345")
         self._client_serial = rospy.get_param("~client_serial", "12345") # Rockblock serial no of client
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
-        self._sbdsession = rockBlock.rockBlock(self._portID, self, self._own_serial, self._client_serial)
         self._count = 0 # Mailbox check counter
+        try:
+            self._sbdsession = rockBlock.rockBlock(self._portID, self, self._own_serial, self._client_serial)
+        except rockBlockException:
+            rospy.signal_shutdown("rockBlock error")
 
     ################################
     # pyrockBlock callback functions
@@ -119,7 +122,11 @@ class satcomms(rockBlockProtocol):
         mo_is_regular = False
         if self._buffer.startswith("r "):
             mo_is_regular = True
-        self._sbdsession.messageCheck(self._buffer, self._thr_server, mo_is_regular)
+        try:
+            self._sbdsession.messageCheck(self._buffer, self._thr_server, mo_is_regular)
+        except rockBlockException:
+            # Restart the node if error occurs
+            rospy.signal_shutdown("rockBlock error")
         # Clear buffer if no new MO msgs were received after sending the previous MO msg
         if self._buffer_write_time < mailchk_time:
             self._buffer = ""
