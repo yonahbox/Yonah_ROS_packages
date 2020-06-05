@@ -42,11 +42,11 @@ class gnddespatcher():
         self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
         # Temp params for msg headers
+        # To-do: Work on air/gnd identifiers whitelist file
         self.is_air = 1 # 1 if aircraft, 0 if GCS
         self.id = 1 # ID number
-        self.severity = "I" # Msg severity level
-        # To-do: Also need a param to compare with transmit time of incoming msg
-        # To-do: Work on air/gnd identifiers whitelist file
+        self.severity = "i" # Msg severity level
+        self.prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -70,9 +70,23 @@ class gnddespatcher():
     # Handle Air-to-Ground (A2G) messages
     ###########################################
 
+    def is_new_msg(self, timestamp):
+        '''Return true is incoming msg is a new msg'''
+        if timestamp < self.prev_transmit_time:
+            return False
+        else:
+            self.prev_transmit_time = timestamp
+            return True
+    
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         entries = data.data.split()
+        try:
+            if not self.is_new_msg(int(entries[-1])):
+                return
+        except ValueError:
+            rospy.logerr("Msg doesn't have UNIX timestamp!")
+            return
         if regular.is_regular(entries):
             # Check if it is regular payload
             msg = regular.convert_to_rosmsg(entries)
