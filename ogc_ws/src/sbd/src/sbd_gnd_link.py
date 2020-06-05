@@ -89,7 +89,7 @@ class satcommsgnd(satcomms):
             return convert_to_str(struct.unpack(struct_cmd, response))
         else:
             # Everything else is non-regular-payload in ASCII form
-            if response.startswith("RB00" + str(self._client_serial)):
+            if response.startswith(("RB00" + str(self._client_serial)).encode()):
                 # Strip Rockblock 2 Rockblock prefix if present
                 response = response[9:]
             # To-do: Catch decode exceptions (e.g. accidental or malicious errors)

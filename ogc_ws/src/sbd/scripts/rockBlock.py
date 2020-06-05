@@ -547,6 +547,8 @@ class rockBlock(object):
             rospy.logwarn("No message content... strange!")
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
+            # Return early. Otherwise it will hit the last while statement and enter an infinite loop
+            return
 
         try:
             if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
