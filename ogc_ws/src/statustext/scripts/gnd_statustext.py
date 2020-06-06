@@ -106,20 +106,25 @@ class StatusTextGround:
 		self.message = ""
 
 	def callback(self, data):
+		self.prefix = data.data.split(".", 1)[0][0]
+		self.type = int(data.data.split(".", 1)[0][1])
+		self.status = int(data.data.split(".", 1)[0][2:])
+		self.details = data.data.split(".", 1)[1]
+
 		try: 
-			if data.type == 1:
-				self.pub.publish(prefixtable[data.prefix] + " Executing " + texttable[data.type][data.status])
-			elif data.type == 2:
-				self.pub.publish(prefixtable[data.prefix] + " Reached waypoint " + str(data.status) + " dist " + str("%.0f" % data.details))
-			elif data.type == 3 and data.status == 1:
-				self.pub.publish(prefixtable[data.prefix] + " " + texttable[data.type][data.status] + str("%.1f" % data.details))
+			if self.type == 1:
+				self.pub.publish(prefixtable[self.prefix] + " Executing " + texttable[self.type][self.status])
+			elif self.type == 2:
+				self.pub.publish(prefixtable[self.prefix] + " Reached waypoint " + str(self.status) + " dist " + str("%.0f" % float(self.details)))
+			elif self.type == 3 and self.status == 1:
+				self.pub.publish(prefixtable[self.prefix] + " " + texttable[self.type][self.status] + str(self.details))
 			else:
-				self.pub.publish(prefixtable[data.prefix] + " " + texttable[data.type][data.status])
+				self.pub.publish(prefixtable[self.prefix] + " " + texttable[self.type][self.status])
 		except KeyError:
 			self.pub.publish("Unknown statustext")
 
 	def main(self):
-		rospy.Subscriber("ogc/from_despatcher/statustext", YonahStatusText, self.callback)
+		rospy.Subscriber("ogc/from_despatcher/statustext", String, self.callback)
 		rospy.spin()
 
 if __name__ == '__main__':
