@@ -204,6 +204,8 @@ class airdespatcher():
                 self._check_ping()
             elif "sms" in self._recv_msg:
                 self._check_sms()
+            elif "statustext" in self._recv_msg:
+                self._check_statustext()
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
                 self._check_arming()
             elif "mode" in self._recv_msg:
