@@ -34,6 +34,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
+from statustext.msg import YonahStatusText
 
 # Local
 from regular import air_payload
@@ -54,6 +55,7 @@ class airdespatcher():
         self._msg = "" # Stores outgoing msg Air-to-Ground message
         self._recv_msg = list() # Stores incoming Ground-to-Air message in list form
         self._regular_payload_flag = False # Whether we should send regular payload to Ground Control
+        self._statustext_flag = False # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
 
         # Temp params for aircraft/gnd identifiers and prefix
@@ -119,6 +121,19 @@ class airdespatcher():
                 self._sms_interval = self._interval_1
             elif self._recv_msg[1] == "long": # Send regular payloads at long intervals
                 self._sms_interval = self._interval_2
+            else:
+                return
+        else:
+            return
+        self._send_ack()
+
+    def _check_statustext(self):
+        '''Check for statustext commands from Ground Control'''
+        if len(self._recv_msg) == 2 and self._recv_msg[0] == "statustext":
+            if self._recv_msg[1] == "true":
+                self._statustext_flag = True
+            elif self._recv_msg[1] == "false":
+                self._statustext_flag = False
             else:
                 return
         else:
@@ -247,6 +262,15 @@ class airdespatcher():
         # Add more special alert checks here
         # To-do: Better msg prefix system
     
+    def get_status_text(self, data):
+        '''Obtain status text messages from ogc/statustext'''
+        statustextmsg = str(data.prefix) + str(data.type) + str(data.status) + "." + str(round(data.details, 1))
+        self.payloads.ping_entries["msg"] = statustextmsg
+        # Send new status texts to Ground Control
+        if self._statustext_flag:
+            self._msg = statustextmsg
+            self.sendmsg("s")
+    
     def send_regular_payload(self, data):
         if self._regular_payload_flag == False:
             return
@@ -269,6 +293,7 @@ class airdespatcher():
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.payloads.get_wp_reached)
+        rospy.Subscriber("ogc/statustext", YonahStatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.payloads.get_vibe_status)
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
