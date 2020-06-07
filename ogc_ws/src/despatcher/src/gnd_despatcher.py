@@ -40,7 +40,6 @@ class gnddespatcher():
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
-        self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
@@ -60,12 +59,11 @@ class gnddespatcher():
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             # Add msg headers
-            # To-do: Add decode msg on air despatcher side to strip out prefixes b4 interpreting msg
-            #msg = self.severity + " " + str(self.is_air) + " " + str(self.id) + \
-            #    " " + data.data + " " + str(rospy.get_rostime().secs)
+            msg = self.severity + " " + str(self.is_air) + " " + str(self.id) + \
+                " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
-            self.pub_to_sms.publish(data.data)
-            self.pub_to_sbd.publish(data.data)
+            self.pub_to_sms.publish(msg)
+            self.pub_to_sbd.publish(msg)
     
     ###########################################
     # Handle Air-to-Ground (A2G) messages
