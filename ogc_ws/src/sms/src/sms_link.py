@@ -36,32 +36,32 @@ class SMSrx():
 
     def __init__(self):
         rospy.init_node('sms_link', anonymous=False)
-        self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
-        self.whitelist = set() # set of whitelisted numbers
-        self.client_no = rospy.get_param("~client_phone_no", "12345678") # GCS phone number
-        self.msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
-        self.msg = "" # Actual incoming message, located on 5th line of msglist
+        self._router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
+        self._whitelist = set() # set of whitelisted numbers
+        self._client_no = rospy.get_param("~client_phone_no", "12345678") # GCS phone number
+        self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
+        self._msg = "" # Actual incoming message, located on 5th line of msglist
         self.interval = 0.5 # Time interval between each check of the router for incoming msgs
 
         # Initialize publisher to despatcher nodes
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
         
         # Security and safety measures
-        self.populatewhitelist()
-        self.purge_residual_sms()
+        self._populatewhitelist()
+        self._purge_residual_sms()
 
-    def populatewhitelist(self):
+    def _populatewhitelist(self):
         """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
         textfile = rospy.get_param("~whitelist", "whitelist.txt")
         with open (textfile, "r") as reader:
             for line in reader:
                 if line[-1] == "\n":
-                    self.whitelist.add(line[:-1]) # remove whitespace at end of line
+                    self._whitelist.add(line[:-1]) # remove whitespace at end of line
                 else:
-                    self.whitelist.add(line) # last line
-        rospy.loginfo(self.whitelist)
+                    self._whitelist.add(line) # last line
+        rospy.loginfo(self._whitelist)
 
-    def purge_residual_sms(self):
+    def _purge_residual_sms(self):
         """
         Clear the router of SMSes (capped at 30 for the RUT955) on bootup. This prevents the situation
         where an SMS is received when the air router was off, and is acted upon the moment the router
@@ -72,7 +72,7 @@ class SMSrx():
         rospy.loginfo("Purging residual SMS, please wait...")
         while count <= 30:
             try:
-                RuTOS.delete_msg(self.router_hostname, count)
+                RuTOS.delete_msg(self._router_hostname, count)
                 count += 1
             except:
                 continue
@@ -88,7 +88,7 @@ class SMSrx():
         '''
         rospy.loginfo("Sending SMS: " + data.data)
         try:
-            sendstatus = RuTOS.send_msg(self.router_hostname, self.client_no, data.data)
+            sendstatus = RuTOS.send_msg(self._router_hostname, self._client_no, data.data)
             if sendstatus == "Timeout":
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         except(subprocess.CalledProcessError):
@@ -98,23 +98,23 @@ class SMSrx():
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
         try:
             # Read an SMS received by the air router
-            msglist_raw = RuTOS.extract_msg(self.router_hostname, 1)
-            self.msglist = msglist_raw.decode().splitlines()
-            if 'no message' in self.msglist:
+            msglist_raw = RuTOS.extract_msg(self._router_hostname, 1)
+            self._msglist = msglist_raw.decode().splitlines()
+            if 'no message' in self._msglist:
                 pass
             else:
                 # extract sender number (2nd word of 3rd line in msglist)
-                sender = self.msglist[2].split()[1]
+                sender = self._msglist[2].split()[1]
                 # Ensure sender is whitelisted before extracting message
-                if sender in self.whitelist:
+                if sender in self._whitelist:
                     rospy.loginfo('Command from '+ sender)
                     # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
-                    self.msg = (self.msglist[4].split(' ', 1)[1]).lower()
+                    self._msg = (self._msglist[4].split(' ', 1)[1]).lower()
                     # Forward msg to air_despatcher
-                    self.pub_to_despatcher.publish(self.msg)
+                    self.pub_to_despatcher.publish(self._msg)
                 else:
                     rospy.logwarn('Rejected msg from unknown sender ' + sender)
-                RuTOS.delete_msg(self.router_hostname, 1) # Delete the existing SMS
+                RuTOS.delete_msg(self._router_hostname, 1) # Delete the existing SMS
         except(subprocess.CalledProcessError):
             rospy.logwarn("SSH process into router has been killed.")
     

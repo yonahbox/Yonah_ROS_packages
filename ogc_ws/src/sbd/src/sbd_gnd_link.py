@@ -42,45 +42,44 @@ class satcommsgnd(satcomms):
     
     def __init__(self):
         rospy.init_node('sbd_gnd_link', anonymous=False)
-        self.__server_url = "" # Our web server url
-        self.__prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
-        self.__mt_cred = dict() # Credentials required to post MT data to Rock 7 server
-        self.__cred_file = rospy.get_param("~credentials") # Text file containing credentials
+        self._server_url = "" # Our web server url
+        self._prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
+        self._mt_cred = dict() # Credentials required to post MT data to Rock 7 server
+        self._cred_file = rospy.get_param("~credentials") # Text file containing credentials
 
-        self.__get_credentials()
+        self._get_credentials()
         self._init_variables()
-        self.__serial_1 = (self._own_serial >> 16) & 0xFF
-        self.__serial_2 = (self._own_serial >> 8) & 0xFF
-        self.__serial_3 = self._own_serial & 0xFF
+        self._serial_1 = (self._own_serial >> 16) & 0xFF
+        self._serial_2 = (self._own_serial >> 8) & 0xFF
+        self._serial_3 = self._own_serial & 0xFF
 
-    def __get_credentials(self):
+    def _get_credentials(self):
         '''Obtain Rock 7's required credentials from login.txt file'''
         # IMEI will be replaced with a list of IMEIs when we scale up to multiple aircraft
-        with open(self.__cred_file, 'r') as fp:
-            self.__server_url = fp.readline().replace('\n','') # Our web server url
-            self.__mt_cred['imei'] = fp.readline().replace('\n','') # Client Rockblock IMEI
-            self.__mt_cred['username'] = fp.readline().replace('\n','') # Our Rock 7 username
-            self.__mt_cred['password'] = fp.readline().replace('\n','') # Our Rock 7 pw
+        with open(self._cred_file, 'r') as fp:
+            self._server_url = fp.readline().replace('\n','') # Our web server url
+            self._mt_cred['imei'] = fp.readline().replace('\n','') # Client Rockblock IMEI
+            self._mt_cred['username'] = fp.readline().replace('\n','') # Our Rock 7 username
+            self._mt_cred['password'] = fp.readline().replace('\n','') # Our Rock 7 pw
     
     ############################
     # Server Message handlers.
     ############################
     
-    def __server_is_new_msg(self, transmit_time):
+    def _server_is_new_msg(self, transmit_time):
         '''See if MO msg from server is a new message'''
-        # To-do: Standardize this to use the UNIX timestamp + rospy time
         new_time = datetime.datetime.strptime(transmit_time, "%y-%m-%d %H:%M:%S")
         # Msg is new if its transmit time is later than last recorded transmit time
-        if new_time > self.__prev_time:
-            self.__prev_time = new_time
+        if new_time > self._prev_time:
+            self._prev_time = new_time
             return True
         return False
     
-    def __server_decode_mo_msg(self, msg):
+    def _server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
         if len(response) > 4 and response[0] == ord('R')and response[1] == ord('B') and \
-        response[2] == self.__serial_1 and response[3] == self.__serial_2 and response[4] == self.__serial_3:
+        response[2] == self._serial_1 and response[3] == self._serial_2 and response[4] == self._serial_3:
             # Sometimes, msgs sent to another Rockblock also end up in the web server
             # Hence, strip Rockblock 2 Rockblock prefix if present
             response = response[5:]
@@ -95,25 +94,25 @@ class satcommsgnd(satcomms):
             # To-do: Catch decode exceptions (e.g. accidental or malicious errors)
             return response.decode()
     
-    def __server_send_msg(self, data):
+    def _server_send_msg(self, data):
         '''Post MT msg to the Rock 7 server'''
         url = 'https://core.rock7.com/rockblock/MT'
         # Message to Rock 7 needs to be hex encoded
         encoded_msg = data.data.encode()
-        self.__mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
-        reply = requests.post(url, data=self.__mt_cred)
+        self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
+        reply = requests.post(url, data=self._mt_cred)
         self._pub_to_despatcher.publish(reply.text)
 
-    def __server_recv_msg(self):
+    def _server_recv_msg(self):
         '''Extract MO msg from our web server'''
         values = {'pw':'testpw'} # We cannot use our account pw, because http is unencrypted...
         # Send HTTP post request to Rock 7 server, incoming msg (if any) stored in reply
-        reply_str = requests.post(self.__server_url, data=values).text
+        reply_str = requests.post(self._server_url, data=values).text
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
-            if reply['imei'] == self.__mt_cred['imei']: # ensure imei is valid
-                if self.__server_is_new_msg(reply['transmit_time']):
-                    self._pub_to_despatcher.publish(self.__server_decode_mo_msg(reply['data']))
+            if reply['imei'] == self._mt_cred['imei']: # ensure imei is valid
+                if self._server_is_new_msg(reply['transmit_time']):
+                    self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
             else:
                 rospy.logwarn("Received unknown msg from " + str(reply['imei']))
         except (ValueError):
@@ -126,16 +125,16 @@ class satcommsgnd(satcomms):
     def send_msg(self, data):
         '''Handle MO msgs'''
         if self._thr_server:
-            self.__server_send_msg(data)
+            self._server_send_msg(data)
         else:
-            self._sbd_get_mo_msg(data)
+            self.sbd_get_mo_msg(data)
     
     def recv_msg(self, data):
         '''Handle MT msgs'''
         if self._thr_server:
-            self.__server_recv_msg()
+            self._server_recv_msg()
         else:
-            self._sbd_check_mailbox("") # "" is placeholder for data variable
+            self.sbd_check_mailbox("") # "" is placeholder for data variable
 
     ############################
     # "Main" function
@@ -143,7 +142,7 @@ class satcommsgnd(satcomms):
     
     def client(self):
         rospy.Subscriber("ogc/to_sbd", String, self.send_msg)
-        message_handler = rospy.Timer(rospy.Duration(self._interval), self.recv_msg)
+        message_handler = rospy.Timer(rospy.Duration(self.interval), self.recv_msg)
         rospy.spin()
         message_handler.shutdown()
         self._sbdsession.close()

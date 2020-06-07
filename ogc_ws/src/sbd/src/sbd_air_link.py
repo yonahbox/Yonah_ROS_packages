@@ -35,10 +35,10 @@ class satcomms(rockBlockProtocol):
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
-        self._interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         self._buffer = "" # MO msg buffer
         self._buffer_write_time = rospy.get_rostime().secs
         self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
+        self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
 
         # Rockblock Comms
         self._own_serial = rospy.get_param("~own_serial", "12345")
@@ -104,7 +104,7 @@ class satcomms(rockBlockProtocol):
     # Rockblock MO/MT msg calls
     ############################
     
-    def _sbd_get_mo_msg(self, data):
+    def sbd_get_mo_msg(self, data):
         '''
         Get MO msg from to_sbd topic and put it in MO buffer
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
@@ -112,7 +112,7 @@ class satcomms(rockBlockProtocol):
         self._buffer = data.data
         self._buffer_write_time = rospy.get_rostime().secs
     
-    def _sbd_check_mailbox(self, data):
+    def sbd_check_mailbox(self, data):
         '''Initiate an SBD mailbox check'''
         # If no MO msg, buffer will be empty
         self._count = self._count + 1
@@ -136,8 +136,8 @@ class satcomms(rockBlockProtocol):
     ############################
     
     def air_client(self):
-        rospy.Subscriber("ogc/to_sbd", String, self._sbd_get_mo_msg)
-        message_handler = rospy.Timer(rospy.Duration(self._interval), self._sbd_check_mailbox)
+        rospy.Subscriber("ogc/to_sbd", String, self.sbd_get_mo_msg)
+        message_handler = rospy.Timer(rospy.Duration(self._interval), self.sbd_check_mailbox)
         rospy.spin()
         message_handler.shutdown()
         self._sbdsession.close()

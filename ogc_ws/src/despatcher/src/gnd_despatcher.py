@@ -43,10 +43,10 @@ class gnddespatcher():
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
-        self.is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self.id = 1 # ID number (outgoing msg)
-        self.severity = "i" # Outgoing msg severity level
-        self.prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
+        self._is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
+        self._id = 1 # ID number (outgoing msg)
+        self._severity = "i" # Outgoing msg severity level
+        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -59,7 +59,7 @@ class gnddespatcher():
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             # Add msg headers
-            msg = self.severity + " " + str(self.is_air) + " " + str(self.id) + \
+            msg = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
                 " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
             self.pub_to_sms.publish(msg)
@@ -69,15 +69,15 @@ class gnddespatcher():
     # Handle Air-to-Ground (A2G) messages
     ###########################################
 
-    def is_new_msg(self, timestamp):
+    def _is_new_msg(self, timestamp):
         '''Return true is incoming msg is a new msg'''
-        if timestamp < self.prev_transmit_time:
+        if timestamp < self._prev_transmit_time:
             return False
         else:
-            self.prev_transmit_time = timestamp
+            self._prev_transmit_time = timestamp
             return True
     
-    def check_sender_id(self, is_air, id):
+    def _check_sender_id(self, is_air, id):
         '''Check identity of the sender'''
         if not is_air:
             # We got no business with other GCS... yet
@@ -94,7 +94,7 @@ class gnddespatcher():
             sender_msgtype = str(entries[0])
             sender_is_air = int(entries[1])
             sender_id = int(entries[2])
-            if not self.is_new_msg(sender_timestamp) or not self.check_sender_id(sender_is_air, sender_id):
+            if not self._is_new_msg(sender_timestamp) or not self._check_sender_id(sender_is_air, sender_id):
                 # Check if it is new msg and is from valid sender
                 return
             if regular.is_regular(sender_msgtype, len(entries)):
