@@ -20,7 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
 # Standard Library
-import subprocess
 from datetime import datetime
 
 # ROS/Third-Party
@@ -50,6 +49,9 @@ def display_ondemand_payload(data):
     '''Receive input from ogc/from_despatcher topic and print it to terminal'''
     rospy.loginfo(str(data.data))
 
+def display_statustext(data):
+    rospy.loginfo("Statustext: " + str(data.data))
+
 def send_msgs(data):
     '''Send messages from user input (in terminal) to screen'''
     command = input()
@@ -59,6 +61,7 @@ def client():
     rospy.init_node('gnd_test', anonymous=False)
     rospy.Subscriber('ogc/from_despatcher/regular', RegularPayload, display_regular_payload)
     rospy.Subscriber('ogc/from_despatcher/ondemand', String, display_ondemand_payload)
+    rospy.Subscriber('ogc/from_despatcher/statustext', String, display_statustext)
     message_sender = rospy.Timer(rospy.Duration(0.5), send_msgs)
     rospy.spin()
     message_sender.shutdown()

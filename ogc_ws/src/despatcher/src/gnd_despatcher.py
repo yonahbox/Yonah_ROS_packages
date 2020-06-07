@@ -39,14 +39,15 @@ class gnddespatcher():
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
+        self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
-        self.is_air = 1 # 1 if aircraft, 0 if GCS
-        self.id = 1 # ID number
-        self.severity = "i" # Msg severity level
-        self.prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg
+        self.is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
+        self.id = 1 # ID number (outgoing msg)
+        self.severity = "i" # Outgoing msg severity level
+        self.prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -78,21 +79,38 @@ class gnddespatcher():
             self.prev_transmit_time = timestamp
             return True
     
+    def check_sender_id(self, is_air, id):
+        '''Check identity of the sender'''
+        if not is_air:
+            # We got no business with other GCS... yet
+            return False
+        # To-do: Add in checks for id (maybe a whitelist, compare the IMEI/phone numbers?)
+        return True
+    
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
-        entries = data.data.split()
         try:
-            if not self.is_new_msg(int(entries[-1])):
+            # Handle msg prefixes
+            entries = data.data.split()
+            sender_timestamp = int(entries[-1])
+            sender_msgtype = str(entries[0])
+            sender_is_air = int(entries[1])
+            sender_id = int(entries[2])
+            if not self.is_new_msg(sender_timestamp) or not self.check_sender_id(sender_is_air, sender_id):
+                # Check if it is new msg and is from valid sender
                 return
-        except ValueError:
-            rospy.logerr("Msg doesn't have UNIX timestamp!")
-            return
-        if regular.is_regular(entries):
-            # Check if it is regular payload
-            msg = regular.convert_to_rosmsg(entries)
-            self.pub_to_rqt_regular.publish(msg)
-        else:
-            self.pub_to_rqt_ondemand.publish(data.data)
+            if regular.is_regular(sender_msgtype, len(entries)):
+                # Check if it is regular payload
+                msg = regular.convert_to_rosmsg(entries)
+                self.pub_to_rqt_regular.publish(msg)
+            else:
+                if sender_msgtype == 's':
+                    # Check if it is statustext
+                    self.pub_to_statustext.publish(data.data)
+                else:
+                    self.pub_to_rqt_ondemand.publish(data.data)
+        except (ValueError, IndexError):
+            rospy.logerr("Invalid message format!")
     
     ############################
     # "Main" function

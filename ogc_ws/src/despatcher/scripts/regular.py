@@ -76,10 +76,13 @@ def convert_to_str(mo_msg):
 # Gnd despatcher
 ########################################
 
-def is_regular(entries):
-    '''Check if entries (msg converted to list) is regular payload, return True if it is'''
+def is_regular(sender_msgtype, entries_len):
+    '''
+    Check if msg is regular payload by checking the msg prefix (sender_msgtype) and number of entries within the msg
+    Return True if payload is a regular payload
+    '''
     global no_of_entries
-    if len(entries) == no_of_entries and entries[0] == 'r':
+    if entries_len == no_of_entries and sender_msgtype == 'r':
         return True
     return False
 
