@@ -137,7 +137,7 @@ class satcomms(rockBlockProtocol):
     
     def air_client(self):
         rospy.Subscriber("ogc/to_sbd", String, self.sbd_get_mo_msg)
-        message_handler = rospy.Timer(rospy.Duration(self._interval), self.sbd_check_mailbox)
+        message_handler = rospy.Timer(rospy.Duration(self.interval), self.sbd_check_mailbox)
         rospy.spin()
         message_handler.shutdown()
         self._sbdsession.close()
