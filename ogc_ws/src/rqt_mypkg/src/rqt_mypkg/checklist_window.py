@@ -38,6 +38,7 @@ class ChecklistWindow(QWidget):
         # add the widgets into the layouts
         self.layout.addLayout(self.tree_widget_layout)
         self.layout.addLayout(self.buttons_layout)
+        self.setLayout(self.layout)
         
     def create_widget(self):
         self.create_tree()
@@ -53,7 +54,6 @@ class ChecklistWindow(QWidget):
         self.buttons_layout.addWidget(self.cancel_button)
         self.buttons_layout.addWidget(self.ok_button)
         self.tree_widget_layout.addWidget(self.tree_widget)
-        self.setLayout(self.layout)
 
     def create_tree(self):
         # set up the main tree widget

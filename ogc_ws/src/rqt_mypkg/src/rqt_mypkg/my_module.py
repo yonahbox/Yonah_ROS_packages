@@ -40,6 +40,7 @@ class MyPlugin(Plugin):
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
         self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
+        self._widget.setWindowTitle('Yonah RQt')
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -47,10 +48,14 @@ class MyPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        self.scroll = QScrollArea()
         
+
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
         self.ControlWindow.show()
+        self.load_button = QPushButton('Load')
+        self._widget.verticalLayout.addWidget(self.load_button)
         self.checklist_opened = 0
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
@@ -170,6 +175,7 @@ class MyPlugin(Plugin):
     
     def shutdown_plugin(self):
         self.ChecklistWindow.shutdown()
+        self.ControlWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
