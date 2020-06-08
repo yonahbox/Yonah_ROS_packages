@@ -48,8 +48,10 @@ class gnddespatcher():
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
         whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp"]
         if data.data.split()[0] not in whitelisted_prefixes:
+            print('data is split if')
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
+            print('data is split else' )
             self.pub_to_sms.publish(data.data) # To-do: Add if-else statement to handle 3 links
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
     

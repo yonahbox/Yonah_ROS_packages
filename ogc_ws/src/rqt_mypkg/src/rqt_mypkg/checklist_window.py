@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # TODO streamline the import files and only include those that are really needed
 import csv
 import os
@@ -7,7 +8,7 @@ from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QC
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
 from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-#from my_module import MyPlugin
+import __main__
 
 class ChecklistWindow(QWidget):
     def __init__(self):
@@ -173,7 +174,7 @@ class ChecklistWindow(QWidget):
     def message_action(self, i):
         if i.text() == '&Yes':
             self.close()
-            #MyPlugin.status_text_display('Checklist has been uploaded')
+            # __main__.my_module.MyPlugin.status_text_display(__main__.my_module.MyPlugin, 'Checklist has been uploaded')
         else:
             self.message.close()
     
@@ -190,3 +191,4 @@ class ChecklistWindow(QWidget):
         self.close()
         if self.has_message_opened == 1:
             self.message.close()
+
