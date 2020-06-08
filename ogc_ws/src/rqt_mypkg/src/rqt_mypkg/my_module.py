@@ -9,7 +9,7 @@ import rostopic
 from std_msgs.msg import String
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
-from despatcher.msg import RegularPayload
+# from despatcher.msg import RegularPayload
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject
@@ -17,7 +17,7 @@ from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
 from python_qt_binding.QtSvg import QSvgGenerator
 from checklist_window import ChecklistWindow
-
+from control_window import ControlWindow
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
@@ -49,6 +49,8 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
         self.ChecklistWindow = ChecklistWindow()
+        self.ControlWindow = ControlWindow()
+        self.ControlWindow.show()
         self.checklist_opened = 0
         self._widget.arming_pushbutton.pressed.connect(self.arming)
         self._widget.control_pushbutton.pressed.connect(self.transfer_control)
@@ -60,7 +62,7 @@ class MyPlugin(Plugin):
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
-        rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
+        # rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber('ogc/from_despatcher/ondemand', String, self.ondemand)
         rospy.Subscriber("mavros/state", State, self.mode_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
@@ -188,7 +190,7 @@ class Communicate (QObject):
     # technically, all the signals that has the same input, such as string
     # can be combined into one variable. However, for clarity purpose,
     # I split each variable for each display we need to make
-    regular_paylaod_signal = Signal(RegularPayload)
+    # regular_paylaod_signal = Signal(RegularPayload)
     status_text_signal = Signal(str)
     arm_signal = Signal(bool)
     mode_signal = Signal(str)
