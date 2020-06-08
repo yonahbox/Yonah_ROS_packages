@@ -36,7 +36,6 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
-from statustext.msg import YonahStatusText
 
 class airdespatcher():
 
@@ -115,8 +114,7 @@ class airdespatcher():
 
     def get_status_text(self, data):
         '''Obtain status text messages from mavros/statustext/recv)'''
-        statustextmsg = str(str(data.prefix) + str(data.type) + str(data.status) + "." + str(round(data.details, 1)))
-        self.ping_entries["msg"] = statustextmsg
+        self.ping_entries["msg"] = data.text
         # Send new status texts to Ground Control
         if self.statustext_flag == True:
             self.msg = self.ping_entries["msg"]
@@ -298,8 +296,7 @@ class airdespatcher():
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.get_VTOL_mode)
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.get_wp_reached)
-        # rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
-        rospy.Subscriber("ogc/statustext", YonahStatusText, self.get_status_text)
+        rospy.Subscriber("mavros/statustext/recv", StatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.get_vibration_status)
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
