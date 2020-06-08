@@ -55,6 +55,7 @@ class airdespatcher():
         self.interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
         self.interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
         self.sms_interval = self.interval_2 # Interval (seconds) for regular payload over sms
+        self.tele_interval = self.interval_2 # Interval (seconds) for regular payload over telegram
         self.min_interval = 1 # Minimum allowable time interval (seconds) for regular payload
         self.ack = "ACK: " # Acknowledgement prefix
         self.entries = { # Dictionary to hold all regular payload entries
@@ -274,14 +275,16 @@ class airdespatcher():
     def send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
         self.pub_to_telegram.publish(self.msg)
-    
+        sleep(self.tele_interval) # Need to remove this after the merge
+
     def send_regular_payload(self, data):
         if self.regular_payload_flag == False:
             return
         '''Send regular payload over one of the three links: SMS, SBD or Telegram'''
         self.truncate_regular_payload()
-        #rospy.loginfo(self.msg)
         self.send_regular_payload_sms() # To-do: Replace with if-else statement
+        self.send_regular_payload_tele()
+
     
     def sendmsg(self):
         '''Send any msg that's not a regular payload'''
