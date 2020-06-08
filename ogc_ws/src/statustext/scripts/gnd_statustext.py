@@ -105,10 +105,11 @@ class StatusTextGround:
 		self.message = ""
 
 	def callback(self, data):
-		self.prefix = data.data.split(".", 1)[0][0]
-		self.type = int(data.data.split(".", 1)[0][1])
-		self.status = int(data.data.split(".", 1)[0][2:])
-		self.details = data.data.split(".", 1)[1]
+		pts, d = data.data.split(".", 1)
+		self.prefix = pts[0]
+		self.type = int(pts[1])
+		self.status = int(pts[2:])
+		self.details = d
 
 		try: 
 			if self.type == 1:
