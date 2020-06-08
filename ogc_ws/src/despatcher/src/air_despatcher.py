@@ -70,7 +70,7 @@ class airdespatcher():
         self._interval_1 = rospy.get_param("~_interval_1") # Short time interval (seconds) for regular payload
         self._interval_2 = rospy.get_param("~_interval_2") # Long time interval (seconds) for regular payload
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
-        self.tele_interval = self.interval_2 # Interval (seconds) for regular payload over telegram
+        self._tele_interval = self._interval_2 # Interval (seconds) for regular payload over telegram
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
@@ -244,7 +244,7 @@ class airdespatcher():
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
         self.pub_to_telegram.publish(self.msg)
-        sleep(self.tele_interval) # Need to remove this after the merge
+        rospy.sleep(self._tele_interval) # Need to remove this after the merge
     
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
