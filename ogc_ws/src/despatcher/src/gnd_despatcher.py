@@ -37,7 +37,6 @@ class gnddespatcher():
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
-        self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.msg = "" # Stores incoming Air-to-Ground message
         self.recv_msg = "" # Stores outgoing Ground-to-Air message
 
@@ -87,13 +86,8 @@ class gnddespatcher():
 
     def handle_ondemand_payload(self):
         '''Publish on-demand and miscellaneous messages to be displayed on rqt's console'''
-        # Check for s prefix (integrated in YH's branch)
-        self.pub_to_statustext.publish(self.msg)
         # To-do: Add some checking mechanism. Right now, all incoming msgs are strings with no fixed format
         self.pub_to_rqt_ondemand.publish(self.msg)
-
-    def handle_statustext(self):
-
     
     ############################
     # "Main" function
