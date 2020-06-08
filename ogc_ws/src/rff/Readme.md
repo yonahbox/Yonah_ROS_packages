@@ -4,7 +4,7 @@
 
 ### Files
 
-The `RFF` node is in the `scripts/` directory
+The `RFF` node is in the `src/` directory
 
 ## Working
 
