@@ -4,9 +4,13 @@
 **/build
 **/devel
 **/.catkin_workspace
+**/install
 
 # vscode files
 **/.vscode
+
+# rosbag files
+*.bag
 
 #SSH private key files (for obvious reasons)
 *.pem
