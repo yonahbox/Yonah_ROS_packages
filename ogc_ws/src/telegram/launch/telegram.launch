@@ -1,0 +1,31 @@
+<!-- 
+Copyright (C) 2020 Rumesh Sudhaharan
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+
+
+<launch>
+	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
+	<arg name="log_output" default="screen"/>
+	<arg name="monitored_chat" default="tele_link_grp" />
+	<!-- comma seperated list of command users-->
+	<arg name="command_whitelist" default="[Rumesh]" />
+
+	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="monitored_chat" value="$(arg monitored_chat)" />
+		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
+		<rosparam param="command_whitelist" subst_value="True">$(arg command_whitelist)</rosparam>
+	</node>
+</launch>

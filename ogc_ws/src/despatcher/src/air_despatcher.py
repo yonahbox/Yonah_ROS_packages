@@ -49,6 +49,7 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to telegram node      
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
 
         # Msg handlers
@@ -69,7 +70,8 @@ class airdespatcher():
         self._interval_1 = rospy.get_param("~_interval_1") # Short time interval (seconds) for regular payload
         self._interval_2 = rospy.get_param("~_interval_2") # Long time interval (seconds) for regular payload
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
-        
+        self.tele_interval = self.interval_2 # Interval (seconds) for regular payload over telegram
+
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
@@ -241,13 +243,15 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        pass
+        self.pub_to_telegram.publish(self.msg)
+        sleep(self.tele_interval) # Need to remove this after the merge
     
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
         self._attach_headers(severity)
         self.pub_to_sms.publish(self._msg) # To-do: Replace with if-else statement
         self.pub_to_sbd.publish(self._msg)
+        self.pub_to_telegram.publish(self.msg)
 
     def check_alerts(self, data):
         '''Check for special alerts'''
@@ -281,10 +285,11 @@ class airdespatcher():
         self._attach_headers("r")
         self._send_regular_payload_sms() # To-do: Replace with if-else statement
         self._send_regular_payload_sbd()
+        self._send_regular_payload_tele()
         # Sleep for the specified interval. Note that rospy.Timer
         # will not allow the time interval to go below min_interval
         rospy.sleep(self._sms_interval)
-    
+
     ############################
     # "Main" function
     ############################
