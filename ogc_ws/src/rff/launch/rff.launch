@@ -1,0 +1,12 @@
+<launch>
+	
+	<arg name="router_hostname" default="root@192.168.1.1"/>
+	<arg name="waypoint_folder" default="/home/ubuntu/Yonah_ROS_packages/Waypoints/"/>
+	<arg name="log_output" default="screen"/>
+
+	<node pkg="rff" name="rff" type="rff.py" output="$(arg log_output)">
+		<param name="router_hostname" value="$(arg router_hostname)"/>
+		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
+	</node>
+
+</launch>
