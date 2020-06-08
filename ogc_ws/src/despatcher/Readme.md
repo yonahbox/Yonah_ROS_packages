@@ -12,25 +12,7 @@ If you haven't done so already, clone this repository and check out onto the bra
 cd ogc_ws
 catkin_make
 ```
-
-Create the sms package, but first move out the existing despatcher folder (catkin will throw an error when it tries to create a package but the package folder already exists). After package creation, move everything in the original sms folder back into the newly created package:
-
-```
-cd src/
-mv despatcher ~/
-catkin_create_pkg despatcher std_msgs rospy
-mv ~/despatcher/* ./despatcher/
-rm -r ~/despatcher
-```
-
-After this step, the despatcher nodes, launchfiles, CMakelists.txt and package.xml should be in the package folder. Navigate back to the ogc workspace and rerun catkin_make:
-
-```
-cd ../
-catkin_make
-```
-
-Finally, source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
+Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
 
 ## Usage
 
@@ -61,6 +43,7 @@ Serves as the relay between mavros and the three telemetry links on the aircraft
 * `ogc/from_sms`: Topic through which air_despatcher receives incoming G2A messages from the sms_link node
 * `ogc/from_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/from_telegram`: Corresponding topic for Telegram Cellular Data link
+* `ogc/statustext`: Topic to receive condensed statustexts from Statustest Handler Node
 * `mavros/*`: Family of mavros topics which air_despatcher subscribes to in order to receive data from aircraft
 
 **Published Topics**
@@ -86,7 +69,8 @@ Serves as the relay between RQt GUI and the three telemetry links on the Ground 
 * `ogc/from_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/from_telegram`: Corresponding topic for Telegram Cellular Data link
 * `ogc/from_despatcher/regular`: Topic through which gnd_despatcher publishes regular payload messages to RQT
-* `ogc/from_despatcher/ondemand`: Topic through which gnd_despatcher publishes on-demand and miscellaneous messages to RQT
+* `ogc/from_despatcher/statustext`: Topic through which gnd despatcher publishes statustext messages to Statustext Handler Node
+* `ogc/from_despatcher/ondemand`: Topic through which gnd_despatcher publishes miscellaneous messages to RQT
 
 **Published Topics**
 
@@ -95,11 +79,6 @@ Serves as the relay between RQt GUI and the three telemetry links on the Ground 
 * `ogc/to_telegram`: Corresponding topic for Telegram Cellular Data linkic
 * `ogc/to_despatcher`: Topic through which gnd_despatcher receives G2A commands from RQT
 
-**Parameters**
-
-* `interval_1`: Short time interval between SMS regular payload
-* `interval_2`: Long time interval between SMS regular payload
-
 ## Msgs
 
 All custom ROS messages are located in the `msg` folder
@@ -107,6 +86,8 @@ All custom ROS messages are located in the `msg` folder
 **RegularPayload**: Stores the regular payload format for A2G message
 
 ## Message/Command formats
+
+To-do: Add details on message headers
 
 **Air-to-Ground messages/payloads**
 
@@ -122,14 +103,18 @@ Regular payload format:
 * Waypoint reached
 * VTOL status
 
+To-do: Add details on statustext and other msg types
+
 **Ground-to-Air commands**
 
 Available G2A commands:
 
+To-do: Change "sms" to a more generic name (to cater to all three links)
+
 * ping: Receive one-off messages (i.e. on-demand payloads)
     * "ping": Receive a one-off regular payload from the aircraft
     * "ping mode": Get an update on flight mode of aircraft
-    * "ping Statustext": Receive the latest status text from the aircraft
+    * "ping statustext": Receive the latest status text from the aircraft
 * sms: Handle regular payloads from the aircraft
     * "sms true": Request regular payloads (default to long intervals) from aircraft
     * "sms false*: Deactivate regular payload service

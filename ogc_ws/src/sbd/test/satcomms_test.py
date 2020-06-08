@@ -1,86 +1,46 @@
 #!/usr/bin/env python3
 
 """
-satcomms_test
+satcomms_test: Node used to test sbd_link node and rockBlock module
 
-Script used to test rockBlock.py module
+Copyright (C) 2020, Lau Yan Han and Yonah (yonahbox@gmail.com)
 
-Lau Yan Han and Yonah, Apr 2020
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Released under the GNU GPL version 3 or later
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # ROS/Third-Party
 import rospy
 from std_msgs.msg import String
 
-# Local
-import rockBlock
-from rockBlock import rockBlockProtocol
-
-class satcommstest(rockBlockProtocol):
+class satcommstest():
     
     def __init__(self):
         rospy.init_node('satcomms_test', anonymous=False)
-        self.portID = "/dev/ttyUSB0"
-        self.sbdsession = rockBlock.rockBlock(self.portID, self)
-        self.mt_count = 0
-    
-    def rockBlockConnected(self):
-        rospy.loginfo("Rockblock Connected")
-
-    def rockBlockDisconnected(self):
-        rospy.logerr("Rockblock Disconnected")
-    
-    #SIGNAL
-    def rockBlockSignalUpdate(self,signal):
-        rospy.loginfo("Rockblock signal strength: " + str(signal))
-
-    def rockBlockSignalPass(self):
-        rospy.loginfo("Rockblock signal strength good")
-
-    def rockBlockSignalFail(self):
-        rospy.logwarn("Rockblock signal strength poor")
-    
-    #MT
-    def rockBlockRxStarted(self):
-        rospy.loginfo("Rockblock ready to receive msg")
-
-    def rockBlockRxFailed(self):
-        rospy.logwarn("Rockblock unable to check for incoming msg")
-
-    def rockBlockRxReceived(self,mtmsn,data):
-        rospy.loginfo("Rockblock msg received: " + data)
-
-    def rockBlockRxMessageQueue(self,count):
-        rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
-     
-    #MO
-    def rockBlockTxStarted(self):
-        rospy.loginfo("Rockblock ready to send msg")
-
-    def rockBlockTxFailed(self):
-        rospy.logwarn("Rockblock msg not sent")
-
-    def rockBlockTxSuccess(self,momsn):
-        rospy.loginfo("Rockblock msg sent")
+        self.pub_to_sbd = rospy.Publisher("ogc/to_sbd", String, queue_size = 5)
 
     def send_mo_msg(self, data):
-        momsg = input("Enter your MO msg: ")
-        self.sbdsession.sendMessage(momsg)
+        momsg = input()
+        self.pub_to_sbd.publish(momsg)
     
     def recv_mt_msg(self, data):
-        self.mt_count = self.mt_count + 1
-        rospy.loginfo("MT msg read attempt: " + str(self.mt_count))
-        self.sbdsession.messageCheck()
+        rospy.loginfo("satcomms_test read: " + data.data)
     
     def client(self):
         message_sender = rospy.Timer(rospy.Duration(0.5), self.send_mo_msg)
-        message_receive = rospy.Timer(rospy.Duration(0.5), self.recv_mt_msg)
+        rospy.Subscriber("ogc/from_sbd", String, self.recv_mt_msg)
         rospy.spin()
         message_sender.shutdown()
-        message_receive.shutdown()
-        self.sbdsession.close()
 
 if __name__=='__main__':
     run = satcommstest()

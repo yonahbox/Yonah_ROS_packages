@@ -13,23 +13,6 @@ cd ogc_ws
 catkin_make
 ```
 
-Create the sms package, but first move out the existing sms folder (catkin will throw an error when it tries to create a package but the package folder already exists). After package creation, move everything in the original sms folder back into the newly created package:
-
-```
-cd src/
-mv sms ~/
-catkin_create_pkg sms std_msgs rospy
-mv ~/sms/* ./sms/
-rm -r ~/sms
-```
-
-After this step, the sms nodes, launchfiles, CMakelists.txt and package.xml should be in the package folder. Finally, navigate back to the ogc workspace and rerun catkin_make:
-
-```
-cd ../
-catkin_make
-```
-
 Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
 
 Change the `client_phone_no` parameter in the launch files (located in the `launch` folder) to the phone number of the receipient. For example, if this package is deployed on the aircraft, specify the phone number of the GCS, and vice-versa. Be sure the include the country code of the number (e.g. +6512345678, instead of 12345678))

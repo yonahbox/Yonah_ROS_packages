@@ -27,7 +27,8 @@ import rospy
 from despatcher.msg import RegularPayload
 from std_msgs.msg import String
 
-REGULAR_PAYLOAD_LEN = 9
+# Local
+import regular
 
 class gnddespatcher():
 
@@ -35,61 +36,82 @@ class gnddespatcher():
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5)
+        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
-        self.msg = "" # Stores incoming Air-to-Ground message
-        self.recv_msg = "" # Stores outgoing Ground-to-Air message
+        self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
+
+        # Temp params for msg headers
+        # To-do: Work on air/gnd identifiers whitelist file
+        self._is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
+        self._id = 1 # ID number (outgoing msg)
+        self._severity = "i" # Outgoing msg severity level
+        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################
-
+    
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
         whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp"]
         if data.data.split()[0] not in whitelisted_prefixes:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
-            self.pub_to_sms.publish(data.data) # To-do: Add if-else statement to handle 3 links
+            # Add msg headers
+            msg = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
+                " " + data.data + " " + str(rospy.get_rostime().secs)
+            # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
+            self.pub_to_sms.publish(msg)
+            self.pub_to_sbd.publish(msg)
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
             self.pub_to_telegram.publish(data.data)
-            
+
     ###########################################
     # Handle Air-to-Ground (A2G) messages
     ###########################################
 
+    def _is_new_msg(self, timestamp):
+        '''Return true is incoming msg is a new msg'''
+        if timestamp < self._prev_transmit_time:
+            return False
+        else:
+            self._prev_transmit_time = timestamp
+            return True
+    
+    def _check_sender_id(self, is_air, id):
+        '''Check identity of the sender'''
+        if not is_air:
+            # We got no business with other GCS... yet
+            return False
+        # To-do: Add in checks for id (maybe a whitelist, compare the IMEI/phone numbers?)
+        return True
+    
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
-        self.msg = data.data
-        if not self.handle_regular_payload():
-            self.handle_ondemand_payload()
-
-    def handle_regular_payload(self):
-        '''Check if incoming message is a regular payload, and handle it accordingly'''
-        global REGULAR_PAYLOAD_LEN
-        entries = self.msg.split()
-        # Check if incoming message is of the regular payload format
-        if not len(entries) == REGULAR_PAYLOAD_LEN:
-            return False
-        # Decode regular payload
-        msg = RegularPayload()
-        msg.airspeed = float(entries[0])
-        msg.alt = float(entries[1])
-        msg.armed = bool(entries[2])
-        msg.groundspeed = float(entries[3])
-        msg.lat = float(entries[4])
-        msg.lon = float(entries[5])
-        msg.throttle = float(entries[6])
-        msg.vtol = bool(entries[7])
-        msg.wp = int(entries[8])
-        self.pub_to_rqt_regular.publish(msg)
-        return True
-
-    def handle_ondemand_payload(self):
-        '''Publish on-demand and miscellaneous messages to be displayed on rqt's console'''
-        # To-do: Add some checking mechanism. Right now, all incoming msgs are strings with no fixed format
-        self.pub_to_rqt_ondemand.publish(self.msg)
+        try:
+            # Handle msg prefixes
+            entries = data.data.split()
+            sender_timestamp = int(entries[-1])
+            sender_msgtype = str(entries[0])
+            sender_is_air = int(entries[1])
+            sender_id = int(entries[2])
+            if not self._is_new_msg(sender_timestamp) or not self._check_sender_id(sender_is_air, sender_id):
+                # Check if it is new msg and is from valid sender
+                return
+            if regular.is_regular(sender_msgtype, len(entries)):
+                # Check if it is regular payload
+                msg = regular.convert_to_rosmsg(entries)
+                self.pub_to_rqt_regular.publish(msg)
+            else:
+                if sender_msgtype == 's':
+                    # Check if it is statustext
+                    self.pub_to_statustext.publish(data.data)
+                else:
+                    self.pub_to_rqt_ondemand.publish(data.data)
+        except (ValueError, IndexError):
+            rospy.logerr("Invalid message format!")
     
     ############################
     # "Main" function
