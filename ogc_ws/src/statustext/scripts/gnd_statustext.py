@@ -3,7 +3,6 @@
 import rospy
 from std_msgs.msg import String
 from mavros_msgs.msg import StatusText
-from statustext.msg import YonahStatusText
 
 prefixtable = {
 	"i" : "[INFO]", 
