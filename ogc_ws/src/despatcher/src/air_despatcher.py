@@ -243,7 +243,7 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        self.pub_to_telegram.publish(self.msg)
+        self.pub_to_telegram.publish(self._msg)
         rospy.sleep(self._tele_interval) # Need to remove this after the merge
     
     def sendmsg(self, severity):
@@ -251,7 +251,7 @@ class airdespatcher():
         self._attach_headers(severity)
         self.pub_to_sms.publish(self._msg) # To-do: Replace with if-else statement
         self.pub_to_sbd.publish(self._msg)
-        self.pub_to_telegram.publish(self.msg)
+        self.pub_to_telegram.publish(self._msg)
 
     def check_alerts(self, data):
         '''Check for special alerts'''
