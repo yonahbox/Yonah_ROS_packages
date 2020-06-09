@@ -14,10 +14,12 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
-from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
+from python_qt_binding.QtWidgets import QFileDialog, QTabWidget, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
 from python_qt_binding.QtSvg import QSvgGenerator
 from checklist_window import ChecklistWindow
 from control_window import ControlWindow
+from summary_window import SummaryWindow
+
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
@@ -48,15 +50,29 @@ class MyPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
+        self.SummaryWindow = SummaryWindow()
+
         self.scroll = QScrollArea()
+        self.scroll.setMinimumHeight(700)
+        self.scroll.setMinimumWidth(400)
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.ControlWindow)
-        
-        self.ControlWindow.show()
-        self.load_button = QPushButton('Load')
+
+        self.summary_scroll = QScrollArea()
+        self.summary_scroll.setMinimumHeight(500)
+        self.summary_scroll.setMinimumWidth(400)
+        self.summary_scroll.setWidgetResizable(True)
+        self.summary_scroll.setWidget(self.SummaryWindow)
+        self.tab = QTabWidget()
+        self.tab.addTab(self.summary_scroll, 'summary')
+        self.tab.setMinimumHeight(500)
+
+        self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
+        self._widget.verticalLayout2.addWidget(self.tab)
         self.checklist_opened = 0
         # self._widget.arming_pushbutton.pressed.connect(self.arming)
         # self._widget.control_pushbutton.pressed.connect(self.transfer_control)
@@ -177,6 +193,7 @@ class MyPlugin(Plugin):
     def shutdown_plugin(self):
         self.ChecklistWindow.shutdown()
         self.ControlWindow.shutdown()
+        self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:

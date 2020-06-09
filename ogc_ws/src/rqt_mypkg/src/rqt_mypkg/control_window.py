@@ -29,7 +29,6 @@ class ControlWindow(QWidget):
 
         # add the widgets into the layouts
         self.layout.addLayout(self.progressbar_layout)
-        self.layout.addLayout(self.buttons_layout)
         self.setLayout(self.layout)
 
     # def create_widget(self):
