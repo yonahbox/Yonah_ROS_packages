@@ -1,0 +1,6 @@
+#remove pyc files
+my_module.pyc
+control_window.pyc
+checklist_window.pyc
+__init__.pyc
+confirmation_window.pyc

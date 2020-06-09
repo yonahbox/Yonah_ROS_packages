@@ -53,7 +53,6 @@ class ControlWindow(QWidget):
         self.waypoint_layout.addLayout(self.waypoint_header_layout)
         self.waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
         self.progressbar_layout.addLayout(self.waypoint_layout)
-        
     
     def shutdown(self):
         self.close()

@@ -56,8 +56,7 @@ class MyPlugin(Plugin):
         
         self.ControlWindow.show()
         self.load_button = QPushButton('Load')
-        self._widget.verticalLayout.addWidget(self.load_button)
-        self._widget.verticalLayout_2.addWidget(self.scroll)
+        self._widget.verticalLayout.addWidget(self.scroll)
         self.checklist_opened = 0
         # self._widget.arming_pushbutton.pressed.connect(self.arming)
         # self._widget.control_pushbutton.pressed.connect(self.transfer_control)
