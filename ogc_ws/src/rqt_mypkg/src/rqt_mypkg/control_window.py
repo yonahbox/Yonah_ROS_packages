@@ -13,51 +13,45 @@ class ControlWindow(QWidget):
     def __init__(self):
         super(ControlWindow, self).__init__()
         self.setWindowTitle("Ground Control Station")
-        self.resize(500, 700)
+        self.adjustSize()
         self.move(200,100)
         
+        self.waypoint_plaintext_dict = {}
         # create the layout
         self.layout = QHBoxLayout(self)
         self.buttons_layout = QVBoxLayout(self)
         self.progressbar_layout = QVBoxLayout(self)
         
         # create the widgets
-        self.create_widget()
-        self.has_message_opened = 0
+        self.active_aircrafts = 20
+        for i in range(1,self.active_aircrafts):
+            self.create_progressbar(i)
 
         # add the widgets into the layouts
         self.layout.addLayout(self.progressbar_layout)
         self.layout.addLayout(self.buttons_layout)
         self.setLayout(self.layout)
 
-    def create_widget(self):
-        # declare buttons and connect each of them to a function
-        self.load_button = QLabel('Load')
-        self.ok_button = QLabel('OK')
-        self.cancel_button = QLabel('Cancel')
-        self.load_button2 = QPushButton('Load')
-        self.ok_button2 = QPushButton('OK')
-        self.cancel_button2 = QPushButton('Cancel')
-        
-        for i in range(3):
-            self.create_progress(i)
+    # def create_widget(self):
+    #     self.waypoint_plaintext_dict.get('aircraft' + str(1)).appendPlainText('test')
+    #     self.waypoint_plaintext_dict.get('aircraft' + str(2)).appendPlainText('testing')
+    #     print(self.waypoint_plaintext_dict)
 
-        self.buttons_layout.addWidget(self.load_button)
-        self.buttons_layout.addWidget(self.cancel_button)
-        self.buttons_layout.addWidget(self.ok_button)
-
-    def create_progress(self, aircraft_no):
+    def create_progressbar(self, aircraft_no):
         self.waypoint_layout = QVBoxLayout(self)
-        self.waypoint_header_layout = QHBoxLayout(self) #waypoint_header will be nested inside waypoint_layout with the progress bar beneath it
+        self.waypoint_header_layout = QHBoxLayout(self) # waypoint_header_layout will be nested inside waypoint_layout with the progress bar beneath it
+        
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
-        self.aircraft_waypoint_textedit = QPlainTextEdit()
-        self.aircraft_waypoint_textedit.setMaximumHeight(40)
-        self.aircraft_progressbar = QProgressBar()
+        self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)] = QPlainTextEdit()
+        self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setMaximumHeight(40)
+        # self.aircraft_waypoint_textedit = QPlainTextEdit()
+        # self.aircraft_waypoint_textedit.setMaximumHeight(40)
+        self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)] = QProgressBar()
 
         self.waypoint_header_layout.addWidget(self.aircraft_label)
-        self.waypoint_header_layout.addWidget(self.aircraft_waypoint_textedit)
+        self.waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)])
         self.waypoint_layout.addLayout(self.waypoint_header_layout)
-        self.waypoint_layout.addWidget(self.aircraft_progressbar)
+        self.waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
         self.progressbar_layout.addLayout(self.waypoint_layout)
         
     

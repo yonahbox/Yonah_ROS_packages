@@ -33,7 +33,7 @@ class MyPlugin(Plugin):
         self._widget = QWidget() # this defines the attribute of MyPlugin class. QWidget is a method in QtWidget
         
         # Get path to UI file which should be in the "resource" folder of this package
-        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'main_window.ui')
+        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'second_window.ui')
         
         # Extend the widget with all attributes and children from UI file
         # there is actually a third param available if we have custom class in our widget, but I think we can ignore this
@@ -48,22 +48,24 @@ class MyPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
-        self.scroll = QScrollArea()
-        
-
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setWidget(self.ControlWindow)
+        
         self.ControlWindow.show()
         self.load_button = QPushButton('Load')
         self._widget.verticalLayout.addWidget(self.load_button)
+        self._widget.verticalLayout_2.addWidget(self.scroll)
         self.checklist_opened = 0
-        self._widget.arming_pushbutton.pressed.connect(self.arming)
-        self._widget.control_pushbutton.pressed.connect(self.transfer_control)
-        self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
-        self._widget.mode_auto_pushbutton.pressed.connect(self.mode_auto)
-        self._widget.load_mission_pushbutton.pressed.connect(self.load_mission)
-        self._widget.check_mission_pushbutton.pressed.connect(self.check_mission)
-        self._widget.checklist_pushbutton.pressed.connect(self.ChecklistWindow.show)
+        # self._widget.arming_pushbutton.pressed.connect(self.arming)
+        # self._widget.control_pushbutton.pressed.connect(self.transfer_control)
+        # self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
+        # self._widget.mode_auto_pushbutton.pressed.connect(self.mode_auto)
+        # self._widget.load_mission_pushbutton.pressed.connect(self.load_mission)
+        # self._widget.check_mission_pushbutton.pressed.connect(self.check_mission)
+        # self._widget.checklist_pushbutton.pressed.connect(self.ChecklistWindow.show)
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
