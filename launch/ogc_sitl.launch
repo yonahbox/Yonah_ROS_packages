@@ -3,7 +3,7 @@
 	<!-- Common OGC args -->
 	<arg name="log_output" default="screen" />
 	<arg name="interval_1" default="10"/>
-    <arg name="interval_2" default="60"/>
+	<arg name="interval_2" default="60"/>
 	<arg name="interval_3" default="1"/>
 	<arg name="router_hostname" default="root@192.168.1.1" />
 	
@@ -17,9 +17,9 @@
 	<arg name="command_whitelist" default="[Rumesh,Lau]" />
 
 	<!-- sbd args -->
-    <arg name="portID" default="/dev/ttyUSB0"/>
-    <arg name="own_serial" default="12345"/>
-    <arg name="client_serial" default="12345"/>
+	<arg name="portID" default="/dev/ttyUSB0"/>
+	<arg name="own_serial" default="12345"/>
+	<arg name="client_serial" default="12345"/>
 
 	<!-- rff args -->
 	<arg name="waypoint_folder" default="/home/ubuntu/Yonah_ROS_packages/Waypoints/"/>
@@ -33,21 +33,21 @@
 	</node>
 
 	<!-- sms_link node -->
-    <node pkg="sms" type="sms_link.py" name="sms_link"
-    respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <param name="whitelist" value="$(arg whitelist)" />
-        <param name="router_hostname" value = "$(arg router_hostname)"/>
-        <param name="client_phone_no" value="$(arg client_phone_no)" />
-    </node>
+	<node pkg="sms" type="sms_link.py" name="sms_link"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="whitelist" value="$(arg whitelist)" />
+		<param name="router_hostname" value = "$(arg router_hostname)"/>
+		<param name="client_phone_no" value="$(arg client_phone_no)" />
+	</node>
 	
 	<!-- sbd link node -->
-    <node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
-    respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <param name="portID" value="$(arg portID)" />
-        <param name="own_serial" value="$(arg own_serial)" />
-        <param name="client_serial" value="$(arg client_serial)" />
-        <param name="interval" value="$(arg interval_3)" />
-    </node>
+	<node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="portID" value="$(arg portID)" />
+		<param name="own_serial" value="$(arg own_serial)" />
+		<param name="client_serial" value="$(arg client_serial)" />
+		<param name="interval" value="$(arg interval_3)" />
+	</node>
 
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" 
