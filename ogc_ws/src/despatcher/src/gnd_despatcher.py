@@ -19,9 +19,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# Standard Library
-import subprocess
-
 # ROS/Third-Party
 import rospy
 from despatcher.msg import RegularPayload
@@ -41,6 +38,9 @@ class gnddespatcher():
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
+
+        # Link switching
+        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
@@ -63,10 +63,13 @@ class gnddespatcher():
             msg = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
                 " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
-            self.pub_to_sms.publish(msg)
-            self.pub_to_sbd.publish(msg)
+            if self.link_select == 0:
+                self.pub_to_telegram.publish(msg)
+            elif self.link_select == 1:
+                self.pub_to_sms.publish(msg)
+            else:
+                self.pub_to_sbd.publish(msg)
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
-            self.pub_to_telegram.publish(msg)
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
