@@ -66,7 +66,7 @@ class gnddespatcher():
             self.pub_to_sms.publish(msg)
             self.pub_to_sbd.publish(msg)
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
-            self.pub_to_telegram.publish(data.data)
+            self.pub_to_telegram.publish(msg)
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
