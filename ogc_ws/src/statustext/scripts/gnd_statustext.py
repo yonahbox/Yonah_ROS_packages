@@ -105,11 +105,16 @@ class StatusTextGround:
 		self.message = ""
 
 	def callback(self, data):
-		pts, d = data.data.split(".", 1)
-		self.prefix = pts[0]
-		self.type = int(pts[1])
-		self.status = int(pts[2:])
-		self.details = d
+		try:
+			payload = data.data.split()[3] # Strip out message headers
+			pts, d = payload.split(".", 1)
+			self.prefix = pts[0]
+			self.type = int(pts[1])
+			self.status = int(pts[2:])
+			self.details = d
+		except (ValueError, IndexError):
+			self.pub.publish("Unknown statustext")
+			return
 
 		try: 
 			if self.type == 1:
