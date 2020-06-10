@@ -75,6 +75,7 @@ class SMSrx():
                 RuTOS.delete_msg(self._router_hostname, count)
                 count += 1
             except:
+                count += 1
                 continue
         rospy.loginfo("Purge complete!")
 
