@@ -58,13 +58,13 @@ class SSH:
 	def ssh_attempt_connection(self):	
 		
 		rospy.loginfo("Attempting connection...")		
-		print "\r"
+		print ("\r")
 
 		#Usage of python subprocessing to maintain an open SSH connection
 		
-			port_1 = (10 * rospy.get_param('aircraft')) + 4000
-			port_2 = port_1 + 1
-			port_3 = port_1 + 2
+		port_1 = (10 * rospy.get_param('aircraft')) + 4000
+		port_2 = port_1 + 1
+		port_3 = port_1 + 2
 		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh', str(port_1), str(port_2), str(port_3)], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
@@ -92,13 +92,13 @@ class SSH:
 
 			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
 				rospy.loginfo("Air-Server-Ground Established")
-				print "\r"	
+				print ("\r")	
 				self.air_link = True
 				self.ground_link = True
 				return True	
 			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
 				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
-				print "\r"
+				print("\r")
 				self.air_link = True
 				self.ground_link = False
 				self.netcat_link = False
@@ -107,7 +107,7 @@ class SSH:
 
 		except: 
 			rospy.logerr("Air-Server Disconnected")
-			print "\r"
+			print("\r")
 			self.air_link = False
 			self.ground_link = False
 			self.netcat_link = False
@@ -125,17 +125,17 @@ class SSH:
 		self.arg = 'kill -9 ' + self.netcat_list
 		subprocess.Popen([self.arg], shell=True, stdout=PIPE, stderr=PIPE)
 		rospy.loginfo("NETCAT Reset")
-		print "\r"
+		print("\r")
 		#Usage of python subprocessing to open a NETCAT process	
 		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
-		print "\r"
+		print("\r")
 
 	def ssh_terminate(self):
 	
 		rospy.loginfo("Program Terminating...")
-		print "\r"
+		print("\r")
 		self.air_link = False
 		self.netcat_link = False
 		self.ssh_linkage.kill()
@@ -157,8 +157,8 @@ if __name__ == "__main__":
 
 			ros.clear_receipt()
 
-			print ssh.netcat_link
-			print ssh.ground_netcat
+			print (ssh.netcat_link)
+			print (ssh.ground_netcat)
 		
 			if (ssh.netcat_link == False) and (ssh.ground_netcat == True):
 				ssh.netcat_init()
