@@ -1,0 +1,8 @@
+<launch>
+
+	<node pkg="air_data" name="air_data" type="air_data.py"
+	respawn="true" respawn_delay="3" output="screen"/>
+
+	<param name="aircraft" value="5"/>
+
+</launch>
