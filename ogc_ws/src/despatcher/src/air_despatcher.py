@@ -121,8 +121,7 @@ class airdespatcher():
         rospy.wait_for_service('mavros/mission/set_current')
         rospy.wait_for_service('mavros/mission/push')
 
-        self.hop = True
-        self.current_mission = 0
+        self.hop = False
         self.missionlist = []
 
     ###########################################
@@ -215,7 +214,7 @@ class airdespatcher():
 
     def _check_mission(self):
         global waypoints
-        wpfolder = "/home/ubuntu/Yonah_ROS_packages/Waypoints/"
+        wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
         # wpfolder = "/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/"
         """Check for mission/waypoint commands from Ground Control"""
         if self._recv_msg[0] == "wp":
@@ -227,28 +226,88 @@ class airdespatcher():
                 if wp_set(wp_seq = int(seq_no)).success == True:
                     self._send_ack()
             elif self._recv_msg[1] == 'load':
-                # Message structure: wp load <wp file name>; extract 3rd word to get wp file
+                # Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
                 # Assume that wp file is located in Waypoints folder of Beaglebone
                 wp_file = self._recv_msg[2]
+                # Set to non-hop mission
                 self.hop = False
+                # Reset mission and waypoints list
                 self.missionlist = []
                 waypoints = []
                 readwp = WP()
                 try:
                     readwp.read(str(wpfolder + wp_file))
                     wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                    # Push waypoints, check if successful
                     if wp(0, waypoints).success:
                         self._send_ack()
                 except FileNotFoundError:
-                    print("Specified file not found")
-            elif self._recv_msg[1] == 'next':
-                if not self.hop:
-                    print("No longer following routine. Please reload mission file.")
+                    self._msg  = "Specified file not found"
+                    self.sendmsg("e")
+            else:
+                return
+        if self._recv_msg[0] == "mission":
+            if self._recv_msg[1] == 'load':
+                # Message structure: mission load <mission file name.txt>
+                self.missionlist = []
+                # Change to hop-mission mode
+                self.hop = True
+                mission_file = self._recv_msg[2]
+                try:
+                    f = open(str(wpfolder + mission_file), "r")
+                except FileNotFoundError:
+                    self._msg = "Specified file not found"
+                    self.sendmsg("e")
                     return
-                # Message structure: wp next
+                for line in f:
+                    # Ignores # comments
+                    if line.startswith('#'):
+                        continue
+                    try:
+                        g = open(str(wpfolder + line.rstrip()), "r") # Open and close to check each wp file
+                        g.close()
+                    except FileNotFoundError:
+                        # Specify which file in the list is not found
+                        self._msg = str(line.rstrip() + "-->File not found")
+                        self.sendmsg("e")
+                        # Set to non-hop (in this case it is used as a switch for the next step)
+                        # Could not think of another way to elegantly implement this
+                        self.hop = False
+                f.close()
+                # Returns if any of the files in mission list weren't found
+                if not self.hop:
+                    return
+                # Somehow there is a need to open the file again after the try block finishes
+                f = open(str(wpfolder + mission_file), "r")
+                for line in f:
+                    if line.startswith('#'):
+                        continue
+                    self.missionlist.append(line.rstrip())
+                f.close()
+                # Prints the missions for operator to check
+                self._msg = "Missions: " + " ".join(self.missionlist)
+                self.sendmsg("i")
+                # Load first mission
+                self.current_mission = 0
+                readwp = WP()
+                readwp.read(str(wpfolder + self.missionlist[0]))
+                wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                if wp(0, waypoints).success:
+                    # This acknowledgement implies that the mission list has no errors and the first mission is loaded
+                    self._send_ack()
+
+            elif self._recv_msg[1] == 'next':
+                # Message structure: wp next (no arguments)
+                if not self.hop: # Checks if hop mission
+                    self._msg = "Please load a mission file"
+                    self.sendmsg("e")
+                    return
                 self.current_mission += 1
                 if self.current_mission >= len(self.missionlist):
-                    print("There are no more missions")
+                    self.hop = False
+                    self.current_mission = 0
+                    self._msg = "There are no more missions"
+                    self.sendmsg("e")
                     return
                 waypoints = []
                 readwp = WP()
@@ -257,40 +316,12 @@ class airdespatcher():
                     wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
                     if wp(0, waypoints).success:
                         self._send_ack()
+                # This error should never be raised if everything above works
                 except FileNotFoundError:
-                    print("Specified file not found")
+                    self._msg = "Specified file not found"
+                    self.sendmsg("e")
             else:
                 return
-        if self._recv_msg[0] == "mission":
-            if self._recv_msg[1] == 'load':
-                self.missionlist = []
-                self.hop = True
-                mission_file = self._recv_msg[2]
-                try:
-                    f = open(str(wpfolder + mission_file), "r")
-                    for line in f:
-                        # Ignores # comments
-                        if line.startswith('#'):
-                            continue
-                        self.missionlist.append(line.rstrip())
-                    # Prints the missions for operator to check
-                    rospy.loginfo("Missions for this flight:")
-                    for i in self.missionlist:
-                        try:
-                            g = open(str(wpfolder + i), "r")
-                            g.close()
-                            rospy.loginfo(i)
-                        except FileNotFoundError:
-                            rospy.logerr(str(i + "-->File not found"))
-                    # Load first mission
-                    self.current_mission = 0
-                    readwp = WP()
-                    readwp.read(str(wpfolder + self.missionlist[0]))
-                    wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                    if wp(0, waypoints).success:
-                        rospy.loginfo("First mission loaded")
-                except FileNotFoundError:
-                    print("Specified file not found")
 
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
@@ -350,7 +381,7 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        self.pub_to_telegram.publish(self.msg)
+        self.pub_to_telegram.publish(self._msg)
         rospy.sleep(self._tele_interval) # Need to remove this after the merge
     
     def sendmsg(self, severity):
@@ -358,7 +389,8 @@ class airdespatcher():
         self._attach_headers(severity)
         self.pub_to_sms.publish(self._msg) # To-do: Replace with if-else statement
         self.pub_to_sbd.publish(self._msg)
-        self.pub_to_telegram.publish(self.msg)
+        self.pub_to_telegram.publish(self._msg)
+        print(self._msg)
 
     def check_alerts(self, data):
         '''Check for special alerts'''
