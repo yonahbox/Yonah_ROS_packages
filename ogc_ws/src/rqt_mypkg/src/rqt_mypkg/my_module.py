@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+'''
+Copyright (C) 2020 Dani Purwadi
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+'''
 
 import os
 import rospy
@@ -20,6 +36,8 @@ from checklist_window import ChecklistWindow
 from control_window import ControlWindow
 from summary_window import SummaryWindow
 from command_window import CommandWindow
+from detailed_info import DetailedInfoWindow
+
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
@@ -53,11 +71,15 @@ class MyPlugin(Plugin):
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
-        # Declare variables for each imported classes
+        # Get the number of active aircrafts here
+        self.active_aircrafts = 5
+
+        # Declare variables for each imported class
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
         self.SummaryWindow = SummaryWindow()
         self.CommandWindow = CommandWindow()
+        self.DetailedInfoWindow = DetailedInfoWindow()
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
@@ -74,6 +96,9 @@ class MyPlugin(Plugin):
         self.summary_scroll.setWidget(self.SummaryWindow)
         self.tab = QTabWidget()
         self.tab.addTab(self.summary_scroll, 'Summary')
+        for i in range (1, self.active_aircrafts + 1):
+            print(i)
+            self.tab.addTab(self.DetailedInfoWindow, 'Aircraft ' + str(i))
         self.tab.setMinimumHeight(500)
 
         # Create layout for command buttons

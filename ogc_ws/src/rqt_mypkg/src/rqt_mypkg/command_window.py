@@ -17,12 +17,11 @@ class CommandWindow(QWidget):
         self.layout = QVBoxLayout(self)
         self.first_row = QHBoxLayout(self)
         self.second_row = QHBoxLayout(self)
-        self.first_row.setContentsMargins(0,20,0,20)
 
         # create the widgets
         self.combo_box = QComboBox()
         self.active_aircrafts = 5
-        for i in range(1, self.active_aircrafts):
+        for i in range(1, self.active_aircrafts + 1):
             self.combo_box.addItem('Aircraft ' + str(i))
         self.arm_button = QPushButton('ARM / DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -30,13 +29,13 @@ class CommandWindow(QWidget):
         self.mission_load_button = QPushButton('Load Mission')
         self.mission_check_button = QPushButton('Check Mission')
 
+        # set UI properties of the buttons and layout
+        self.first_row.setContentsMargins(0,20,0,20)
         self.arm_button.setMinimumHeight(50)
         self.go_button.setMinimumHeight(50)
         self.mission_check_button.setMinimumHeight(30)
         self.mission_load_button.setMinimumHeight(30)
         self.checklist_button.setMinimumHeight(30)
-        
-
         
         # add the widgets into the layouts
         self.layout.addWidget(self.combo_box)
@@ -48,7 +47,6 @@ class CommandWindow(QWidget):
         self.layout.addLayout(self.first_row)
         self.layout.addLayout(self.second_row)
         self.setLayout(self.layout)
-
 
     def shutdown(self):
         self.close()

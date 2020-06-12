@@ -6,3 +6,4 @@ __init__.pyc
 confirmation_window.pyc
 summary_window.pyc
 command_window.pyc
+detailed_info.pyc

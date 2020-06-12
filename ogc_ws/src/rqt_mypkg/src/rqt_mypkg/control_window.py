@@ -24,8 +24,8 @@ class ControlWindow(QWidget):
         self.progressbar_layout = QVBoxLayout(self)
         
         # create the widgets
-        self.active_aircrafts = 20
-        for i in range(1,self.active_aircrafts):
+        self.active_aircrafts = 15
+        for i in range(1,self.active_aircrafts + 1):
             self.create_progressbar(i)
 
         # add the widgets into the layouts
@@ -39,6 +39,7 @@ class ControlWindow(QWidget):
 
     def create_progressbar(self, aircraft_no):
         self.waypoint_layout = QVBoxLayout(self)
+        self.waypoint_layout.setContentsMargins(0,10,0,10)
         self.waypoint_header_layout = QHBoxLayout(self) # waypoint_header_layout will be nested inside waypoint_layout with the progress bar beneath it
         
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))

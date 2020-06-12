@@ -9,9 +9,9 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
-class SummaryWindow(QWidget):
+class DetailedInfoWindow(QWidget):
     def __init__(self):
-        super(SummaryWindow, self).__init__()
+        super(DetailedInfoWindow, self).__init__()
         self.setWindowTitle("Summary Page")
         
         self.waypoint_plaintext_dict = {}
