@@ -51,16 +51,19 @@ class MyPlugin(Plugin):
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
+        # Declare variables for each imported classes
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
         self.SummaryWindow = SummaryWindow()
 
+        # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
         self.scroll.setMinimumWidth(400)
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.ControlWindow)
 
+        # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()
         self.summary_scroll.setMinimumHeight(500)
         self.summary_scroll.setMinimumWidth(400)
@@ -70,10 +73,15 @@ class MyPlugin(Plugin):
         self.tab.addTab(self.summary_scroll, 'summary')
         self.tab.setMinimumHeight(500)
 
+        # Add both layouts into the main layout
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
         self._widget.verticalLayout2.addWidget(self.tab)
+
+        # Keep track whether the checklist window is opened
         self.checklist_opened = 0
+
+        # Connect each button to a function
         # self._widget.arming_pushbutton.pressed.connect(self.arming)
         # self._widget.control_pushbutton.pressed.connect(self.transfer_control)
         # self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
@@ -98,7 +106,8 @@ class MyPlugin(Plugin):
 
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
-    
+
+    # Create a signal-slot mechanism for each function in order to display information
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
@@ -167,6 +176,7 @@ class MyPlugin(Plugin):
             self.text_to_display = 'ARMED'
         self._widget.arming_textedit.setText(str(self.text_to_display))
 
+    # Send commands to air_despatcher
     def arming (self):
         print(self.checklist_opened)
         self.arming_publisher.publish('arm')
@@ -190,6 +200,8 @@ class MyPlugin(Plugin):
     def armingbox(self):
         print ('successful!')
     
+    # Close all windows
+    # @TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
         self.ChecklistWindow.shutdown()
         self.ControlWindow.shutdown()
@@ -210,6 +222,7 @@ class MyPlugin(Plugin):
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
    
+# Class that is responsible for signal and slot function
 class Communicate (QObject):
     # technically, all the signals that has the same input, such as string
     # can be combined into one variable. However, for clarity purpose,

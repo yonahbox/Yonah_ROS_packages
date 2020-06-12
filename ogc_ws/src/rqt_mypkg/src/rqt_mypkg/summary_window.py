@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 import os
 import rospkg
-from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QCompleter, QLabel, QProgressBar, QPlainTextEdit
-from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
-from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
-from PyQt5.QtWidgets import *
-
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 import __main__
+
+from python_qt_binding import loadUi
+from PyQt5.QtWidgets import *
+from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from checklist_window import ChecklistWindow
 
+### File is still changing rapidly and dynamically, hence comments might not be accurate
 class SummaryWindow(QWidget):
     def __init__(self):
         super(SummaryWindow, self).__init__()
