@@ -31,9 +31,12 @@ class Identifiers:
 		self.json_file = json_file
 		self.valid_air_ids = valid_air_ids
 		self.valid_gnd_ids = valid_gnd_ids
-		self.whitelist_nums = []
+
 		self.whitelist_gnd = []
 		self.whitelist_air = []
+		self.whitelist_nums = []
+		self.whitelist_imei = []
+		
 		self.rock7_un = ""
 		self.rock7_pw = ""
 		self.aws_url = ""
@@ -52,11 +55,13 @@ class Identifiers:
 			if obj["id"] in self.valid_gnd_ids:
 				self.whitelist_gnd.append(Device(obj["label"], False, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
+				self.whitelist_imei.append(obj["imei"])
 
 		for obj in self.json_obj["air"]:
 			if obj["id"] in self.valid_air_ids:
 				self.whitelist_air.append(Device(obj["label"], True, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
+				self.whitelist_imei.append(obj["imei"])
 
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
