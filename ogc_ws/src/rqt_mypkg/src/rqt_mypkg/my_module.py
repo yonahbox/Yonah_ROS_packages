@@ -14,12 +14,12 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
-from python_qt_binding.QtWidgets import QFileDialog, QTabWidget, QWidget, QCompleter, QScrollArea, QPushButton, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
 from checklist_window import ChecklistWindow
 from control_window import ControlWindow
 from summary_window import SummaryWindow
-
+from command_window import CommandWindow
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
@@ -40,9 +40,11 @@ class MyPlugin(Plugin):
         # Extend the widget with all attributes and children from UI file
         # there is actually a third param available if we have custom class in our widget, but I think we can ignore this
         loadUi(ui_file, self._widget)
+
         # Give QObjects reasonable names
         self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
         self._widget.setWindowTitle('Yonah RQt')
+
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -55,28 +57,32 @@ class MyPlugin(Plugin):
         self.ChecklistWindow = ChecklistWindow()
         self.ControlWindow = ControlWindow()
         self.SummaryWindow = SummaryWindow()
+        self.CommandWindow = CommandWindow()
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
-        self.scroll.setMinimumWidth(400)
+        self.scroll.setMinimumWidth(600)
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.ControlWindow)
 
         # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()
         self.summary_scroll.setMinimumHeight(500)
-        self.summary_scroll.setMinimumWidth(400)
+        self.summary_scroll.setMinimumWidth(600)
         self.summary_scroll.setWidgetResizable(True)
         self.summary_scroll.setWidget(self.SummaryWindow)
         self.tab = QTabWidget()
-        self.tab.addTab(self.summary_scroll, 'summary')
+        self.tab.addTab(self.summary_scroll, 'Summary')
         self.tab.setMinimumHeight(500)
 
+        # Create layout for command buttons
+        self.textbox = QPlainTextEdit()
         # Add both layouts into the main layout
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
         self._widget.verticalLayout2.addWidget(self.tab)
+        self._widget.verticalLayout2.addWidget(self.CommandWindow)
 
         # Keep track whether the checklist window is opened
         self.checklist_opened = 0

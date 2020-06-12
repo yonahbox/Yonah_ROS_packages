@@ -4,3 +4,5 @@ control_window.pyc
 checklist_window.pyc
 __init__.pyc
 confirmation_window.pyc
+summary_window.pyc
+command_window.pyc

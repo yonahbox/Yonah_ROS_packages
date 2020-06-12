@@ -9,6 +9,7 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 import __main__
 from checklist_window import ChecklistWindow
 
+### File is still changing rapidly and dynamically, hence comments might not be accurate
 class ControlWindow(QWidget):
     def __init__(self):
         super(ControlWindow, self).__init__()
@@ -43,6 +44,7 @@ class ControlWindow(QWidget):
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
         self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)] = QPlainTextEdit()
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setMaximumHeight(40)
+        self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setReadOnly(True)
         # self.aircraft_waypoint_textedit = QPlainTextEdit()
         # self.aircraft_waypoint_textedit.setMaximumHeight(40)
         self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)] = QProgressBar()

@@ -13,7 +13,6 @@ class SummaryWindow(QWidget):
     def __init__(self):
         super(SummaryWindow, self).__init__()
         self.setWindowTitle("Summary Page")
-        self.move(200,100)
         
         self.waypoint_plaintext_dict = {}
         # create the layout
@@ -25,17 +24,14 @@ class SummaryWindow(QWidget):
         self.active_aircrafts = 5
         for i in range(1, self.active_aircrafts):
             self.create_summary(i, summarised_fields)
-
         self.statustext = QPlainTextEdit()
+        self.statustext.setReadOnly(True)
+
         # add the widgets into the layouts
         self.layout.addWidget(self.statustext)
         self.layout.addLayout(self.summary_layout)
         self.setLayout(self.layout)
 
-    # def create_widget(self):
-    #     self.waypoint_plaintext_dict.get('aircraft' + str(1)).appendPlainText('test')
-    #     self.waypoint_plaintext_dict.get('aircraft' + str(2)).appendPlainText('testing')
-    #     print(self.waypoint_plaintext_dict)
 
     def create_summary(self, aircraft_no, summarised_fields):
         self.summary_details_layout = QVBoxLayout(self)
@@ -45,14 +41,15 @@ class SummaryWindow(QWidget):
         self.aircraft_label.setContentsMargins(0, 30, 0, 0)
         print(self.aircraft_label.setAlignment(Qt.AlignLeft))
         self.summary_details_layout.addWidget(self.aircraft_label)
-        # @TODO I think the generation of the sub-fields can be automated and the setmaxheight can be condensed
         for i in summarised_fields:
             # if summarised_fields.index(i) 
             self.summary_fields_layout = QHBoxLayout(self)
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)
+            # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
             self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
             self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
+            self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
 
             self.summary_fields_layout.addWidget(self.subfield_label_mode)
             self.summary_fields_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)])
