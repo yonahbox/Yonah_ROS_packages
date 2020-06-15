@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
-
 import os
 import rospy
 import rospkg
@@ -33,10 +32,10 @@ from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
 from checklist_window import ChecklistWindow
-from control_window import ControlWindow
+from control_window import WaypointWindow
 from summary_window import SummaryWindow
 from command_window import CommandWindow
-from detailed_info import DetailedInfoWindow
+from aircraft_info import *
 
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
@@ -73,39 +72,35 @@ class MyPlugin(Plugin):
         
         # Get the number of active aircrafts here
         self.active_aircrafts = 5
+        self.aircrafts_info = {}
+        self.aircrafts_info['AC1'] = Aircraft1()
+        self.aircrafts_info['AC2'] = Aircraft2()
+        self.aircrafts_info['AC3'] = Aircraft3()
+        self.aircrafts_info['AC4'] = Aircraft4()
+        self.aircrafts_info['AC5'] = Aircraft5()
+        self.aircrafts_info['AC6'] = Aircraft6()
+        self.aircrafts_info['AC7'] = Aircraft7()
+        self.aircrafts_info['AC8'] = Aircraft8()
+        self.aircrafts_info['AC9'] = Aircraft9()
 
         # Declare variables for each imported class
         self.ChecklistWindow = ChecklistWindow()
-        self.ControlWindow = ControlWindow()
+        self.WaypointWindow = WaypointWindow()
         self.SummaryWindow = SummaryWindow()
         self.CommandWindow = CommandWindow()
-        self.DetailedInfoWindow = DetailedInfoWindow()
+        self.Aircraft1 = Aircraft1()
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
         self.scroll.setMinimumWidth(600)
         self.scroll.setWidgetResizable(True)
-        self.scroll.setWidget(self.ControlWindow)
+        self.scroll.setWidget(self.WaypointWindow)
 
-        # Create layout for Summary scroll window
-        self.summary_scroll = QScrollArea()
-        self.summary_scroll.setMinimumHeight(500)
-        self.summary_scroll.setMinimumWidth(600)
-        self.summary_scroll.setWidgetResizable(True)
-        self.summary_scroll.setWidget(self.SummaryWindow)
-        self.tab = QTabWidget()
-        self.tab.addTab(self.summary_scroll, 'Summary')
-        for i in range (1, self.active_aircrafts + 1):
-            print(i)
-            self.tab.addTab(self.DetailedInfoWindow, 'Aircraft ' + str(i))
-        self.tab.setMinimumHeight(500)
+        self.create_tab_windows()
 
-        # Create layout for command buttons
-        self.textbox = QPlainTextEdit()
         # Add both layouts into the main layout
-        self._widget.verticalLayout.addStretch(1)
-        self._widget.verticalLayout.addWidget(self.scroll)
+        
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
 
@@ -138,7 +133,34 @@ class MyPlugin(Plugin):
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
 
+    def create_tab_windows(self):
+        # Create layout for Summary scroll window
+        self.summary_scroll = QScrollArea()
+        self.summary_scroll.setMinimumHeight(500)
+        self.summary_scroll.setMinimumWidth(600)
+        self.summary_scroll.setWidgetResizable(True)
+        self.tab = QTabWidget()
+        self.summary_scroll.setWidget(self.SummaryWindow)
+        self.tab.addTab(self.summary_scroll, 'Summary')
+        for i in range (1, self.active_aircrafts + 1):
+            key = 'aircraft' + str(i) + ' scroll'
+            self.aircrafts_info[key] = QScrollArea()
+            self.aircrafts_info.get(key).setMinimumHeight(500)
+            self.aircrafts_info.get(key).setMinimumWidth(600)
+            self.aircrafts_info.get(key).setWidgetResizable(True)
+            # self.aircraft1_scroll = QScrollArea()
+            # self.aircraft1_scroll.setMinimumHeight(500)
+            # self.aircraft1_scroll.setMinimumWidth(600)        
+            # self.aircraft1_scroll.setWidgetResizable(True)
+            self.aircrafts_info.get(key).setWidget(self.aircrafts_info.get('AC' + str(i)))
+            self.tab.addTab(self.aircrafts_info.get(key), 'Aircraft ' + str(i))
+            
+        self.tab.setMinimumHeight(500)
+        self._widget.verticalLayout.addStretch(1)
+        self._widget.verticalLayout.addWidget(self.scroll)
+
     # Create a signal-slot mechanism for each function in order to display information
+    # @TODO optimize the code for the signal slot such that only one function is needed
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
@@ -235,7 +257,7 @@ class MyPlugin(Plugin):
     # @TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
         self.ChecklistWindow.shutdown()
-        self.ControlWindow.shutdown()
+        self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
