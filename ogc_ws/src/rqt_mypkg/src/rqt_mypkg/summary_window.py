@@ -39,8 +39,8 @@ class SummaryWindow(QWidget):
         
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
         self.aircraft_label.setContentsMargins(0, 30, 0, 0)
-        print(self.aircraft_label.setAlignment(Qt.AlignLeft))
         self.summary_details_layout.addWidget(self.aircraft_label)
+        
         for i in summarised_fields:
             # if summarised_fields.index(i) 
             self.summary_fields_layout = QHBoxLayout(self)

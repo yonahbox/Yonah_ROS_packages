@@ -148,10 +148,6 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(key).setMinimumHeight(500)
             self.aircrafts_info.get(key).setMinimumWidth(600)
             self.aircrafts_info.get(key).setWidgetResizable(True)
-            # self.aircraft1_scroll = QScrollArea()
-            # self.aircraft1_scroll.setMinimumHeight(500)
-            # self.aircraft1_scroll.setMinimumWidth(600)        
-            # self.aircraft1_scroll.setWidgetResizable(True)
             self.aircrafts_info.get(key).setWidget(self.aircrafts_info.get('AC' + str(i)))
             self.tab.addTab(self.aircrafts_info.get(key), 'Aircraft ' + str(i))
             
