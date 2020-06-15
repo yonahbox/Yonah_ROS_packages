@@ -10,9 +10,9 @@ import __main__
 from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
-class ControlWindow(QWidget):
+class WaypointWindow(QWidget):
     def __init__(self):
-        super(ControlWindow, self).__init__()
+        super(WaypointWindow, self).__init__()
         self.setWindowTitle("Ground Control Station")
         self.adjustSize()
         self.move(200,100)
