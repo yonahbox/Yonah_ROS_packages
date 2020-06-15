@@ -1,9 +1,2 @@
 #remove pyc files
-my_module.pyc
-control_window.pyc
-checklist_window.pyc
-__init__.pyc
-confirmation_window.pyc
-summary_window.pyc
-command_window.pyc
-aircraft_info.pyc
+*.pyc
