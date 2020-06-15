@@ -18,8 +18,10 @@
 from ctypes import *
 import json
 
+from identifiers import Identifiers
+
 class Td():
-	def __init__(self, tdlib_dir, output_chat, command_users):
+	def __init__(self, tdlib_dir, identifiers_loc, whitelist_devs):
 		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
 		tdjson = CDLL(tdjson_path)
 
@@ -54,8 +56,15 @@ class Td():
 		set_log_fatal_error_callback(fatal_error_cb)
 
 		self.tdlib_dir = tdlib_dir
-		self.chat_name = output_chat
-		self.command_users_info = command_users
+		self.whitelist_devs = whitelist_devs
+		self._ids = Identifiers(identifiers_loc, self.whitelist_devs, [1])
+		self.command_users_dict = {}
+
+		print(self._ids.get_number(True, 2))
+
+		for num in self.whitelist_devs:
+			self.command_users_dict[num] = {"number": self._ids.get_number(True, num)}
+
 
 		self.chat_list = []
 		self.selected_chat = None
@@ -101,6 +110,20 @@ class Td():
 				},
 				'@extra': 'sent from Td.py'
 			})
+
+	def send_message_multi(self, id_n, msg):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': self.command_users_dict[id_n]["id"],
+			'input_message_content': {
+				'@type': 'inputMessageText',
+				'text': {
+					'@type': 'formattedText',
+					'text': msg,
+				}
+			},
+			'@extra': 'sent from Td.py'
+		})
 
 	def send_image(self, path):
 		if self.selected_chat is None:
@@ -180,7 +203,7 @@ class Td():
 			result = json.loads(result_orig.decode('utf-8'))
 			recv_type = result['@type']
 
-			if result['@type'] == 'updateAuthorizationState':
+			if recv_type == 'updateAuthorizationState':
 				auth_state = result['authorization_state']['@type']
 				if auth_state == 'authorizationStateWaitTdlibParameters':
 					self.send({
@@ -205,45 +228,31 @@ class Td():
 					})
 			elif recv_type == 'updateChatOrder':
 				if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
-					new_chat = Chat(result['chat_id'])
-					self.chat_list.append(new_chat)
 					self._get_chat_info(result['chat_id'])
 			elif recv_type == 'chat':
 				if result['id'] not in [chat.chat_id for chat in self.chat_list]:
 					new_chat = Chat(result['id'])
+					new_chat.set_title(result['title'])
+
+					if result['type']['@type'] == 'chatTypePrivate':
+						self.command_user_ids.append(result['type']['user_id'])
+						print("calling getUser")
+						self.send({
+							'@type': 'getUser',
+							'user_id': result['type']['user_id']
+						})
+
 					self.chat_list.append(new_chat)
-				
-				for chat in self.chat_list:
-					if chat.chat_id == result['id']:
-						chat.set_title(result['title'])
-						chat.set_chat_type(result['type']['@type'])
-
-						if result['title'] == self.chat_name:
-							self.select_chat(chat)
-							if chat.chat_type == 1:
-								self.command_user_ids.append(result['type']['user_id'])
-							if chat.chat_type == 2:
-								chat.basic_group_id = result['type']['basic_group_id']
-								self.send({
-									'@type': 'getBasicGroupFullInfo',
-									'basic_group_id': chat.basic_group_id
-								})
-
-			elif recv_type == 'basicGroupFullInfo':
-				for user in result['members']:
-					new_member = User(user['user_id'])
-					self.selected_chat.add_member(new_member)
-					self.send({
-						'@type': 'getUser',
-						'user_id': user['user_id']
-					})
 			elif recv_type == 'user':
-				for member in self.selected_chat.group_members:
-					if member.user_id == result['id']:
-						member.set_info(result['first_name'], result['last_name'], result['username'], result['phone_number'])
-						if member.first_name in self.command_users_info:
-							self.command_users.append(member)
-							self.command_user_ids.append(member.user_id)
+				for id_n, obj in self.command_users_dict.items():
+					if result['phone_number'] == obj["number"]:
+						for chat in self.chat_list:
+							if chat.chat_id == result["id"]:
+								self.select_chat(chat)
+								self.command_users_dict[id_n]["id"] = result["id"]
+								break
+					break
+
 			return result
 
 	def destroy(self):
@@ -274,6 +283,7 @@ class Chat():
 			self.chat_type = 1
 		elif chat_type == 'chatTypeBasicGroup':
 			self.chat_type = 2
+			
 	def set_title(self, title):
 		self.title = title
 
@@ -282,17 +292,3 @@ class Chat():
 
 	def get_messages(self, n):
 		pass
-
-class User():
-	def __init__(self, user_id):
-		self.user_id = user_id
-		self.first_name = ""
-		self.last_name = ""
-		self.user_name = ""
-		self.phone_number = 0
-
-	def set_info(self, first_name, last_name, user_name, phone_number):
-		self.first_name = first_name
-		self.last_name = last_name
-		self.user_name = user_name
-		self.phone_number = phone_number
