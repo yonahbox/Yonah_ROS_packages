@@ -57,16 +57,14 @@ class Td():
 
 		self.tdlib_dir = tdlib_dir
 		self.whitelist_devs = whitelist_devs
+		
 		self._ids = Identifiers(identifiers_loc, self.whitelist_devs, [1])
-		self.command_users_dict = {}
-
-		print(self._ids.get_number(True, 2))
-
-		for num in self.whitelist_devs:
-			self.command_users_dict[num] = {"number": self._ids.get_number(True, num)}
-
 
 		self.chat_list = []
+
+		for num in self.whitelist_devs:
+			self.chat_list.append(Chat(num, self._ids.get_number(True, num)))
+
 		self.selected_chat = None
 
 		self.get_chats()
@@ -88,6 +86,12 @@ class Td():
 		result = self._client_execute(None, query)
 		if result:
 			return json.loads(result.decode('utf-8'))
+		
+	def _get_chat_id(self, id_n):
+		for chat in self.chat_list:
+			if chat.whitelist_id == id_n:
+				return chat.chat_id
+		return False
 		
 	def send(self, query):
 		query = json.dumps(query).encode('utf-8')
@@ -114,7 +118,7 @@ class Td():
 	def send_message_multi(self, id_n, msg):
 		self.send({
 			'@type': 'sendMessage',
-			'chat_id': self.command_users_dict[id_n]["id"],
+			'chat_id': self._get_chat_id(id_n),
 			'input_message_content': {
 				'@type': 'inputMessageText',
 				'text': {
@@ -194,8 +198,8 @@ class Td():
 			'chat_id': chat_id
 		})
 
-	def select_chat(self, chat):
-		self.selected_chat = chat
+	# def select_chat(self, chat):
+		# self.selected_chat = chat
 
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
@@ -230,28 +234,16 @@ class Td():
 				if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
 					self._get_chat_info(result['chat_id'])
 			elif recv_type == 'chat':
-				if result['id'] not in [chat.chat_id for chat in self.chat_list]:
-					new_chat = Chat(result['id'])
-					new_chat.set_title(result['title'])
-
-					if result['type']['@type'] == 'chatTypePrivate':
-						self.command_user_ids.append(result['type']['user_id'])
-						print("calling getUser")
-						self.send({
-							'@type': 'getUser',
-							'user_id': result['type']['user_id']
-						})
-
-					self.chat_list.append(new_chat)
+				if result['type']['@type'] == 'chatTypePrivate':
+					self.send({
+						'@type': 'getUser',
+						'user_id': result['type']['user_id']
+					})
+				# print(self.command_user_ids)
 			elif recv_type == 'user':
-				for id_n, obj in self.command_users_dict.items():
-					if result['phone_number'] == obj["number"]:
-						for chat in self.chat_list:
-							if chat.chat_id == result["id"]:
-								self.select_chat(chat)
-								self.command_users_dict[id_n]["id"] = result["id"]
-								break
-					break
+				for chat in self.chat_list:
+					if chat.phone_number == result["phone_number"]:
+						chat.set_chat_id(result["id"])
 
 			return result
 
@@ -259,14 +251,14 @@ class Td():
 		self._client_destroy(self.client)
 	
 	def setup_complete(self):
-		return self.selected_chat is not None
-
+		return all([chat.basic_complete for chat in self.chat_list])
 
 class Chat():
-	def __init__(self, chat_id):
-		self.chat_id = chat_id
+	def __init__(self, whitelist_id, phone_number):
+		self.chat_id = 0
+		self.whitelist_id = whitelist_id
 		self.title = ""
-		self.phone_number = 0
+		self.phone_number = phone_number
 
 		# type of chat:
 		#	0: unknown
@@ -277,6 +269,11 @@ class Chat():
 		# Only applicable for basic groups (chat type 2 below)
 		self.basic_group_id = 0
 		self.group_members = []
+		self.basic_complete = False
+	
+	def set_chat_id(self, chat_id):
+		self.chat_id = chat_id
+		self.basic_complete = True
 
 	def set_chat_type(self, chat_type):
 		if chat_type == 'chatTypePrivate':
