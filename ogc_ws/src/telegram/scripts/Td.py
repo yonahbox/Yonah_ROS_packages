@@ -21,7 +21,7 @@ import json
 from identifiers import Identifiers
 
 class Td():
-	def __init__(self, tdlib_dir, identifiers_loc, whitelist_devs):
+	def __init__(self, tdlib_dir, identifiers_loc, is_air, whitelist_devs):
 		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
 		tdjson = CDLL(tdjson_path)
 
@@ -58,7 +58,7 @@ class Td():
 		self.tdlib_dir = tdlib_dir
 		self.whitelist_devs = whitelist_devs
 		
-		self._ids = Identifiers(identifiers_loc, self.whitelist_devs, [1])
+		self._ids = Identifiers(identifiers_loc, is_air,  self.whitelist_devs,)
 
 		self.chat_list = []
 
@@ -92,7 +92,7 @@ class Td():
 			if chat.whitelist_id == id_n:
 				return chat.chat_id
 		return False
-		
+
 	def send(self, query):
 		query = json.dumps(query).encode('utf-8')
 		self._client_send(self.client, query)

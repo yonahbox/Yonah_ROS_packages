@@ -55,10 +55,12 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")
-		chat_name = rospy.get_param("~identifiers_file")
-		command_users = rospy.get_param("~whitelist_devs")
-		rospy.loginfo(command_users)
-		td = Td(tdlib_dir, chat_name, command_users)
+		identifiers_file = rospy.get_param("~identifiers_file")
+		ground_ids = rospy.get_param("~ground_ids")
+		is_air = rospy.get_param("~is_air")
+
+		# rospy.loginfo(command_users)
+		td = Td(tdlib_dir, identifiers_file, is_air, ground_ids)
 
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True

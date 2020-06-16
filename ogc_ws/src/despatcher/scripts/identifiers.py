@@ -27,13 +27,17 @@ class Device:
 		self.rb_serial = rb_serial
 
 class Identifiers:
-	def __init__(self, json_file, valid_air_ids, valid_gnd_ids):
+	# def __init__(self, json_file, valid_air_ids, valid_gnd_ids):
+	def __init__(self, json_file, is_air, valid_ids):
 		self.json_file = json_file
-		self.valid_air_ids = valid_air_ids
-		self.valid_gnd_ids = valid_gnd_ids
+		# self.valid_air_ids = valid_air_ids
+		# self.valid_gnd_ids = valid_gnd_ids
+		self.is_air = is_air
+		self.valid_ids = valid_ids
 
-		self.whitelist_gnd = []
-		self.whitelist_air = []
+		# self.whitelist_gnd = []
+		# self.whitelist_air = []
+		self.whitelist = []
 		self.whitelist_nums = []
 		self.whitelist_imei = []
 		
@@ -51,17 +55,23 @@ class Identifiers:
 				print("invalid identifier file")
 				exit()
 
-		for obj in self.json_obj["ground"]:
-			if obj["id"] in self.valid_gnd_ids:
-				self.whitelist_gnd.append(Device(obj["label"], False, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
+		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
+			if obj["id"] in self.valid_ids:
+				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_imei.append(obj["imei"])
 
-		for obj in self.json_obj["air"]:
-			if obj["id"] in self.valid_air_ids:
-				self.whitelist_air.append(Device(obj["label"], True, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
-				self.whitelist_nums.append(obj["number"])
-				self.whitelist_imei.append(obj["imei"])
+		# for obj in self.json_obj["ground"]:
+		# 	if obj["id"] in self.valid_gnd_ids:
+		# 		self.whitelist_gnd.append(Device(obj["label"], False, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
+		# 		self.whitelist_nums.append(obj["number"])
+		# 		self.whitelist_imei.append(obj["imei"])
+
+		# for obj in self.json_obj["air"]:
+		# 	if obj["id"] in self.valid_air_ids:
+		# 		self.whitelist_air.append(Device(obj["label"], True, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
+		# 		self.whitelist_nums.append(obj["number"])
+		# 		self.whitelist_imei.append(obj["imei"])
 
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
@@ -76,7 +86,8 @@ class Identifiers:
 	def get_device(self, is_air, id_n):
 		# return the phone number associated with the id
 		# the for loop uses a ternary operator to check which whitelist to check against
-		for device in self.whitelist_air if is_air else self.whitelist_gnd:
+		# for device in self.whitelist_air if is_air else self.whitelist_gnd:
+		for device in self.whitelist:
 			if device.id == id_n:
 				return device
 
