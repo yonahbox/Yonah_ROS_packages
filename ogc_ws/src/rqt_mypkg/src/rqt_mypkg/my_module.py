@@ -27,7 +27,7 @@ from sensor_msgs.msg import NavSatFix
 # from despatcher.msg import RegularPayload
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject
+from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
@@ -115,7 +115,8 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/state", State, self.mode_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
-
+        
+        self.trigger = Signal(str)
         # Publisher List
         self.arming_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
         self.transfer_control_publisher = rospy.Publisher('transfer_control', String, queue_size = 5)
@@ -156,20 +157,45 @@ class MyPlugin(Plugin):
 
     def regular_payload(self, data):
         status = Communicate()
-        status.regular_payload_signal.connect(self.regular_payload_display)
-        status.regular_payload_signal.emit(data.text)
-
+        status.string_signal.connect(self.airspeed_display)
+        status.string_signal.emit(data.airspeed)
+        status.string_signal.connect(self.altitude_display)
+        status.string_signal.emit(data.altitude)
+        status.string_signal.connect(self.mode_status_display) 
+        status.string_signal.emit(data.armed)
+        status.string_signal.connect(self.groundspeed_display) #
+        status.string_signal.emit(data.groundspeed)
+        status.string_signal.connect(self.throttle_display) #
+        status.string_signal.emit(data.throttle)
+        status.string_signal.connect(self.gps_display) #
+        status.string_signal.emit(data.lat, data.lon)
+        status.string_signal.connect(self.windspeed_display) #
+        status.string_signal.emit(data.windspeed)
+        status.string_signal.connect(self.vibe_display) #
+        status.string_signal.emit(data.vibe)
+        status.string_signal.connect(self.vtol_display) #
+        status.string_signal.emit(data.vtol)
+        status.string_signal.connect(self.waypoint_display) #
+        status.string_signal.emit(data.text)
+        status.string_signal.connect(self.time_display) #
+        status.string_signal.emit(data.text)
+        status.string_signal.connect(self.fuel_display) #
+        status.string_signal.emit(data.fuel)
+        status.string_signal.connect(self.quad_batt_display) #
+        status.string_signal.emit(data.quad_batt)
+        
     def status_text(self, data):
         status = Communicate()
-        status.status_text_signal.connect(self.status_text_display)
-        status.status_text_signal.emit(data.text)
+        status.string_signal.connect(self.status_text_display)
+        status.string_signal.emit(data.text)
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display)
-        status.mode_signal.emit(data.mode)
-        status.arm_signal.connect(self.arm_status_display)
-        status.arm_signal.emit(data.armed)
+        status.string_signal.connect(self.mode_status_display)
+        status.string_signal.emit(data.mode)
+
+        status.string_signal.connect(self.arm_status_display)
+        status.string_signal.emit(str(data.armed))
 
     def VFR_HUD(self, data):
         status = Communicate()
@@ -184,63 +210,75 @@ class MyPlugin(Plugin):
         status.waypoint_list_signal.emit(data.waypoints, data.current_seq)
     
     # All functions with _display are the functions that takes the information and display it to the UI
-    def ondemand_display(self, status_text): # as of now put all info on the main textedit box
-        self._widget.message_textedit.append(status_text)
-
-    def regular_payload_display(self, status_text): # as of now put all info on the main textedit box
-        self._widget.message_textedit.append(status_text)
+    def groundspeed_display(self, data):
+        pass
     
-    def status_text_display(self, status_text):
-        self._widget.message_textedit.append(status_text)
+    def throttle_display(self, data):
+        pass
+
+    def gps_display(self, data):
+        pass
+
+    def windspeed_display(self, data):
+        pass
+
+    def vibe_display(self, data):
+        pass
+
+    def vtol_display(self, data):
+        pass
+
+    def waypoint_display(self, data):
+        pass
+
+    def time_display(self, data):
+        pass
+
+    def fuel_display(self, data):
+        pass
+
+    def quad_batt_display(self, data):
+        pass
     
     def mode_status_display(self, mode_status):
-        self._widget.mode_textedit.setText(mode_status)
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMODE1').setPlainText(mode_status)
 
     def altitude_display(self, altitude):
         altitude = str(round(altitude, 1)) + ' m'
-        self._widget.altitude_textedit.setText(altitude)
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftALTITUDE1').setPlainText(altitude)        
+        # self._widget.altitude_textedit.setText(altitude)
 
     def airspeed_display(self, airspeed):
         airspeed = str(round(airspeed, 1)) + ' m/s'
-        self._widget.airspeed_textedit.setText(airspeed)
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAIRSPEED1').setPlainText(airspeed)        
+        # self._widget.airspeed_textedit.setText(airspeed)
 
     def waypoint_total_display(self, total, sequence):
         total = len(total) - 1
-        self._widget.progressBar.setRange(0,total)
-        self._widget.progressBar.setValue(sequence)
-        self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
+        # self._widget.progressBar.setRange(0,total)
+        # self._widget.progressBar.setValue(sequence)
+        # self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
 
+    
     def arm_status_display(self, arm_status):
-        if arm_status == False:
-            self.text_to_display = 'DISARMED'
+        if arm_status == 'False':
+            text_to_display = 'DISARMED'
         else:
-            self.text_to_display = 'ARMED'
-        self._widget.arming_textedit.setText(str(self.text_to_display))
+            text_to_display = 'ARMED'
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftSTATUS1').setPlainText(text_to_display)        
+        # self._widget.arming_textedit.setText(str(text_to_display))
 
     # Send commands to air_despatcher
     def arming (self):
         print(self.checklist_opened)
         self.arming_publisher.publish('arm')
-        self.status_text_display('Arming message sent')
+        # self.status_text_display('Arming message sent')
         # if self.text_to_display == 'DISARMED':
         #     self.arming.publish('ARM')
         # elif self.text_to_display == 'ARMED':
         #     self.arming.publish('DISARM')
         #     print('Now disarm it')
 
-    def transfer_control (self):
-        print ('transfer control successful')
-    def mode_manual (self):
-        print ('manual mode activated')
-    def mode_auto (self):
-        print ('auto mode activated')
-    def load_mission(self):
-        print ('mission loaded')
-    def check_mission(self):
-        print ('checked mission')
-    def armingbox(self):
-        print ('successful!')
-    
     # Close all windows
     # @TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
@@ -269,6 +307,10 @@ class Communicate (QObject):
     # can be combined into one variable. However, for clarity purpose,
     # I split each variable for each display we need to make
     # regular_paylaod_signal = Signal(RegularPayload)
+    string_signal = Signal(str)
+    boolean_signal = Signal(bool)
+    float_signal = Signal(float)
+    
     status_text_signal = Signal(str)
     arm_signal = Signal(bool)
     mode_signal = Signal(str)
