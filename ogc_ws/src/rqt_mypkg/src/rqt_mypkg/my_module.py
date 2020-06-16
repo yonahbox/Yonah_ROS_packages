@@ -21,7 +21,7 @@ import rospkg
 import rosservice
 import rostopic
 
-from std_msgs.msg import String
+from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
 # from despatcher.msg import RegularPayload
@@ -73,22 +73,14 @@ class MyPlugin(Plugin):
         # Get the number of active aircrafts here
         self.active_aircrafts = 5
         self.aircrafts_info = {}
-        self.aircrafts_info['AC1'] = Aircraft1()
-        self.aircrafts_info['AC2'] = Aircraft2()
-        self.aircrafts_info['AC3'] = Aircraft3()
-        self.aircrafts_info['AC4'] = Aircraft4()
-        self.aircrafts_info['AC5'] = Aircraft5()
-        self.aircrafts_info['AC6'] = Aircraft6()
-        self.aircrafts_info['AC7'] = Aircraft7()
-        self.aircrafts_info['AC8'] = Aircraft8()
-        self.aircrafts_info['AC9'] = Aircraft9()
+        for i in range (self.active_aircrafts + 1):
+            self.aircrafts_info['AC' + str(i)] = Aircraft1(i)
 
         # Declare variables for each imported class
         self.ChecklistWindow = ChecklistWindow()
         self.WaypointWindow = WaypointWindow()
         self.SummaryWindow = SummaryWindow()
         self.CommandWindow = CommandWindow()
-        self.Aircraft1 = Aircraft1()
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()

@@ -11,7 +11,7 @@ from checklist_window import ChecklistWindow
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 # AircraftInfo is the parent widget for all the other aircrafts
 class AircraftInfo(QWidget):
-    def __init__(self):
+    def __init__(self, no_aircraft):
         super(AircraftInfo, self).__init__()
         self.setWindowTitle("Summary Page")
         
@@ -36,7 +36,7 @@ class AircraftInfo(QWidget):
             'Fuel Level',
             'Quad Battery']
 
-        self.active_aircrafts = 1
+        self.active_aircrafts = no_aircraft
         self.create_summary(self.active_aircrafts, summarised_fields)
         self.statustext_label = QLabel('Status Text')
         self.statustext_label.setContentsMargins(0, 30, 0, 0)
@@ -49,7 +49,6 @@ class AircraftInfo(QWidget):
         self.layout.addWidget(self.statustext_label)
         self.layout.addWidget(self.statustext)
         self.setLayout(self.layout)
-
 
     def create_summary(self, aircraft_no, summarised_fields):
         self.summary_details_layout = QVBoxLayout(self)
@@ -70,12 +69,11 @@ class AircraftInfo(QWidget):
             self.summary_details_layout.addLayout(self.summary_fields_layout)
 
         self.summary_layout.addLayout(self.summary_details_layout)
-    
+
     def shutdown(self):
         self.close()
 class Aircraft1(AircraftInfo):
     pass
-
 class Aircraft2(AircraftInfo):
     pass
 class Aircraft3(AircraftInfo):
