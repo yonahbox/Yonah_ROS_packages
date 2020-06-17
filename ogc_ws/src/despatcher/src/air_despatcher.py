@@ -58,6 +58,7 @@ class airdespatcher():
         self._regular_payload_flag = False # Whether we should send regular payload to Ground Control
         self._statustext_flag = False # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
+        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for aircraft/gnd identifiers and prefix
         # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)
@@ -67,8 +68,8 @@ class airdespatcher():
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
         # Intervals btwn msgs
-        self._interval_1 = rospy.get_param("~_interval_1") # Short time interval (seconds) for regular payload
-        self._interval_2 = rospy.get_param("~_interval_2") # Long time interval (seconds) for regular payload
+        self._interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
+        self._interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
         self._tele_interval = self._interval_2 # Interval (seconds) for regular payload over telegram
 
@@ -243,15 +244,18 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        self.pub_to_telegram.publish(self.msg)
-        rospy.sleep(self._tele_interval) # Need to remove this after the merge
+        self.pub_to_telegram.publish(self._msg)
     
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
         self._attach_headers(severity)
-        self.pub_to_sms.publish(self._msg) # To-do: Replace with if-else statement
-        self.pub_to_sbd.publish(self._msg)
-        self.pub_to_telegram.publish(self.msg)
+        if self.link_select == 0:
+            self.pub_to_telegram.publish(self._msg)
+        elif self.link_select == 1:
+            self.pub_to_sms.publish(self._msg)
+        else:
+            self.pub_to_sbd.publish(self._msg)
+        
 
     def check_alerts(self, data):
         '''Check for special alerts'''
@@ -283,9 +287,13 @@ class airdespatcher():
         '''Send regular payload over one of the three links: SMS, SBD or Telegram'''
         self._msg = self.payloads.truncate_regular_payload()
         self._attach_headers("r")
-        self._send_regular_payload_sms() # To-do: Replace with if-else statement
-        self._send_regular_payload_sbd()
-        self._send_regular_payload_tele()
+        if self.link_select == 0:
+            self._send_regular_payload_tele()
+        elif self.link_select == 1:
+            self._send_regular_payload_sms()
+        else:
+            self._send_regular_payload_sbd()
+        
         # Sleep for the specified interval. Note that rospy.Timer
         # will not allow the time interval to go below min_interval
         rospy.sleep(self._sms_interval)
