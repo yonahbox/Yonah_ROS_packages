@@ -37,7 +37,7 @@ class RegularPayloadException(Exception):
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements
 # Example payload: r 1 1 30 226 1 30 2 2315 102 6857 4 0 0 1591089280
-struct_cmd = "> s B B B H B B B H B H B H B I"
+struct_cmd = "> s B B B H B B B H B H B H B I" #@TODO need to change as well
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -119,14 +119,18 @@ def convert_to_rosmsg(entries):
     rosmsg.airspeed = int(entries[3])
     rosmsg.alt = int(entries[4])
     rosmsg.armed = int(entries[5])
-    # rosmsg.mode = int(entries[6])
-    rosmsg.groundspeed = int(entries[6])
-    rosmsg.lat = int(entries[7]) + float(entries[8])/10000
-    rosmsg.lon = int(entries[9]) + float(entries[10])/10000
-    rosmsg.throttle = float(entries[11])/10
-    rosmsg.vtol = int(entries[12])
-    rosmsg.wp = int(entries[13])
-    rosmsg.header.stamp.secs = int(entries[14])
+    rosmsg.mode = int(entries[6])
+    rosmsg.groundspeed = int(entries[7])
+    rosmsg.windspeed = int(entries[8])
+    rosmsg.fuel = int(entries[9])
+    rosmsg.battery = int(entries[10])
+    rosmsg.lat = int(entries[11]) + float(entries[12])/10000
+    rosmsg.lon = int(entries[13]) + float(entries[14])/10000
+    rosmsg.throttle = float(entries[15])/10
+    rosmsg.vtol = int(entries[16])
+    rosmsg.wp = int(entries[17])
+    rosmsg.vibe = int(entries[18])
+    rosmsg.header.stamp.secs = int(entries[19])
     return rosmsg
 
 ########################################
@@ -140,19 +144,19 @@ class air_payload():
             "airspeed": 0,
             "alt": 0,
             "arm": 0,
-            "mode": 0, # new done
+            "mode": 0, 
             "groundspeed": 0,
-            "windspeed": 0, # currently no topic is changing this value
-            "fuel": 0, # as of now fuel's topic hasn't been established yet
-            "batt": 0, # new
+            "windspeed": 0, 
+            "fuel": 0,
+            "batt": 0, 
             "lat1": 0,
             "lat2": 0,
             "lon1": 0,
             "lon2": 0,
             "throttle": 0,
+            "vtol": 0,
             "wp": 0,
-            "vtol": 0
-            # "vibe" : 0
+            "vibe" : 0
         }
         self.ping_entries = {
             "vibe": (0.0, 0.0, 0.0),
@@ -194,14 +198,18 @@ class air_payload():
     
     # @TODO check whether data.windspeed is indeed correct
     def get_windspeed(self, data):
-        self.entries['windspeed'] = int(data.windspeed)
+        pass
 
     def get_vibe_status(self, data):
         '''Obtain vibration data from mavros/vibration/raw/vibration'''
         self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
             round(data.vibration.z, 2))
         self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
-        # self.entries['vibe']
+        bad_vibe = 3
+        for i in self.ping_entries.get("vibe"):
+            if i >= bad_vibe:
+                self.entries["vibe"] = 1
+
     def truncate_regular_payload(self):
         '''Remove unnecessary characters from regular payload'''
         msg = str(sorted(self.entries.items())) # Sort entries and convert to string
