@@ -163,25 +163,25 @@ class MyPlugin(Plugin):
         status.string_signal.emit(data.altitude)
         status.string_signal.connect(self.mode_status_display) 
         status.string_signal.emit(data.armed)
-        status.string_signal.connect(self.groundspeed_display) #
+        status.string_signal.connect(self.groundspeed_display)
         status.string_signal.emit(data.groundspeed)
-        status.string_signal.connect(self.throttle_display) #
+        status.string_signal.connect(self.throttle_display)
         status.string_signal.emit(data.throttle)
-        status.string_signal.connect(self.gps_display) #
+        status.string_signal.connect(self.gps_display)
         status.string_signal.emit(data.lat, data.lon)
-        status.string_signal.connect(self.windspeed_display) #
+        status.string_signal.connect(self.windspeed_display)
         status.string_signal.emit(data.windspeed)
-        status.string_signal.connect(self.vibe_display) #
+        status.string_signal.connect(self.vibe_display)
         status.string_signal.emit(data.vibe)
-        status.string_signal.connect(self.vtol_display) #
+        status.string_signal.connect(self.vtol_display)
         status.string_signal.emit(data.vtol)
-        status.string_signal.connect(self.waypoint_display) #
+        status.string_signal.connect(self.waypoint_display)
         status.string_signal.emit(data.text)
-        status.string_signal.connect(self.time_display) #
+        status.string_signal.connect(self.time_display)
         status.string_signal.emit(data.text)
-        status.string_signal.connect(self.fuel_display) #
+        status.string_signal.connect(self.fuel_display)
         status.string_signal.emit(data.fuel)
-        status.string_signal.connect(self.quad_batt_display) #
+        status.string_signal.connect(self.quad_batt_display)
         status.string_signal.emit(data.quad_batt)
         
     def status_text(self, data):
@@ -211,34 +211,34 @@ class MyPlugin(Plugin):
     
     # All functions with _display are the functions that takes the information and display it to the UI
     def groundspeed_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGroundspeed1').setPlainText(data)
     
     def throttle_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftThrottle1').setPlainText(data)
 
     def gps_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGPS1').setPlainText(data)
 
     def windspeed_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftWindspeed1').setPlainText(data)
 
     def vibe_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVibe Status1').setPlainText(data)
 
     def vtol_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVTOL Status1').setPlainText(data)
 
     def waypoint_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftTarget Waypoint1').setPlainText(data)
 
     def time_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFlying Time1').setPlainText(data)
 
     def fuel_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFuel Level1').setPlainText(data)
 
     def quad_batt_display(self, data):
-        pass
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftQuad Battery1').setPlainText(data)
     
     def mode_status_display(self, mode_status):
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMODE1').setPlainText(mode_status)

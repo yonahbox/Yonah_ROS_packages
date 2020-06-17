@@ -22,14 +22,15 @@ class AircraftInfo(QWidget):
         
         # create the widgets
         summarised_fields = [
-            'MODE', 
-            'STATUS', 
-            'ALTITUDE', 
-            'AIRSPEED',  
-            'GROUNDSPEED', 
+            'Mode', 
+            'Status', 
+            'Altitude', 
+            'Airspeed',  
+            'Groundspeed', 
             'GPS Coordinate', 
             'Throttle', 
             'VTOL Status', 
+            'Windspeed',
             'Target Waypoint',
             'Flying Time',
             'Vibe status',
