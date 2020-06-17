@@ -116,7 +116,8 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/state", State, self.mode_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
-        
+        # rospy.Subscriber("mavros/vfr_hud", Twist, self.get_wind_speed) #highly unsure whether this is correct
+
         # Publisher List
         self.arming_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
         self.transfer_control_publisher = rospy.Publisher('transfer_control', String, queue_size = 5)
@@ -125,7 +126,8 @@ class MyPlugin(Plugin):
 
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
-
+    def get_wind_speed(self, data):
+        print (data.windspeed)
     def create_tab_windows(self):
         # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()
@@ -203,6 +205,8 @@ class MyPlugin(Plugin):
         status.airspeed_signal.emit(data.airspeed)
         status.altitude_signal.connect(self.altitude_display)
         status.altitude_signal.emit(data.altitude)
+        status.altitude_signal.connect(self.altitude_display)
+        status.altitude_signal.emit(data.windspeed)
 
     def waypoint_total(self, data):
         status = Communicate()

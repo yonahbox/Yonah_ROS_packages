@@ -72,6 +72,30 @@ def convert_to_str(mo_msg):
         string = string.replace(i,"") # Remove unnecessary characters
     return string
 
+def convert_mode_to_int (mode):
+        d = {
+            'MANUAL': 0,
+            'CIRCLE': 1,
+            'STABILIZE': 2,
+            'TRAINING': 3,
+            'ACRO': 4,
+            'FBWA': 5,
+            'FBWB': 6,
+            'CRUISE': 7,
+            'AUTOTUNE': 8,
+            'AUTO': 10,
+            'RTL': 11,
+            'LOITER': 12,
+            'LAND': 14,
+            'GUIDED': 15,
+            'INITIALISING': 16,
+            'QSTABILIZE': 17,
+            'QHOVER': 18,
+            'QLOITER': 19,
+            'MANUAL': 20,
+            'QLAND': 21
+        }
+        return d.get(mode)
 ########################################
 # Gnd despatcher
 ########################################
@@ -95,6 +119,7 @@ def convert_to_rosmsg(entries):
     rosmsg.airspeed = int(entries[3])
     rosmsg.alt = int(entries[4])
     rosmsg.armed = int(entries[5])
+    # rosmsg.mode = int(entries[6])
     rosmsg.groundspeed = int(entries[6])
     rosmsg.lat = int(entries[7]) + float(entries[8])/10000
     rosmsg.lon = int(entries[9]) + float(entries[10])/10000
@@ -115,10 +140,9 @@ class air_payload():
             "airspeed": 0,
             "alt": 0,
             "arm": 0,
-            "mode": 0, # new
+            "mode": 0, # new done
             "groundspeed": 0,
-            "windspeed": 0, # new
-            "time": 0, # new
+            "windspeed": 0, # currently no topic is changing this value
             "fuel": 0, # as of now fuel's topic hasn't been established yet
             "batt": 0, # new
             "lat1": 0,
@@ -138,6 +162,7 @@ class air_payload():
     def get_mode_and_arm_status(self, data):
         '''Obtain mode and arm status from mavros/state'''
         self.entries["arm"] = int(data.armed)
+        self.entries["mode"] = convert_mode_to_int(data.mode)
         self.ping_entries["mode"] = data.mode
     
     def get_VFR_HUD_data(self, data):
@@ -153,7 +178,7 @@ class air_payload():
         self.entries["lat1"] = int(data.latitude)
         self.entries["lat2"] = int(10000*(data.latitude - self.entries["lat1"]))
         self.entries["lon1"] = int(data.longitude)
-        self.entri  es["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
+        self.entries["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
 
     def get_wp_reached(self, data):
         '''Obtain information on which waypoint has been reached'''
@@ -167,12 +192,16 @@ class air_payload():
         else:
             self.entries["vtol"] = 0
     
+    # @TODO check whether data.windspeed is indeed correct
+    def get_windspeed(self, data):
+        self.entries['windspeed'] = int(data.windspeed)
+
     def get_vibe_status(self, data):
         '''Obtain vibration data from mavros/vibration/raw/vibration'''
         self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
             round(data.vibration.z, 2))
         self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
-    
+        # self.entries['vibe']
     def truncate_regular_payload(self):
         '''Remove unnecessary characters from regular payload'''
         msg = str(sorted(self.entries.items())) # Sort entries and convert to string
@@ -183,3 +212,5 @@ class air_payload():
             k = k + " "
             msg = msg.replace(k,"") # Remove entry descriptions
         return msg
+    
+    
