@@ -120,7 +120,7 @@ class air_payload():
             "windspeed": 0, # new
             "time": 0, # new
             "fuel": 0, # as of now fuel's topic hasn't been established yet
-            "batt": 0, # battery status
+            "batt": 0, # new
             "lat1": 0,
             "lat2": 0,
             "lon1": 0,
@@ -128,6 +128,7 @@ class air_payload():
             "throttle": 0,
             "wp": 0,
             "vtol": 0
+            # "vibe" : 0
         }
         self.ping_entries = {
             "vibe": (0.0, 0.0, 0.0),
@@ -152,7 +153,7 @@ class air_payload():
         self.entries["lat1"] = int(data.latitude)
         self.entries["lat2"] = int(10000*(data.latitude - self.entries["lat1"]))
         self.entries["lon1"] = int(data.longitude)
-        self.entries["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
+        self.entri  es["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
 
     def get_wp_reached(self, data):
         '''Obtain information on which waypoint has been reached'''
