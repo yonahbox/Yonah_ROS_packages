@@ -11,7 +11,7 @@ uint8 vehicle_no
 uint8 airspeed
 uint16 alt
 bool armed
-uint16 mode
+uint8 mode
 uint16 groundspeed
 uint8 windspeed
 bool fuel
