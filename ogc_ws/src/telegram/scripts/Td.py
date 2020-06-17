@@ -245,6 +245,7 @@ class Td():
 				for chat in self.chat_list:
 					if chat.phone_number == result["phone_number"]:
 						chat.set_chat_id(result["id"])
+						self.command_user_ids.append(result["id"])
 
 			return result
 
