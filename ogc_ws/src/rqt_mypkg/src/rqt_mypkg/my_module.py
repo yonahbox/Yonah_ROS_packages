@@ -89,6 +89,7 @@ class MyPlugin(Plugin):
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.WaypointWindow)
 
+        # Create the tab windows for the aircraft-specific information
         self.create_tab_windows()
 
         # Add both layouts into the main layout
@@ -116,7 +117,6 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
         
-        self.trigger = Signal(str)
         # Publisher List
         self.arming_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
         self.transfer_control_publisher = rospy.Publisher('transfer_control', String, queue_size = 5)

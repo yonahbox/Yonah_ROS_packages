@@ -115,7 +115,12 @@ class air_payload():
             "airspeed": 0,
             "alt": 0,
             "arm": 0,
+            "mode": 0, # new
             "groundspeed": 0,
+            "windspeed": 0, # new
+            "time": 0, # new
+            "fuel": 0, # as of now fuel's topic hasn't been established yet
+            "batt": 0, # battery status
             "lat1": 0,
             "lat2": 0,
             "lon1": 0,

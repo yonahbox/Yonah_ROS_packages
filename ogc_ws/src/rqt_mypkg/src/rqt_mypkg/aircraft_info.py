@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from checklist_window import ChecklistWindow
 
-### File is still changing rapidly and dynamically, hence comments might not be accurate
+# File is still changing rapidly and dynamically, hence comments might not be accurate
+# @TODO change the variable names. As of now it is heavily referenced from the summary page
 # AircraftInfo is the parent widget for all the other aircrafts
 class AircraftInfo(QWidget):
     def __init__(self, no_aircraft):
@@ -45,7 +46,7 @@ class AircraftInfo(QWidget):
         self.statustext.setReadOnly(True)
         self.statustext.setMinimumHeight(300)
 
-        # add the widgets into the layouts
+        # Add the widgets into the layouts
         self.layout.addLayout(self.summary_layout)
         self.layout.addWidget(self.statustext_label)
         self.layout.addWidget(self.statustext)
@@ -73,6 +74,9 @@ class AircraftInfo(QWidget):
 
     def shutdown(self):
         self.close()
+
+# The child classes as of now are empty -- meaning they do not modify anything from the parent class
+# This serves as a placeholder in the case we need to modify anything specific to an aircraft, then we can do it easily
 class Aircraft1(AircraftInfo):
     pass
 class Aircraft2(AircraftInfo):
