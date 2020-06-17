@@ -21,8 +21,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # ROS/Third-Party
 import rospy
-from despatcher.msg import RegularPayload
+
 from std_msgs.msg import String
+from despatcher.msg import RegularPayload
+from despatcher.msg import Message
 
 # Local
 import regular
@@ -34,7 +36,7 @@ class gnddespatcher():
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to Telegram node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram_gnd', Message, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
@@ -59,8 +61,10 @@ class gnddespatcher():
         if data.data.split()[0] not in whitelisted_prefixes:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
+            msg = Message()
+            msg.id = data.id
             # Add msg headers
-            msg = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
+            msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
                 " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
             if self.link_select == 0:
@@ -124,7 +128,7 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
-        rospy.Subscriber("ogc/to_despatcher", String, self.handle_outgoing_msgs)
+        rospy.Subscriber("ogc/to_despatcher", Message, self.handle_outgoing_msgs)
         rospy.spin()
 
 if __name__=='__main__':

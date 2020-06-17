@@ -17,6 +17,7 @@
 
 import rospy
 from std_msgs.msg import String
+from despatcher.msg import Message
 
 import sys
 import os
@@ -26,7 +27,7 @@ import json
 from Td import Td, Chat
 
 def tdlib_topic_cb(msg, td):
-	td.send_message_multi(1, msg.data)
+	td.send_message_multi(msg.id, msg.data)
 
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
@@ -66,7 +67,7 @@ if __name__ == '__main__':
 		recv_thread.daemon = True
 		recv_thread.start()
 
-		rospy.Subscriber('ogc/to_telegram', String, tdlib_topic_cb, td)
+		rospy.Subscriber('ogc/to_telegram', Message, tdlib_topic_cb, td)
 
 		rospy.logwarn(os.getcwd())
 		rate = rospy.Rate(1)
