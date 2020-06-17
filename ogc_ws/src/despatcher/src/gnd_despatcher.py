@@ -36,7 +36,7 @@ class gnddespatcher():
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram_gnd', Message, queue_size = 5) # Link to Telegram node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', Message, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)

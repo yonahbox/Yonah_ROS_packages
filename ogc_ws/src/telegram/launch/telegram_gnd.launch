@@ -26,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<!-- comma seperated list of command users-->
 	<arg name="command_whitelist" default="[Rumesh]" />
 
-	<node pkg="telegram" type="telegram_link_gnd" name="telegram_link_gnd" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
