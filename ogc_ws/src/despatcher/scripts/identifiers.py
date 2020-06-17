@@ -27,16 +27,11 @@ class Device:
 		self.rb_serial = rb_serial
 
 class Identifiers:
-	# def __init__(self, json_file, valid_air_ids, valid_gnd_ids):
 	def __init__(self, json_file, is_air, valid_ids):
 		self.json_file = json_file
-		# self.valid_air_ids = valid_air_ids
-		# self.valid_gnd_ids = valid_gnd_ids
 		self.is_air = is_air
 		self.valid_ids = valid_ids
 
-		# self.whitelist_gnd = []
-		# self.whitelist_air = []
 		self.whitelist = []
 		self.whitelist_nums = []
 		self.whitelist_imei = []
@@ -55,23 +50,12 @@ class Identifiers:
 				print("invalid identifier file")
 				exit()
 
-		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
+		# For loop with ternary operator to decide which array to check from the json object
+		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
 			if obj["id"] in self.valid_ids:
 				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_imei.append(obj["imei"])
-
-		# for obj in self.json_obj["ground"]:
-		# 	if obj["id"] in self.valid_gnd_ids:
-		# 		self.whitelist_gnd.append(Device(obj["label"], False, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
-		# 		self.whitelist_nums.append(obj["number"])
-		# 		self.whitelist_imei.append(obj["imei"])
-
-		# for obj in self.json_obj["air"]:
-		# 	if obj["id"] in self.valid_air_ids:
-		# 		self.whitelist_air.append(Device(obj["label"], True, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
-		# 		self.whitelist_nums.append(obj["number"])
-		# 		self.whitelist_imei.append(obj["imei"])
 
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
@@ -83,21 +67,19 @@ class Identifiers:
 	def refresh_details(self):
 		self._parse_file()
 
-	def get_device(self, is_air, id_n):
-		# return the phone number associated with the id
-		# the for loop uses a ternary operator to check which whitelist to check against
-		# for device in self.whitelist_air if is_air else self.whitelist_gnd:
+	# return the device associated with the id
+	def get_device(self, id_n):
 		for device in self.whitelist:
 			if device.id == id_n:
 				return device
 
-	def get_number(self, is_air, id_n):
-		device = self.get_device(is_air, id_n)
+	def get_number(self, id_n):
+		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
 		return device.number if device else 0
 
-	def get_sbd_info(self, is_air, id_n):
-		device = self.get_device(is_air, id_n)
+	def get_sbd_info(self, id_n):
+		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
 		return (device.imei, device.rb_serial) if device else ()
 

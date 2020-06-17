@@ -56,11 +56,11 @@ if __name__ == '__main__':
 		rospy.init_node('tele_ros', anonymous=False)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")
 		identifiers_file = rospy.get_param("~identifiers_file")
-		ground_ids = rospy.get_param("~ground_ids")
+		valid_ids = rospy.get_param("~valid_ids")
 		is_air = rospy.get_param("~is_air")
 
 		# rospy.loginfo(command_users)
-		td = Td(tdlib_dir, identifiers_file, is_air, ground_ids)
+		td = Td(tdlib_dir, identifiers_file, is_air, valid_ids)
 
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True

@@ -56,16 +56,17 @@ class Td():
 		set_log_fatal_error_callback(fatal_error_cb)
 
 		self.tdlib_dir = tdlib_dir
+		self.is_air = is_air
 		self.whitelist_devs = whitelist_devs
 		
-		self._ids = Identifiers(identifiers_loc, is_air,  self.whitelist_devs,)
+		self._ids = Identifiers(identifiers_loc, self.is_air, self.whitelist_devs)
 
 		self.chat_list = []
 
 		for num in self.whitelist_devs:
-			self.chat_list.append(Chat(num, self._ids.get_number(True, num)))
+			self.chat_list.append(Chat(num, self._ids.get_number(num)))
 
-		self.selected_chat = None
+		# self.selected_chat = None
 
 		self.get_chats()
 
@@ -97,23 +98,23 @@ class Td():
 		query = json.dumps(query).encode('utf-8')
 		self._client_send(self.client, query)
 
-	def send_message(self, msg):
-		if self.selected_chat is None:
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self.selected_chat.chat_id,
-				'input_message_content': {
-					'@type': 'inputMessageText',
-					'text': {
-						'@type': 'formattedText',
-						'text': msg,
-					}
-				},
-				'@extra': 'sent from Td.py'
-			})
+	# def send_message(self, msg):
+	# 	if self.selected_chat is None:
+	# 		self.get_chats()
+	# 		return False
+	# 	else:
+	# 		self.send({
+	# 			'@type': 'sendMessage',
+	# 			'chat_id': self.selected_chat.chat_id,
+	# 			'input_message_content': {
+	# 				'@type': 'inputMessageText',
+	# 				'text': {
+	# 					'@type': 'formattedText',
+	# 					'text': msg,
+	# 				}
+	# 			},
+	# 			'@extra': 'sent from Td.py'
+	# 		})
 
 	def send_message_multi(self, id_n, msg):
 		self.send({
@@ -129,61 +130,61 @@ class Td():
 			'@extra': 'sent from Td.py'
 		})
 
-	def send_image(self, path):
-		if self.selected_chat is None:
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self.selected_chat.chat_id,
-				'input_message_content': {
-					'@type': 'inputMessagePhoto',
-					'photo': {
-						'@type': 'inputFileLocal',
-						'path': path
-					}
-				}
-			})
+	# def send_image(self, path):
+	# 	if self.selected_chat is None:
+	# 		self.get_chats()
+	# 		return False
+	# 	else:
+	# 		self.send({
+	# 			'@type': 'sendMessage',
+	# 			'chat_id': self.selected_chat.chat_id,
+	# 			'input_message_content': {
+	# 				'@type': 'inputMessagePhoto',
+	# 				'photo': {
+	# 					'@type': 'inputFileLocal',
+	# 					'path': path
+	# 				}
+	# 			}
+	# 		})
 
-	def send_video(self, path):
-		if not self.setup_complete():
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self.selected_chat.chat_id,
-				'input_message_content': {
-					'@type': 'inputMessageVideo',
-					'video': {
-						'@type': 'inputFileLocal',
-						'path': path
-					}
-				}
-			})
+	# def send_video(self, path):
+	# 	if not self.setup_complete():
+	# 		self.get_chats()
+	# 		return False
+	# 	else:
+	# 		self.send({
+	# 			'@type': 'sendMessage',
+	# 			'chat_id': self.selected_chat.chat_id,
+	# 			'input_message_content': {
+	# 				'@type': 'inputMessageVideo',
+	# 				'video': {
+	# 					'@type': 'inputFileLocal',
+	# 					'path': path
+	# 				}
+	# 			}
+	# 		})
 
-	def send_location(self, title, coordinates):
-		if not self.setup_complete():
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self.selected_chat.chat_id,
-				'input_message_content': {
-					'@type': 'inputMessageVenue',
-					'venue': {
-						'@type': 'venue',
-						'title': title,
-						'location': {
-							'@type': 'location',
-							'latitude': coordinates[0],
-							'longitude': coordinates[1]
-						}
-					}
-				}
-			})
+	# def send_location(self, title, coordinates):
+	# 	if not self.setup_complete():
+	# 		self.get_chats()
+	# 		return False
+	# 	else:
+	# 		self.send({
+	# 			'@type': 'sendMessage',
+	# 			'chat_id': self.selected_chat.chat_id,
+	# 			'input_message_content': {
+	# 				'@type': 'inputMessageVenue',
+	# 				'venue': {
+	# 					'@type': 'venue',
+	# 					'title': title,
+	# 					'location': {
+	# 						'@type': 'location',
+	# 						'latitude': coordinates[0],
+	# 						'longitude': coordinates[1]
+	# 					}
+	# 				}
+	# 			}
+	# 		})
 
 	
 	def get_chats(self):
