@@ -48,8 +48,8 @@ class MyPlugin(Plugin):
         # args = self._parse_args(context.argv()) #[DA] Need to investigate what parse args does
 
         # Give QObjects reasonable names
-        self.setObjectName('main_window') #this is inherited from QObject class which sets name of the object
-        self._widget = QWidget() # this defines the attribute of MyPlugin class. QWidget is a method in QtWidget
+        self.setObjectName('main_window')
+        self._widget = QWidget() # _widget is a private class
         
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'second_window.ui')
@@ -62,10 +62,8 @@ class MyPlugin(Plugin):
         self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
         self._widget.setWindowTitle('Yonah RQt')
 
-        # Show _widget.windowTitle on left-top of each plugin (when 
-        # it's set in _widget). This is useful when you open multiple 
-        # plugins at once. Also if you open multiple instances of your 
-        # plugin at once, these lines add number to make it easy to 
+        # Show _widget.windowTitle on left-top of each plugin (when it's set in _widget). This is useful when you open multiple 
+        # plugins at once. Also if you open multiple instances of your plugin at once, these lines add number to make it easy to 
         # tell from pane to pane.
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
@@ -171,8 +169,6 @@ class MyPlugin(Plugin):
         status.string_signal.emit(data.throttle)
         status.string_signal.connect(self.gps_display)
         status.string_signal.emit(data.lat, data.lon)
-        status.string_signal.connect(self.windspeed_display)
-        status.string_signal.emit(data.windspeed)
         status.string_signal.connect(self.vibe_display)
         status.string_signal.emit(data.vibe)
         status.string_signal.connect(self.vtol_display)
@@ -220,8 +216,8 @@ class MyPlugin(Plugin):
     def throttle_display(self, data):
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftThrottle1').setPlainText(data)
 
-    def gps_display(self, data):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGPS1').setPlainText(data)
+    def gps_display(self, lat, lon):
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGPS1').setPlainText(lat + lon)
 
     def windspeed_display(self, data):
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftWindspeed1').setPlainText(data)
@@ -284,7 +280,7 @@ class MyPlugin(Plugin):
         #     print('Now disarm it')
 
     # Close all windows
-    # @TODO close all ROS connections as well (unsubscribe from the channels)
+    # TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
         self.ChecklistWindow.shutdown()
         self.WaypointWindow.shutdown()

@@ -99,6 +99,7 @@ def convert_mode_to_int (mode):
             'QLAND': 21
         }
         return d.get(mode)
+
 ########################################
 # Gnd despatcher
 ########################################
@@ -217,5 +218,3 @@ class air_payload():
             k = k + " "
             msg = msg.replace(k,"") # Remove entry descriptions
         return msg
-    
-    
