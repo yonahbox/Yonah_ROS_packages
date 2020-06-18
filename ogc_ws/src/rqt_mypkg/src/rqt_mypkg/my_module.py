@@ -149,8 +149,8 @@ class MyPlugin(Plugin):
     # @TODO optimize the code for the signal slot such that only one function is needed
     def ondemand(self, data):
         status = Communicate()
-        status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(data.text)
+        status.string_signal.connect(self.ondemand_display)
+        status.string_signal.emit(data.text)
 
     def regular_payload(self, data):
         status = Communicate()
@@ -267,6 +267,10 @@ class MyPlugin(Plugin):
     def status_text_display(self, status_text):
         self.SummaryWindow.statustext.appendPlainText(status_text)
         self.aircrafts_info.get('AC1').statustext.appendPlainText(status_text)
+
+    def ondemand_display(self, data):
+        self.SummaryWindow.statustext.appendPlainText(data)
+        self.aircrafts_info.get('AC1').statustext.appendPlainText(data)
 
     # Send commands to air_despatcher
     def arming (self):
