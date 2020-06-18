@@ -24,7 +24,7 @@ import rospy
 
 from std_msgs.msg import String
 from despatcher.msg import RegularPayload
-from despatcher.msg import Message
+from despatcher.msg import LinkMessage
 
 # Local
 import regular
@@ -36,7 +36,7 @@ class gnddespatcher():
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', Message, queue_size = 5) # Link to Telegram node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
@@ -61,7 +61,7 @@ class gnddespatcher():
         if data.data.split()[0] not in whitelisted_prefixes:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
-            msg = Message()
+            msg = LinkMessage()
             msg.id = data.id
             # Add msg headers
             msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
@@ -128,7 +128,7 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
-        rospy.Subscriber("ogc/to_despatcher", Message, self.handle_outgoing_msgs)
+        rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
         rospy.spin()
 
 if __name__=='__main__':

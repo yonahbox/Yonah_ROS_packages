@@ -66,8 +66,6 @@ class Td():
 		for num in self.whitelist_devs:
 			self.chat_list.append(Chat(num, self._ids.get_number(num)))
 
-		# self.selected_chat = None
-
 		self.get_chats()
 
 		self.command_users = []
@@ -190,9 +188,6 @@ class Td():
 			'chat_id': chat_id
 		})
 
-	# def select_chat(self, chat):
-		# self.selected_chat = chat
-
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
 		if result_orig:
@@ -226,12 +221,12 @@ class Td():
 				if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
 					self._get_chat_info(result['chat_id'])
 			elif recv_type == 'chat':
+				# print(result)
 				if result['type']['@type'] == 'chatTypePrivate':
 					self.send({
 						'@type': 'getUser',
 						'user_id': result['type']['user_id']
 					})
-				# print(self.command_user_ids)
 			elif recv_type == 'user':
 				for chat in self.chat_list:
 					if chat.phone_number == result["phone_number"]:

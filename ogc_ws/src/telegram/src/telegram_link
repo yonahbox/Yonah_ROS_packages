@@ -17,7 +17,7 @@
 
 import rospy
 from std_msgs.msg import String
-from despatcher.msg import Message
+from despatcher.msg import LinkMessage
 
 import sys
 import os
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 		recv_thread.daemon = True
 		recv_thread.start()
 
-		rospy.Subscriber('ogc/to_telegram', Message, tdlib_topic_cb, td)
+		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, td)
 
 		rospy.logwarn(os.getcwd())
 		rate = rospy.Rate(1)
