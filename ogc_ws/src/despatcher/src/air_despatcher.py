@@ -278,7 +278,7 @@ class airdespatcher():
                 break
             i = i + 1
         # Add more special alert checks here
-        # To-do: Better msg prefix system
+        # @TODO: Better msg prefix system
     
     def get_status_text(self, data):
         '''Obtain status text messages from ogc/statustext'''
@@ -318,7 +318,6 @@ class airdespatcher():
         rospy.Subscriber("mavros/mission/reached", WaypointReached, self.payloads.get_wp_reached)
         rospy.Subscriber("ogc/statustext", YonahStatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.payloads.get_vibe_status)
-        # rospy.Subscriber("mavros/wind_estimation", WindSpeed, self.payloads.get_wind_speed) #highly unsure whether this is correct
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)

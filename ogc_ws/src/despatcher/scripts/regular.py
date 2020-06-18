@@ -36,8 +36,11 @@ class RegularPayloadException(Exception):
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements
-# Example payload: r 1 1 30 226 1 30 2 2315 102 6857 4 0 0 1591089280
-struct_cmd = "> s B B B H B B B H B H B H B I" #@TODO need to change as well
+# Entries:         0 1 2 3  4   5 6  7  8 9 10 11   12  13   14 15 16 17 18
+# struct_cmd:      s B B B  H   B B  B  B B B  H    B   H    B  H  B  B  I
+# Example payload: r 1 1 30 226 1 10 30 1 1 2  2315 102 6857 4  0  0  20 1591089280
+
+struct_cmd = "> s B B B H B B B B B B H B H B H B B I" 
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -64,7 +67,7 @@ def convert_to_list(mo_msg):
 
 def convert_to_str(mo_msg):
     '''Convert regular payload msg from list to string after struct unpacking, to standardize with other links'''
-    # Example: (b'r', 1, 1, 0, 226, 0, 0, 2, 2315, 102, 6857, 0, 0, 0, 1591159898)
+    # Example: (b'r', 1, 1, 30, 226, 1, 10, 30, 1, 1, 2, 2315, 102, 6857, 4, 0, 0, 20, 1591159898)
     string = str(mo_msg)
     string = string.replace('b\'r\'', 'r', 1) # The 'r' msg prefix is still byte encoded
     bad_char = ",()"
@@ -121,16 +124,15 @@ def convert_to_rosmsg(entries):
     rosmsg.armed = int(entries[5])
     rosmsg.mode = int(entries[6])
     rosmsg.groundspeed = int(entries[7])
-    rosmsg.windspeed = int(entries[8])
-    rosmsg.fuel = int(entries[9])
-    rosmsg.battery = int(entries[10])
-    rosmsg.lat = int(entries[11]) + float(entries[12])/10000
-    rosmsg.lon = int(entries[13]) + float(entries[14])/10000
-    rosmsg.throttle = float(entries[15])/10
-    rosmsg.vtol = int(entries[16])
-    rosmsg.wp = int(entries[17])
-    rosmsg.vibe = int(entries[18])
-    rosmsg.header.stamp.secs = int(entries[19])
+    rosmsg.fuel = int(entries[8])
+    rosmsg.battery = int(entries[9])
+    rosmsg.lat = int(entries[10]) + float(entries[11])/10000
+    rosmsg.lon = int(entries[12]) + float(entries[13])/10000
+    rosmsg.throttle = float(entries[14])/10
+    rosmsg.vtol = int(entries[15])
+    rosmsg.wp = int(entries[16])
+    rosmsg.vibe = int(entries[17])
+    rosmsg.header.stamp.secs = int(entries[18])
     return rosmsg
 
 ########################################
@@ -146,7 +148,6 @@ class air_payload():
             "arm": 0,
             "mode": 0, 
             "groundspeed": 0,
-            "windspeed": 0, 
             "fuel": 0,
             "batt": 0, 
             "lat1": 0,
@@ -195,17 +196,13 @@ class air_payload():
             self.entries["vtol"] = 1
         else:
             self.entries["vtol"] = 0
-    
-    # @TODO check whether data.windspeed is indeed correct
-    def get_windspeed(self, data):
-        pass
 
     def get_vibe_status(self, data):
         '''Obtain vibration data from mavros/vibration/raw/vibration'''
         self.ping_entries["vibe"] = (round(data.vibration.x, 2), round(data.vibration.y, 2),\
             round(data.vibration.z, 2))
         self.ping_entries["clipping"] = (data.clipping[0], data.clipping[1], data.clipping[2])
-        bad_vibe = 3
+        bad_vibe = 30
         for i in self.ping_entries.get("vibe"):
             if i >= bad_vibe:
                 self.entries["vibe"] = 1
