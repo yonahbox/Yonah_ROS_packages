@@ -98,28 +98,15 @@ class Td():
 		query = json.dumps(query).encode('utf-8')
 		self._client_send(self.client, query)
 
-	# def send_message(self, msg):
-	# 	if self.selected_chat is None:
-	# 		self.get_chats()
-	# 		return False
-	# 	else:
-	# 		self.send({
-	# 			'@type': 'sendMessage',
-	# 			'chat_id': self.selected_chat.chat_id,
-	# 			'input_message_content': {
-	# 				'@type': 'inputMessageText',
-	# 				'text': {
-	# 					'@type': 'formattedText',
-	# 					'text': msg,
-	# 				}
-	# 			},
-	# 			'@extra': 'sent from Td.py'
-	# 		})
+	def send_message(self, id_n, msg):
+		chat_id = self._get_chat_id(id_n)
+		if not chat_id:
+			print("invalid id specified")
+			return False
 
-	def send_message_multi(self, id_n, msg):
 		self.send({
 			'@type': 'sendMessage',
-			'chat_id': self._get_chat_id(id_n),
+			'chat_id': chat_id,
 			'input_message_content': {
 				'@type': 'inputMessageText',
 				'text': {
@@ -130,61 +117,65 @@ class Td():
 			'@extra': 'sent from Td.py'
 		})
 
-	# def send_image(self, path):
-	# 	if self.selected_chat is None:
-	# 		self.get_chats()
-	# 		return False
-	# 	else:
-	# 		self.send({
-	# 			'@type': 'sendMessage',
-	# 			'chat_id': self.selected_chat.chat_id,
-	# 			'input_message_content': {
-	# 				'@type': 'inputMessagePhoto',
-	# 				'photo': {
-	# 					'@type': 'inputFileLocal',
-	# 					'path': path
-	# 				}
-	# 			}
-	# 		})
+	def send_message_multi(self, ids, msg):
+		for id_n in ids:
+			self.send_message(id_n, msg)
 
-	# def send_video(self, path):
-	# 	if not self.setup_complete():
-	# 		self.get_chats()
-	# 		return False
-	# 	else:
-	# 		self.send({
-	# 			'@type': 'sendMessage',
-	# 			'chat_id': self.selected_chat.chat_id,
-	# 			'input_message_content': {
-	# 				'@type': 'inputMessageVideo',
-	# 				'video': {
-	# 					'@type': 'inputFileLocal',
-	# 					'path': path
-	# 				}
-	# 			}
-	# 		})
+	def send_image(self, id_n, path):
+		if not self.setup_complete():
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self._get_chat_id(chat_id),
+				'input_message_content': {
+					'@type': 'inputMessagePhoto',
+					'photo': {
+						'@type': 'inputFileLocal',
+						'path': path
+					}
+				}
+			})
 
-	# def send_location(self, title, coordinates):
-	# 	if not self.setup_complete():
-	# 		self.get_chats()
-	# 		return False
-	# 	else:
-	# 		self.send({
-	# 			'@type': 'sendMessage',
-	# 			'chat_id': self.selected_chat.chat_id,
-	# 			'input_message_content': {
-	# 				'@type': 'inputMessageVenue',
-	# 				'venue': {
-	# 					'@type': 'venue',
-	# 					'title': title,
-	# 					'location': {
-	# 						'@type': 'location',
-	# 						'latitude': coordinates[0],
-	# 						'longitude': coordinates[1]
-	# 					}
-	# 				}
-	# 			}
-	# 		})
+	def send_video(self, id_n, path):
+		if not self.setup_complete():
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self._get_chat_id(chat_id),
+				'input_message_content': {
+					'@type': 'inputMessageVideo',
+					'video': {
+						'@type': 'inputFileLocal',
+						'path': path
+					}
+				}
+			})
+
+	def send_location(self, id_n, title, coordinates):
+		if not self.setup_complete():
+			self.get_chats()
+			return False
+		else:
+			self.send({
+				'@type': 'sendMessage',
+				'chat_id': self.sel_get_chat_id(chat_id),
+				'input_message_content': {
+					'@type': 'inputMessageVenue',
+					'venue': {
+						'@type': 'venue',
+						'title': title,
+						'location': {
+							'@type': 'location',
+							'latitude': coordinates[0],
+							'longitude': coordinates[1]
+						}
+					}
+				}
+			})
 
 	
 	def get_chats(self):

@@ -17,11 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib_air"/>
 	<arg name="log_output" default="screen"/>
 
 	<arg name="identifiers_file"  default="" />
 	<arg name="ground_ids" default="[1]" />
+	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
 
 	<!--Various regular payload intervals in seconds-->
@@ -29,10 +30,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <arg name="interval_2" default="60"/>
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
-		<!-- <param name="monitored_chat" value="$(arg monitored_chat)" /> -->
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
 		<param name="is_air" value="$(arg is_air)" />
+		<param name="self_id" value="$(arg self_id)" />
 		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
