@@ -106,7 +106,8 @@ class MyPlugin(Plugin):
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
-        # rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
+        rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
+        rospy.Subscriber("ogc/yonahtext", String, self.status_text)
         rospy.Subscriber('ogc/from_despatcher/ondemand', String, self.ondemand)
         rospy.Subscriber("mavros/state", State, self.mode_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
@@ -262,6 +263,10 @@ class MyPlugin(Plugin):
             text_to_display = 'ARMED'
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftSTATUS1').setPlainText(text_to_display)        
         # self._widget.arming_textedit.setText(str(text_to_display))
+    
+    def status_text_display(self, status_text):
+        self.SummaryWindow.statustext.appendPlainText(status_text)
+        self.aircrafts_info.get('AC1').statustext.appendPlainText(status_text)
 
     # Send commands to air_despatcher
     def arming (self):
@@ -274,7 +279,7 @@ class MyPlugin(Plugin):
         #     self.arming.publish('DISARM')
         #     print('Now disarm it')
     def go_button(self):
-        self.command_publisher.publish('mode 5')
+        self.command_publisher.publish('mode 0')
         print('go')
 
     # Close all windows
