@@ -24,7 +24,7 @@ import rostopic
 from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
-# from despatcher.msg import RegularPayload
+from despatcher.msg import RegularPayload
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
@@ -198,8 +198,8 @@ class MyPlugin(Plugin):
         status.airspeed_signal.emit(data.airspeed)
         status.altitude_signal.connect(self.altitude_display)
         status.altitude_signal.emit(data.altitude)
-        status.altitude_signal.connect(self.altitude_display)
-        status.altitude_signal.emit(data.windspeed)
+        # status.altitude_signal.connect(self.windspeed_display)
+        # status.altitude_signal.emit(data.windspeed)
 
     def waypoint_total(self, data):
         status = Communicate()
@@ -238,16 +238,16 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftQuad Battery1').setPlainText(data)
     
     def mode_status_display(self, mode_status):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMODE1').setPlainText(mode_status)
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMode1').setPlainText(mode_status)
 
     def altitude_display(self, altitude):
         altitude = str(round(altitude, 1)) + ' m'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftALTITUDE1').setPlainText(altitude)        
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)        
         # self._widget.altitude_textedit.setText(altitude)
 
     def airspeed_display(self, airspeed):
         airspeed = str(round(airspeed, 1)) + ' m/s'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAIRSPEED1').setPlainText(airspeed)        
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)        
         # self._widget.airspeed_textedit.setText(airspeed)
 
     def waypoint_total_display(self, total, sequence):
@@ -261,7 +261,7 @@ class MyPlugin(Plugin):
             text_to_display = 'DISARMED'
         else:
             text_to_display = 'ARMED'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftSTATUS1').setPlainText(text_to_display)        
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftStatus1').setPlainText(text_to_display)        
         # self._widget.arming_textedit.setText(str(text_to_display))
     
     def status_text_display(self, status_text):
