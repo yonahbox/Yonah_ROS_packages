@@ -14,9 +14,10 @@ class CommandWindow(QWidget):
         self.setWindowTitle("Command Window")
         
         # create the layout
-        self.layout = QVBoxLayout(self)
-        self.first_row = QHBoxLayout(self)
-        self.second_row = QHBoxLayout(self)
+        self.main_layout = QVBoxLayout(self)
+        self.first_row = QHBoxLayout()
+        self.second_row = QHBoxLayout()
+        self.setLayout(self.main_layout)
 
         # create the widgets
         self.combo_box = QComboBox()
@@ -36,17 +37,17 @@ class CommandWindow(QWidget):
         self.mission_check_button.setMinimumHeight(30)
         self.mission_load_button.setMinimumHeight(30)
         self.checklist_button.setMinimumHeight(30)
+       
         
         # add the widgets into the layouts
-        self.layout.addWidget(self.combo_box)
+        self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.mission_check_button)
-        self.layout.addLayout(self.first_row)
-        self.layout.addLayout(self.second_row)
-        self.setLayout(self.layout)
+        self.main_layout.addLayout(self.first_row)
+        self.main_layout.addLayout(self.second_row)
 
     def shutdown(self):
         self.close()
