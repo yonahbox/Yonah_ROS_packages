@@ -98,13 +98,11 @@ class MyPlugin(Plugin):
         self.checklist_opened = 0
 
         # Connect each button to a function
-        # self._widget.arming_pushbutton.pressed.connect(self.arming)
-        # self._widget.control_pushbutton.pressed.connect(self.transfer_control)
-        # self._widget.mode_manual_pushbutton.pressed.connect(self.mode_manual)
-        # self._widget.mode_auto_pushbutton.pressed.connect(self.mode_auto)
-        # self._widget.load_mission_pushbutton.pressed.connect(self.load_mission)
-        # self._widget.check_mission_pushbutton.pressed.connect(self.check_mission)
-        # self._widget.checklist_pushbutton.pressed.connect(self.ChecklistWindow.show)
+        self.CommandWindow.arm_button.pressed.connect(self.arming)
+        self.CommandWindow.go_button.pressed.connect(self.go_button)
+        # self.CommandWindow.mission_check_button.pressed.connect(self.check_mission)
+        # self.CommandWindow.mission_load_button.pressed.connect(self.load_mission)
+        self.CommandWindow.checklist_button.pressed.connect(self.ChecklistWindow.show)
         
         #Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
@@ -115,9 +113,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
 
         # Publisher List
-        self.arming_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
-        self.transfer_control_publisher = rospy.Publisher('transfer_control', String, queue_size = 5)
-        self.mode_publisher = rospy.Publisher('mode_change', String, queue_size = 5)
+        self.command_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
         self.mission_publisher = rospy.Publisher('load_mission', String, queue_size = 5)
 
         self.rate = rospy.Rate(2)
@@ -258,7 +254,6 @@ class MyPlugin(Plugin):
         # self._widget.progressBar.setRange(0,total)
         # self._widget.progressBar.setValue(sequence)
         # self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
-
     
     def arm_status_display(self, arm_status):
         if arm_status == 'False':
@@ -270,14 +265,17 @@ class MyPlugin(Plugin):
 
     # Send commands to air_despatcher
     def arming (self):
-        print(self.checklist_opened)
-        self.arming_publisher.publish('arm')
+        self.command_publisher.publish('arm')
+        print('armed')
         # self.status_text_display('Arming message sent')
         # if self.text_to_display == 'DISARMED':
         #     self.arming.publish('ARM')
         # elif self.text_to_display == 'ARMED':
         #     self.arming.publish('DISARM')
         #     print('Now disarm it')
+    def go_button(self):
+        self.command_publisher.publish('mode 5')
+        print('go')
 
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
