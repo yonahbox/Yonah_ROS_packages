@@ -9,20 +9,19 @@ from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 class CommandWindow(QWidget):
-    def __init__(self):
+    def __init__(self, active_aircrafts):
         super(CommandWindow, self).__init__()
         self.setWindowTitle("Command Window")
         
-        # create the layout
-        self.main_layout = QVBoxLayout(self)
+        # Create the layout
+        self.main_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
-        self.setLayout(self.main_layout)
+        self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
 
-        # create the widgets
+        # Create the widgets
         self.combo_box = QComboBox()
-        self.active_aircrafts = 5
-        for i in range(1, self.active_aircrafts + 1):
+        for i in range(1, active_aircrafts + 1): # Use a for loop to add items inside the drop down menu
             self.combo_box.addItem('Aircraft ' + str(i))
         self.arm_button = QPushButton('ARM / DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -38,7 +37,6 @@ class CommandWindow(QWidget):
         self.mission_load_button.setMinimumHeight(30)
         self.checklist_button.setMinimumHeight(30)
        
-        
         # add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)

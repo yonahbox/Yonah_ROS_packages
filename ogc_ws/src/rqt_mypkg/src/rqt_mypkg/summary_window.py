@@ -10,31 +10,30 @@ from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 class SummaryWindow(QWidget):
-    def __init__(self):
+    def __init__(self, active_aircrafts):
         super(SummaryWindow, self).__init__()
         self.setWindowTitle("Summary Page")
-        
-        self.waypoint_plaintext_dict = {}
-        # create the layout
-        self.layout = QVBoxLayout(self)
-        self.summary_layout = QVBoxLayout(self)
-        
+        self.waypoint_plaintext_dict = {} # Dictionary to store the textedits
+
+        # Create the main_layout
+        self.main_layout = QVBoxLayout()
+        self.summary_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
         # create the widgets
         summarised_fields = ['MODE', 'STATUS', 'AIRSPEED', 'ALTITUDE']
-        self.active_aircrafts = 5
-        for i in range(1, self.active_aircrafts + 1):
+        for i in range(1, active_aircrafts + 1):
             self.create_summary(i, summarised_fields)
         self.statustext = QPlainTextEdit()
         self.statustext.setReadOnly(True)
 
         # add the widgets into the layouts
-        self.layout.addWidget(self.statustext)
-        self.layout.addLayout(self.summary_layout)
-        self.setLayout(self.layout)
+        self.main_layout.addWidget(self.statustext)
+        self.main_layout.addLayout(self.summary_layout)
 
 
     def create_summary(self, aircraft_no, summarised_fields):
-        self.summary_details_layout = QVBoxLayout(self)
+        self.summary_details_layout = QVBoxLayout()
          # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
         
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
@@ -42,10 +41,11 @@ class SummaryWindow(QWidget):
         self.summary_details_layout.addWidget(self.aircraft_label)
         
         for i in summarised_fields:
-            # if summarised_fields.index(i) 
-            self.summary_fields_layout = QHBoxLayout(self)
+            # 
+            self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)
+
             # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
             self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
             self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)

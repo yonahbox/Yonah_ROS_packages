@@ -32,7 +32,7 @@ from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
 from checklist_window import ChecklistWindow
-from control_window import WaypointWindow
+from waypoint_window import WaypointWindow
 from summary_window import SummaryWindow
 from command_window import CommandWindow
 from aircraft_info import *
@@ -78,9 +78,9 @@ class MyPlugin(Plugin):
 
         # Declare variables for each imported class
         self.ChecklistWindow = ChecklistWindow()
-        self.WaypointWindow = WaypointWindow()
-        self.SummaryWindow = SummaryWindow()
-        self.CommandWindow = CommandWindow()
+        self.WaypointWindow = WaypointWindow(self.active_aircrafts)
+        self.SummaryWindow = SummaryWindow(self.active_aircrafts)
+        self.CommandWindow = CommandWindow(self.active_aircrafts)
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
@@ -88,12 +88,11 @@ class MyPlugin(Plugin):
         self.scroll.setMinimumWidth(600)
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.WaypointWindow)
-
+        self._widget.verticalLayout.addWidget(self.scroll)
         # Create the tab windows for the aircraft-specific information
         self.create_tab_windows()
 
         # Add both layouts into the main layout
-        
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
 
@@ -116,7 +115,6 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/state", State, self.mode_status)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
-        # rospy.Subscriber("mavros/vfr_hud", Twist, self.get_wind_speed) #highly unsure whether this is correct
 
         # Publisher List
         self.arming_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
@@ -126,8 +124,10 @@ class MyPlugin(Plugin):
 
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
+
     def get_wind_speed(self, data):
         print (data.windspeed)
+
     def create_tab_windows(self):
         # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()

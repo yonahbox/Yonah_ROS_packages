@@ -29,23 +29,23 @@ class ChecklistWindow(QWidget):
             print("\033[91m ERROR: Checklist files are missing or named wrongly. Please follow the original directory and naming")
             exit()
         
-        # create the layout
-        self.layout = QVBoxLayout(self)
-        self.buttons_layout = QHBoxLayout(self)
-        self.tree_widget_layout = QHBoxLayout(self)
+        # Create the layout
+        self.main_layout = QVBoxLayout()
+        self.buttons_layout = QHBoxLayout()
+        self.tree_widget_layout = QHBoxLayout()
         
-        # create the widgets
+        # Create the widgets
         self.create_widget()
         self.has_message_opened = 0
 
-        # add the widgets into the layouts
-        self.layout.addLayout(self.tree_widget_layout)
-        self.layout.addLayout(self.buttons_layout)
-        self.setLayout(self.layout)
+        # Add the widgets into the layouts
+        self.main_layout.addLayout(self.tree_widget_layout)
+        self.main_layout.addLayout(self.buttons_layout)
+        self.setLayout(self.main_layout)
         
     def create_widget(self):
         self.create_tree()
-        # declare buttons and connect each of them to a function
+        # Declare buttons and connect each of them to a function
         self.load_button = QPushButton('Load')
         self.ok_button = QPushButton('OK')
         self.cancel_button = QPushButton('Cancel')
@@ -59,14 +59,14 @@ class ChecklistWindow(QWidget):
         self.tree_widget_layout.addWidget(self.tree_widget)
 
     def create_tree(self):
-        # set up the main tree widget
+        # Set up the main tree widget
         self.tree_widget = QTreeWidget()
         self.tree_widget.setColumnCount(2)
         self.tree_widget.setColumnWidth(0, 250)
         self.tree_widget.setHeaderLabels(['Parts', 'Status'])
         self.item = QTreeWidgetItem()
         
-        # create the first header
+        # Create the first header
         self.BPO_header = QTreeWidgetItem(self.tree_widget)
         self.BPO_header.setFlags(self.BPO_header.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
         self.BPO_header.setText(0, 'BPO Checklist')
@@ -153,9 +153,9 @@ class ChecklistWindow(QWidget):
                 print('ERROR: Checklist name must contain BPO or BTO')
                 self.close()
     
-    # Close all the layout
+    # Close all the main_layout
     def remove_widget(self):
-        self.layout.removeWidget(self.tree_widget)
+        self.main_layout.removeWidget(self.tree_widget)
         self.tree_widget.deleteLater()
         self.buttons_layout.removeWidget(self.ok_button)
         self.buttons_layout.removeWidget(self.cancel_button)

@@ -18,8 +18,9 @@ class AircraftInfo(QWidget):
         
         self.waypoint_plaintext_dict = {}
         # create the layout
-        self.layout = QVBoxLayout(self)
-        self.summary_layout = QVBoxLayout(self)
+        self.main_layout = QVBoxLayout()
+        self.summary_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
         
         # create the widgets
         summarised_fields = [
@@ -47,18 +48,17 @@ class AircraftInfo(QWidget):
         self.statustext.setMinimumHeight(300)
 
         # Add the widgets into the layouts
-        self.layout.addLayout(self.summary_layout)
-        self.layout.addWidget(self.statustext_label)
-        self.layout.addWidget(self.statustext)
-        self.setLayout(self.layout)
+        self.main_layout.addLayout(self.summary_layout)
+        self.main_layout.addWidget(self.statustext_label)
+        self.main_layout.addWidget(self.statustext)
 
     def create_summary(self, aircraft_no, summarised_fields):
-        self.summary_details_layout = QVBoxLayout(self)
+        self.summary_details_layout = QVBoxLayout()
          # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
         self.summary_details_layout.addWidget(self.aircraft_label)
         for i in summarised_fields:
-            self.summary_fields_layout = QHBoxLayout(self)
+            self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(120,30)
             # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
