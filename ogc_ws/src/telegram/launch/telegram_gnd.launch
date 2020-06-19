@@ -19,15 +19,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 <launch>
 	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib_gnd"/>
 	<arg name="log_output" default="screen"/>
+  
 	<arg name="identifiers_file" default="" />
-	<arg name="air_ids" default="[1, 3]" />
+	<arg name="air_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 
-	<!-- comma seperated list of command users-->
-	<arg name="command_whitelist" default="[Rumesh]" />
 
-	<node pkg="telegram" type="telegram_link" name="telegram_link_gnd" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="self_id" value="$(arg self_id)" />

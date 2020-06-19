@@ -34,7 +34,7 @@ class gnddespatcher():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
-        self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
         self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
@@ -42,7 +42,7 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
 
         # Link switching
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
