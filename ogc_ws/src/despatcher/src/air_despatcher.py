@@ -258,7 +258,10 @@ class airdespatcher():
         '''Send any msg that's not a regular payload'''
         self._attach_headers(severity)
         if self.link_select == 0:
-            self.pub_to_telegram.publish(self._msg)
+            message = LinkMessage()
+            message.id = self.ground_id
+            message.data = self._msg
+            self.pub_to_telegram.publish(message)
         elif self.link_select == 1:
             self.pub_to_sms.publish(self._msg)
         else:
