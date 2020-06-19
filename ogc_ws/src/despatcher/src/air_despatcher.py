@@ -35,6 +35,7 @@ from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
 from statustext.msg import YonahStatusText
+from despatcher.msg import LinkMessage
 
 # Local
 from regular import air_payload
@@ -49,14 +50,14 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to telegram node      
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to telegram node      
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
 
         # Msg handlers
         self._msg = "" # Stores outgoing msg Air-to-Ground message
         self._recv_msg = list() # Stores incoming Ground-to-Air message in list form
-        self._regular_payload_flag = False # Whether we should send regular payload to Ground Control
-        self._statustext_flag = False # Whether we should send status texts to Ground Control
+        self._regular_payload_flag = True # Whether we should send regular payload to Ground Control
+        self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
@@ -72,6 +73,8 @@ class airdespatcher():
         self._interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
         self._tele_interval = self._interval_2 # Interval (seconds) for regular payload over telegram
+
+        self.ground_id = rospy.get_param("~ground_ids")[0]
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
@@ -244,13 +247,21 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        self.pub_to_telegram.publish(self._msg)
+        print(self.ground_id)
+        message = LinkMessage()
+        message.data = self._msg
+        # message.id = 1
+        message.id = self.ground_id
+        self.pub_to_telegram.publish(message)
     
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
         self._attach_headers(severity)
         if self.link_select == 0:
-            self.pub_to_telegram.publish(self._msg)
+            message = LinkMessage()
+            message.id = self.ground_id
+            message.data = self._msg
+            self.pub_to_telegram.publish(message)
         elif self.link_select == 1:
             self.pub_to_sms.publish(self._msg)
         else:
@@ -270,7 +281,7 @@ class airdespatcher():
                 break
             i = i + 1
         # Add more special alert checks here
-        # To-do: Better msg prefix system
+        # @TODO: Better msg prefix system
     
     def get_status_text(self, data):
         '''Obtain status text messages from ogc/statustext'''
