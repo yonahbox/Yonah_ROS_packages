@@ -59,7 +59,7 @@ class airdespatcher():
         self._regular_payload_flag = True # Whether we should send regular payload to Ground Control
         self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
-        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for aircraft/gnd identifiers and prefix
         # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)

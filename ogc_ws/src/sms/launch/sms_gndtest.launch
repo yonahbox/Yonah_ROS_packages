@@ -1,7 +1,6 @@
 <!-- launch file for Yonah main SMS Telemetry Node on GCS as a standalone (for testing purposes)-->
 
 <launch>
-
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
