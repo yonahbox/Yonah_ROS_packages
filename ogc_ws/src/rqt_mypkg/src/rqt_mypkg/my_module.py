@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 '''
+my_module: Main Python file where RQt layout and components are assembled
+
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
@@ -15,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
+
 import os
 import rospy
 import rospkg
@@ -24,7 +27,8 @@ import rostopic
 from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
-from despatcher.msg import RegularPayload, LinkMessage
+from despatcher.msg import RegularPayload
+from despatcher.msg import LinkMessage
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
