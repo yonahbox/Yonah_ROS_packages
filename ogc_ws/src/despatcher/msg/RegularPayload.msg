@@ -13,7 +13,6 @@ uint16 alt
 bool armed
 uint8 mode
 uint16 groundspeed
-uint8 windspeed
 bool fuel
 bool batt 
 float32 lat

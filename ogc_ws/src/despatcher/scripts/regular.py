@@ -36,11 +36,10 @@ class RegularPayloadException(Exception):
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements
-# Entries:         0 1 2 3  4   5 6  7  8 9 10 11   12  13   14 15 16 17 18
-# struct_cmd:      s B B B  H   B B  B  B B B  H    B   H    B  H  B  B  I
-# Example payload: r 1 1 30 226 1 10 30 1 1 2  2315 102 6857 4  0  0  20 1591089280
-
-struct_cmd = "> s B B B H B B B B B B H B H B H B B I" 
+# Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18
+# struct_cmd:      s B B B  H   B B B B  B H    H   B    H  B  B  B  H  I
+# Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0 1591089280
+struct_cmd = "> s B B B H B B B B B H H B H B B B H I" 
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -123,16 +122,16 @@ def convert_to_rosmsg(entries):
     rosmsg.airspeed = int(entries[3])
     rosmsg.alt = int(entries[4])
     rosmsg.armed = int(entries[5])
-    rosmsg.mode = int(entries[6])
-    rosmsg.groundspeed = int(entries[7])
-    rosmsg.fuel = int(entries[8])
-    rosmsg.battery = int(entries[9])
-    rosmsg.lat = int(entries[10]) + float(entries[11])/10000
-    rosmsg.lon = int(entries[12]) + float(entries[13])/10000
+    rosmsg.battery = int(entries[6])
+    rosmsg.fuel = int(entries[7])
+    rosmsg.groundspeed = int(entries[8])
+    rosmsg.lat = int(entries[9]) + float(entries[10])/10000 #
+    rosmsg.lon = int(entries[11]) + float(entries[12])/10000 #
+    rosmsg.mode = int(entries[13])
     rosmsg.throttle = float(entries[14])/10
-    rosmsg.vtol = int(entries[15])
-    rosmsg.wp = int(entries[16])
-    rosmsg.vibe = int(entries[17])
+    rosmsg.vibe = int(entries[15])
+    rosmsg.vtol = int(entries[16])
+    rosmsg.wp = int(entries[17]) #
     rosmsg.header.stamp.secs = int(entries[18])
     return rosmsg
 
@@ -147,18 +146,18 @@ class air_payload():
             "airspeed": 0,
             "alt": 0,
             "arm": 0,
-            "mode": 0, 
-            "groundspeed": 0,
-            "fuel": 0,
             "batt": 0, 
+            "fuel": 0,
+            "groundspeed": 0,
             "lat1": 0,
             "lat2": 0,
             "lon1": 0,
             "lon2": 0,
+            "mode": 0, 
             "throttle": 0,
+            "vibe" : 0,
             "vtol": 0,
-            "wp": 0,
-            "vibe" : 0
+            "wp": 0
         }
         self.ping_entries = {
             "vibe": (0.0, 0.0, 0.0),
