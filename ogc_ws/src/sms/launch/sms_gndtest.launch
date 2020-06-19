@@ -2,13 +2,6 @@
 
 <launch>
 
-    <!-- please fill in the phone no of the client (e.g. if running this on air, fill in ground phone no,
-     and vice versa). Enclose it in '' to recognise it as a string (instead of int)-->
-    <arg name="client_phone_no" default="'12345678'"/>
-
-    <!-- phone numbers authorized to send commands to GCS. Whitelist should be in same folder as nodes-->
-    <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/>
-
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
@@ -27,10 +20,8 @@
     <!-- sms_link node -->
     <node pkg="sms" type="sms_link.py" name="sms_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <!-- <param name="whitelist" value="$(arg whitelist)" /> -->
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
-        <!-- <param name="client_phone_no" value="$(arg client_phone_no)" /> -->
 
         <param name="identifiers_file" value="$(arg identifiers_file)" />
         <param name="is_air" value="$(arg is_air)" />
@@ -44,8 +35,8 @@
     </node>
 
     <!-- ground test node -->
-    <!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui" -->
-    <!-- respawn="true" respawn_delay="3" output="$(arg log_output)"> -->
-    <!-- </node> -->
+    <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+    </node>
 
 </launch>

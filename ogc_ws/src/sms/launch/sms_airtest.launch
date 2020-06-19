@@ -2,13 +2,7 @@
 
 <launch>
 
-    <!-- please fill in the phone no of the client (e.g. if running this on air, fill in ground phone no,
-     and vice versa). Enclose it in '' to recognise it as a string (instead of int)-->
-    <!-- <arg name="client_phone_no" default="'12345678'"/> -->
-
-    <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
-    <!-- <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/> -->
-    <arg name="identifiers_file" default="" />
+    <arg name="identifiers_file" default="/home/rumesh/codes/test_identifiers_2.json" />
     <arg name="ground_ids" default="[1]" />
     <arg name="self_id" default="1" />
     <arg name="is_air" default="True" />

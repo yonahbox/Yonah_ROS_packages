@@ -41,8 +41,6 @@ class SMSrx():
         rospy.init_node('sms_link', anonymous=False)
         self._username = rospy.get_param("~router_username","root") # Hostname of onboard router
         self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
-        # self._whitelist = set() # set of whitelisted numbers
-        # self._client_no = rospy.get_param("~client_phone_no", "12345678") # GCS phone number
         self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self._msg = "" # Actual incoming message, located on 5th line of msglist
         self.interval = 0.5 # Time interval between each check of the router for incoming msgs
@@ -62,19 +60,7 @@ class SMSrx():
         self._ids = Identifiers(identifiers_file, self._is_air, self._valid_ids)
         
         # Security and safety measures
-        # self._populatewhitelist()
         self._purge_residual_sms()
-
-    # def _populatewhitelist(self):
-    #     """Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
-    #     textfile = rospy.get_param("~whitelist", "whitelist.txt")
-    #     with open (textfile, "r") as reader:
-    #         for line in reader:
-    #             if line[-1] == "\n":
-    #                 self._whitelist.add(line[:-1]) # remove whitespace at end of line
-    #             else:
-    #                 self._whitelist.add(line) # last line
-    #     rospy.loginfo(self._whitelist)
 
     def _purge_residual_sms(self):
         """
@@ -122,7 +108,6 @@ class SMSrx():
             sender = self._msglist[2].split()[1]
             # Ensure sender is whitelisted before extracting message
             if sender[1:] in self._ids.get_whitelist():
-            # if sender in self._whitelist:
                 rospy.loginfo('Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                 self._msg = (self._msglist[4].split(' ', 1)[1].rstrip()).lower()
