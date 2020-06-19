@@ -21,7 +21,7 @@ class SummaryWindow(QWidget):
         self.setLayout(self.main_layout)
 
         # create the widgets
-        summarised_fields = ['MODE', 'STATUS', 'AIRSPEED', 'ALTITUDE']
+        summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
         for i in range(1, active_aircrafts + 1):
             self.create_summary(i, summarised_fields)
         self.statustext = QPlainTextEdit()

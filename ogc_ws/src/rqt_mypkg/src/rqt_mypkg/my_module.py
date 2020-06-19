@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Copyright (C) 2020 Dani Purwadi
+Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import rostopic
 from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
-from despatcher.msg import RegularPayload
+from despatcher.msg import RegularPayload, LinkMessage
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
@@ -114,8 +114,8 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
 
         # Publisher List
-        self.command_publisher = rospy.Publisher('ogc/to_despatcher', String, queue_size = 5)
-        self.mission_publisher = rospy.Publisher('load_mission', String, queue_size = 5)
+        self.command_publisher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
+        # self.mission_publisher = rospy.Publisher('load_mission', String, queue_size = 5)
 
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
@@ -239,15 +239,20 @@ class MyPlugin(Plugin):
     
     def mode_status_display(self, mode_status):
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMode1').setPlainText(mode_status)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode1').setPlainText(mode_status)
 
     def altitude_display(self, altitude):
         altitude = str(round(altitude, 1)) + ' m'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)        
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)        
         # self._widget.altitude_textedit.setText(altitude)
 
     def airspeed_display(self, airspeed):
         airspeed = str(round(airspeed, 1)) + ' m/s'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)        
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setStyleSheet("background-color: rgb(255, 0, 0);")     
+        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)
+        
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)                
         # self._widget.airspeed_textedit.setText(airspeed)
 
     def waypoint_total_display(self, total, sequence):
@@ -262,6 +267,7 @@ class MyPlugin(Plugin):
         else:
             text_to_display = 'ARMED'
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftStatus1').setPlainText(text_to_display)        
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus1').setPlainText(text_to_display)        
         # self._widget.arming_textedit.setText(str(text_to_display))
     
     def status_text_display(self, status_text):
@@ -274,8 +280,10 @@ class MyPlugin(Plugin):
 
     # Send commands to air_despatcher
     def arming (self):
-        self.command_publisher.publish('arm')
-        print('armed')
+        message = LinkMessage()
+        message.id = 1
+        message.data = 'arm'
+        self.command_publisher.publish(message)
         # self.status_text_display('Arming message sent')
         # if self.text_to_display == 'DISARMED':
         #     self.arming.publish('ARM')
@@ -283,7 +291,10 @@ class MyPlugin(Plugin):
         #     self.arming.publish('DISARM')
         #     print('Now disarm it')
     def go_button(self):
-        self.command_publisher.publish('mode 0')
+        message = LinkMessage()
+        message.id = 1
+        message.data = 'mode 5'
+        self.command_publisher.publish(message)
         print('go')
 
     # Close all windows
@@ -327,3 +338,8 @@ class Communicate (QObject):
     waypoint_index_signal = Signal(int)
 
 
+def color(color):
+    if color == 'red':
+        return QColor(255,0,0)
+    elif color == 'black':
+        return QColor(0,0,0)
