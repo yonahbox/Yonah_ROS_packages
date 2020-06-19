@@ -35,7 +35,7 @@ from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from std_msgs.msg import String
 from statustext.msg import YonahStatusText
-from despatcher.msg import Message
+from despatcher.msg import LinkMessage
 
 # Local
 from regular import air_payload
@@ -50,7 +50,7 @@ class airdespatcher():
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', Message, queue_size = 5) # Link to telegram node      
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to telegram node      
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
 
         # Msg handlers
@@ -248,7 +248,7 @@ class airdespatcher():
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
         print(self.ground_id)
-        message = Message()
+        message = LinkMessage()
         message.data = self._msg
         # message.id = 1
         message.id = self.ground_id
