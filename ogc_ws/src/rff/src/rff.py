@@ -2,7 +2,7 @@
 
 import time
 import rospy
-import paramiko
+import RuTOS
 import csv
 import threading
 from mavros_msgs.srv import CommandBool
@@ -108,28 +108,24 @@ class RFF:
 class Button:
 
 	def __init__(self):
-		self.router_hostname = rospy.get_param('~router_hostname','root@192.168.1.1')
-		index = self.router_hostname.index('@')
-		self.ip = self.router_hostname[index+1:]
-		self.user = self.router_hostname[0:index]
+		self._username = rospy.get_param("~router_username","root") # Hostname of onboard router
+        self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
 		self.Button_State = False
 		self.stopwarn = False
-		self.ssh = paramiko.SSHClient()
-		self.ssh.load_system_host_keys()
-		self.ssh.connect(self.ip, username=self.user)
+		self.ssh = RuTOS.start_client(self.ip, self.user)
 		rospy.loginfo("Monitoring button")
+		RuTOS.button_on(self.ssh)
 
 	def blink(self):
 		while True:
-			stdin, stdout, stderr = self.ssh.exec_command('gpio.sh invert DOUT1')
+			RuTOS.blink_button(self.ssh)
 			time.sleep(0.5)
 			if self.stopwarn:
 				break
 
 	def press(self):
 		while True:
-			din, dout, derr = self.ssh.exec_command('gpio.sh get DIN1')
-			digital_input = int(str(dout.readlines())[2])
+			digital_input = RuTOS.check_button(self.ssh)
 
 			if digital_input == 0:
 				if self.Button_State == False:
@@ -159,13 +155,14 @@ class Button:
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
 	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
+	# waypointsfolder = rospy.get_param('~waypoint_folder', '/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/')
 	rff = RFF()
 
 	try:
 		for i in range(len(missionlist)):
 			wpfile = str(waypointsfolder + missionlist[i])
-			readwp = WP()
-			readwp.read(wpfile)
+			wpread = WP()
+			wpread.read(wpfile)
 			# Do nothing if aircraft is armed
 			while rff.armStatus:
 				time.sleep(5)
