@@ -103,7 +103,7 @@ class SMSrx():
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
         rospy.loginfo("Sending SMS: " + data.data)
-        sendstatus = RuTOS.send_msg(self.ssh, "+"+self._ids.get_number(data.id), data.data)
+        sendstatus = RuTOS.send_msg(self.ssh, "+"+str(self._ids.get_number(data.id)), data.data)
         if "Timeout\n" in sendstatus:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
     
