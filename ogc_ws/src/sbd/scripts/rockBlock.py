@@ -347,7 +347,7 @@ class rockBlock(object):
             if(self.s.readline().strip().decode() == "READY"):
                 # Calculate checksum. Checksum is least significant 2-bytes of the summation of the entire SBD
                 # message. The high order byte must be sent first. For example if the FA were to send the
-                # word “hello” encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
+                # word "hello" encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
                 # Updated checksum calculation formula from https://stackoverflow.com/questions/46813077/2-byte-checksum-in-python-for-iridium-sbd
                 # >> 8 to get higher order byte, see https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
                 # & 0xFF to get lower order byte, see https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
