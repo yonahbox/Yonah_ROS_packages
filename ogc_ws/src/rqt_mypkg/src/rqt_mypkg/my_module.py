@@ -124,9 +124,6 @@ class MyPlugin(Plugin):
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
 
-    def get_wind_speed(self, data):
-        print (data.windspeed)
-
     def create_tab_windows(self):
         # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()
@@ -152,11 +149,13 @@ class MyPlugin(Plugin):
     # Create a signal-slot mechanism for each function in order to display information
     # @TODO optimize the code for the signal slot such that only one function is needed
     def ondemand(self, data):
+        print('on demand')
         status = Communicate()
-        status.string_signal.connect(self.ondemand_display)
-        status.string_signal.emit(data.text)
+        status.mode_signal.connect(self.ondemand_display)
+        status.mode_signal.emit(str(data))
 
     def regular_payload(self, data):
+        print('regularpayload')
         status = Communicate()
         status.string_signal.connect(self.airspeed_display)
         status.string_signal.emit(data.airspeed)
@@ -279,7 +278,7 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC1').statustext.appendPlainText(status_text)
 
     def ondemand_display(self, data):
-        self.SummaryWindow.statustext.appendPlainText(data)
+        self.SummaryWindow.statustext.appendPlainText(str(data))
         self.aircrafts_info.get('AC1').statustext.appendPlainText(data)
 
     # Send commands to air_despatcher
@@ -288,6 +287,7 @@ class MyPlugin(Plugin):
         message.id = 1
         message.data = 'arm'
         self.command_publisher.publish(message)
+        print('arm')
         # self.status_text_display('Arming message sent')
         # if self.text_to_display == 'DISARMED':
         #     self.arming.publish('ARM')
@@ -329,9 +329,9 @@ class Communicate (QObject):
     # can be combined into one variable. However, for clarity purpose,
     # I split each variable for each display we need to make
     # regular_paylaod_signal = Signal(RegularPayload)
-    string_signal = Signal(str)
-    boolean_signal = Signal(bool)
-    float_signal = Signal(float)
+    string_signal = Signal(RegularPayload)
+    boolean_signal = Signal(RegularPayload)
+    float_signal = Signal(RegularPayload)
     
     status_text_signal = Signal(str)
     arm_signal = Signal(bool)
