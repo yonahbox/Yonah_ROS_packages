@@ -104,6 +104,8 @@ class SMSrx():
         self._msglist = RuTOS.extract_msg(self.ssh, 1)
         if 'no message\n' in self._msglist:
             pass
+        elif 'N/A\n' in self._msglist:
+            pass
         elif 'Timeout.\n' in self._msglist:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         else:
