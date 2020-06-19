@@ -15,7 +15,8 @@
 	<arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
 	<arg name="short_interval" default="10"/>
     <arg name="long_interval" default="300"/>
-	<arg name="router_hostname" default="'root@192.168.1.1'" />
+	<arg name="router_username" default="'root'" />
+	<arg name="router_ip" default="'192.168.1.1'" />
 
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
@@ -42,7 +43,8 @@
 		<arg name="short_interval" value="$(arg short_interval)"/>
 		<arg name="long_interval" value="$(arg long_interval)"/>
 		<arg name="log_output" value="$(arg log_output)"/>
-		<arg name="router_hostname" value="$(arg router_hostname)" />
+		<arg name="router_username" value="$(arg router_username)" />
+		<arg name="router_ip" value="$(arg router_ip)" />
 	</include>
 
 </launch>

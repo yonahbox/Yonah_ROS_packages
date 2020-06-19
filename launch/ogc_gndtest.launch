@@ -5,7 +5,8 @@
 	<arg name="interval_1" default="10"/>
 	<arg name="interval_2" default="60"/>
 	<arg name="interval_3" default="1"/>
-	<arg name="router_hostname" default="root@192.168.1.1" />
+	<arg name="router_username" default="'root'" />
+	<arg name="router_ip" default="'192.168.1.1'" />
 	
 	<!-- sms args -->
 	<arg name="whitelist" default="$(find sms)/src/whitelist.txt"/>
@@ -34,7 +35,8 @@
 	<node pkg="sms" type="sms_link.py" name="sms_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="whitelist" value="$(arg whitelist)" />
-		<param name="router_hostname" value = "$(arg router_hostname)"/>
+		<param name="router_username" value="$(arg router_username)" />
+		<param name="router_ip" value="$(arg router_ip)" />
 		<param name="client_phone_no" value="$(arg client_phone_no)" />
 	</node>
 	
