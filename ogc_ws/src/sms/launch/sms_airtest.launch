@@ -4,10 +4,14 @@
 
     <!-- please fill in the phone no of the client (e.g. if running this on air, fill in ground phone no,
      and vice versa). Enclose it in '' to recognise it as a string (instead of int)-->
-    <arg name="client_phone_no" default="'12345678'"/>
+    <!-- <arg name="client_phone_no" default="'12345678'"/> -->
 
     <!-- phone numbers authorized to send commands to aircraft. Whitelist should be in same folder as nodes-->
-    <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/>
+    <!-- <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/> -->
+    <arg name="identifiers_file" default="/home/rumesh/codes/test_identifiers_2.json" />
+    <arg name="ground_ids" default="[1]" />
+    <arg name="self_id" default="1" />
+    <arg name="is_air" default="True" />
 
     <!--Various regular payload intervals in seconds-->
     <arg name="interval_1" default="10"/>
@@ -22,14 +26,19 @@
     <!-- sms_link node -->
     <node pkg="sms" type="sms_link.py" name="sms_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <param name="whitelist" value="$(arg whitelist)" />
+        <!-- <param name="whitelist" value="$(arg whitelist)" /> -->
         <param name="router_hostname" value = "$(arg router_hostname)"/>
-        <param name="client_phone_no" value="$(arg client_phone_no)" />
+        <!-- <param name="client_phone_no" value="$(arg client_phone_no)" /> -->
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 
     <!-- air_despatcher node -->
     <node pkg="despatcher" type="air_despatcher.py" name="air_despatcher"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
         <param name="interval_1" value="$(arg interval_1)" />
         <param name="interval_2" value="$(arg interval_2)" />
     </node>
