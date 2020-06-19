@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+'''
+checklist_window: Additional window that contains the BPO and BTO checklists
+
+Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+'''
 # TODO streamline the import files and only include those that are really needed
 import csv
 import os
@@ -16,9 +34,12 @@ class ChecklistWindow(QWidget):
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
         self.move(200,100)
+        
         # relative path for the default BPO and BTO checklist
         BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')
         BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BTO_checklist.csv')
+        
+        # Check whether checklist is present, if not print a error message to terminal
         try:
             self.BPO_checklist = self.excel_parser(BPO_checklist_file)
             self.BTO_checklist = self.excel_parser(BTO_checklist_file)
@@ -26,22 +47,23 @@ class ChecklistWindow(QWidget):
             print("\033[91m ERROR: Checklist files are missing or named wrongly. Please follow the original directory and naming")
             exit()
         
-        # create the layout
-        self.layout = QVBoxLayout(self)
-        self.buttons_layout = QHBoxLayout(self)
-        self.tree_widget_layout = QHBoxLayout(self)
+        # Create the layout
+        self.main_layout = QVBoxLayout()
+        self.buttons_layout = QHBoxLayout()
+        self.tree_widget_layout = QHBoxLayout()
         
-        # create the widgets
+        # Create the widgets
         self.create_widget()
         self.has_message_opened = 0
 
-        # add the widgets into the layouts
-        self.layout.addLayout(self.tree_widget_layout)
-        self.layout.addLayout(self.buttons_layout)
+        # Add the widgets into the layouts
+        self.main_layout.addLayout(self.tree_widget_layout)
+        self.main_layout.addLayout(self.buttons_layout)
+        self.setLayout(self.main_layout)
         
     def create_widget(self):
         self.create_tree()
-        # declare buttons and connect each of them to a function
+        # Declare buttons and connect each of them to a function
         self.load_button = QPushButton('Load')
         self.ok_button = QPushButton('OK')
         self.cancel_button = QPushButton('Cancel')
@@ -53,17 +75,16 @@ class ChecklistWindow(QWidget):
         self.buttons_layout.addWidget(self.cancel_button)
         self.buttons_layout.addWidget(self.ok_button)
         self.tree_widget_layout.addWidget(self.tree_widget)
-        self.setLayout(self.layout)
 
     def create_tree(self):
-        # set up the main tree widget
+        # Set up the main tree widget
         self.tree_widget = QTreeWidget()
         self.tree_widget.setColumnCount(2)
         self.tree_widget.setColumnWidth(0, 250)
         self.tree_widget.setHeaderLabels(['Parts', 'Status'])
         self.item = QTreeWidgetItem()
         
-        # create the first header
+        # Create the first header
         self.BPO_header = QTreeWidgetItem(self.tree_widget)
         self.BPO_header.setFlags(self.BPO_header.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
         self.BPO_header.setText(0, 'BPO Checklist')
@@ -109,6 +130,7 @@ class ChecklistWindow(QWidget):
                 grandchild.setCheckState(0, Qt.Unchecked) # uncheck everything
                 k += 1
 
+    # read the excel sheet and parse it as a list
     def excel_parser(self, file_name):
         with open(file_name, 'r') as file:
             checklist = []
@@ -117,6 +139,7 @@ class ChecklistWindow(QWidget):
                 checklist.append(row)
             return checklist            
 
+    # The following 2 functions govern what happens when ok/cancel is clicked
     def ok_clicked(self):
         if self.BPO_header.checkState(0) != 2 or self.BTO_header.checkState(0) != 2:
             self.dialog_window("Some items in the checklist are still unchecked", "Do you still want to continue?", True)
@@ -131,6 +154,7 @@ class ChecklistWindow(QWidget):
             self.BPO_header.setCheckState(0, Qt.Unchecked)
             self.close()
     
+    # Load the BTO and BPO file
     def load_clicked(self):
         filenames = QFileDialog.getOpenFileNames(
             self, self.tr('Load from Files'), '.', self.tr('csv files {.csv} (*.csv)'))
@@ -147,8 +171,9 @@ class ChecklistWindow(QWidget):
                 print('ERROR: Checklist name must contain BPO or BTO')
                 self.close()
     
+    # Close all the main_layout
     def remove_widget(self):
-        self.layout.removeWidget(self.tree_widget)
+        self.main_layout.removeWidget(self.tree_widget)
         self.tree_widget.deleteLater()
         self.buttons_layout.removeWidget(self.ok_button)
         self.buttons_layout.removeWidget(self.cancel_button)
@@ -157,6 +182,7 @@ class ChecklistWindow(QWidget):
         self.cancel_button.deleteLater()
         self.load_button.deleteLater()
     
+    # Create a pop up window when user pre-emptively cancelled or clicked ok without completing the checklist
     def dialog_window(self, message, detail, check):
         self.message = QMessageBox()
         self.has_message_opened = 1
@@ -171,6 +197,7 @@ class ChecklistWindow(QWidget):
         else:
             self.message.buttonClicked.connect(self.message_action_uncheck)
     
+    # 
     def message_action(self, i):
         if i.text() == '&Yes':
             self.close()
@@ -187,6 +214,7 @@ class ChecklistWindow(QWidget):
         else:
             self.message.close()
 
+    # Shutdown function
     def shutdown(self):
         self.close()
         if self.has_message_opened == 1:

@@ -35,15 +35,19 @@ def display_regular_payload(data):
         rospy.loginfo("Msg from Aircraft " + str(data.vehicle_no))
     else:
         rospy.loginfo("Msg from GCS " + str(data.vehicle_no))
-    rospy.loginfo("Airspeed: " + str(data.airspeed))
-    rospy.loginfo("Altitude: " + str(data.alt))
-    rospy.loginfo("Armed: " + str(data.armed))
-    rospy.loginfo("Groundspeed: " + str(data.groundspeed))
-    rospy.loginfo("GPS Coords: " + str(data.lat) + ", " + str(data.lon))
-    rospy.loginfo("Throttle: " + str(data.throttle))
-    rospy.loginfo("VTOL Status: " + str(data.vtol))
-    rospy.loginfo("WP Reached: " + str(data.wp))
-    rospy.loginfo("Transmit Time: " + str(datetime.fromtimestamp(data.header.stamp.secs)))
+        rospy.loginfo("Airspeed: " + str(data.airspeed))
+        rospy.loginfo("Altitude: " + str(data.alt))
+        rospy.loginfo("Armed: " + str(data.armed))
+        rospy.loginfo("Mode: " + str(data.mode))
+        rospy.loginfo("Groundspeed: " + str(data.groundspeed))
+        rospy.loginfo("Fuel: " + str(data.fuel))
+        rospy.loginfo("Battery: " + str(data.battery))
+        rospy.loginfo("GPS Coords: " + str(data.lat) + ", " + str(data.lon))
+        rospy.loginfo("Throttle: " + str(data.throttle))
+        rospy.loginfo("VTOL Status: " + str(data.vtol))
+        rospy.loginfo("WP Reached: " + str(data.wp))
+        rospy.loginfo("Vibration: " + str(data.vibe))
+        rospy.loginfo("Transmit Time: " + str(datetime.fromtimestamp(data.header.stamp.secs)))
 
 def display_ondemand_payload(data):
     '''Receive input from ogc/from_despatcher topic and print it to terminal'''

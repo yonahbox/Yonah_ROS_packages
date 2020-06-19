@@ -284,7 +284,7 @@ class airdespatcher():
                 break
             i = i + 1
         # Add more special alert checks here
-        # To-do: Better msg prefix system
+        # @TODO: Better msg prefix system
     
     def get_status_text(self, data):
         '''Obtain status text messages from ogc/statustext'''
