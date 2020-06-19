@@ -15,7 +15,7 @@
 	<arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
 	<arg name="short_interval" default="10"/>
     <arg name="long_interval" default="300"/>
-	<arg name="router_hostname" default="'root@192.168.1.1'" />
+
 
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->

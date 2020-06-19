@@ -68,7 +68,8 @@ Interacts with the cellular router to send and receive SMS messages
 
 **Parameters**
 
-* `router_hostname`: Hostname and IP address of cellular router
+* `router_username`: Username of cellular router
+* `router_ip`: IP address of cellular router
 * `client_phone_no`: Phone number of client (if this package is running on the ground, then the client is the aircraft, and vice versa)
 * `whitelist`: Location of the text file containing whitelisted phone numbers, relative to the sms package folder
 
