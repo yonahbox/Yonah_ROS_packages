@@ -154,8 +154,7 @@ class Button:
 
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
-	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
-	# waypointsfolder = rospy.get_param('~waypoint_folder', '/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/')
+	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/')
 	rff = RFF()
 
 	try:
