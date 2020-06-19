@@ -121,7 +121,7 @@ class SMSrx():
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
             # Ensure sender is whitelisted before extracting message
-            if sender in self._ids.get_whitelist():
+            if sender[1:] in self._ids.get_whitelist():
             # if sender in self._whitelist:
                 rospy.loginfo('Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase

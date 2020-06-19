@@ -49,7 +49,7 @@ class airdespatcher():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('air_despatcher', anonymous=False)
-        self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
         self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to telegram node      
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
 
@@ -59,7 +59,7 @@ class airdespatcher():
         self._regular_payload_flag = True # Whether we should send regular payload to Ground Control
         self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for aircraft/gnd identifiers and prefix
         # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)
@@ -239,7 +239,10 @@ class airdespatcher():
 
     def _send_regular_payload_sms(self):
         '''Send regular payload over sms link'''
-        self.pub_to_sms.publish(self._msg)
+        message = LinkMessage()
+        message.data = self._msg
+        message.id = self.ground_id
+        self.pub_to_sms.publish(message)
     
     def _send_regular_payload_sbd(self):
         '''Send regular payload over SBD Satcomms link'''
@@ -257,13 +260,13 @@ class airdespatcher():
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
         self._attach_headers(severity)
+        message = LinkMessage()
+        message.id = self.ground_id
+        message.data = self._msg
         if self.link_select == 0:
-            message = LinkMessage()
-            message.id = self.ground_id
-            message.data = self._msg
             self.pub_to_telegram.publish(message)
         elif self.link_select == 1:
-            self.pub_to_sms.publish(self._msg)
+            self.pub_to_sms.publish(message)
         else:
             self.pub_to_sbd.publish(self._msg)
         
