@@ -44,26 +44,21 @@ from aircraft_info import *
 #[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
 class MyPlugin(Plugin):
 
-    def __init__(self, context): #[DA] the class MyPlugin takes in context as a variable
-        #[DA] super means it inherits the parent class' init() property
-        #[DA] In this case the parent class requires context as a parameter for its init
-        super(MyPlugin, self).__init__(context) ### this syntax means that it is a python 2 syntax and not python 3
-        # from argparse import ArgumentParser
-        # args = self._parse_args(context.argv()) #[DA] Need to investigate what parse args does
-
+    def __init__(self, context):
+        super(MyPlugin, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName('main_window')
-        self._widget = QWidget() # _widget is a private class
+        self._widget = QWidget()
         
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'second_window.ui')
         
         # Extend the widget with all attributes and children from UI file
-        # there is actually a third param available if we have custom class in our widget, but I think we can ignore this
+        # there is actually a third param available if we have custom class in our widget
         loadUi(ui_file, self._widget)
 
         # Give QObjects reasonable names
-        self._widget.setObjectName('MainWindowUI') #[DA] This sets the name instance using property inherited by _widget
+        self._widget.setObjectName('MainWindowUI')
         self._widget.setWindowTitle('Yonah RQt')
 
         # Show _widget.windowTitle on left-top of each plugin (when it's set in _widget). This is useful when you open multiple 
@@ -180,7 +175,7 @@ class MyPlugin(Plugin):
         status.string_signal.connect(self.fuel_display)
         status.string_signal.emit(data.fuel)
         status.string_signal.connect(self.quad_batt_display)
-        status.string_signal.emit(data.quad_batt)
+        status.string_signal.emit(data.batt)
         
     def status_text(self, data):
         status = Communicate()
@@ -287,6 +282,10 @@ class MyPlugin(Plugin):
         message.id = 1
         message.data = 'arm'
         self.command_publisher.publish(message)
+        message2 = LinkMessage()
+        message2.id = 2
+        message2.data = 'ping'
+        self.command_publisher.publish(message2)
         print('arm')
         # self.status_text_display('Arming message sent')
         # if self.text_to_display == 'DISARMED':
@@ -332,7 +331,7 @@ class Communicate (QObject):
     string_signal = Signal(RegularPayload)
     boolean_signal = Signal(RegularPayload)
     float_signal = Signal(RegularPayload)
-    
+    int_signal = Signal(int)
     status_text_signal = Signal(str)
     arm_signal = Signal(bool)
     mode_signal = Signal(str)

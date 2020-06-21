@@ -28,6 +28,7 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
+# Self-note: Consider changing the structure of the code to not over-populate the init
 class CommandWindow(QWidget):
     def __init__(self, active_aircrafts):
         super(CommandWindow, self).__init__()
@@ -37,11 +38,13 @@ class CommandWindow(QWidget):
         self.main_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
-        self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
+        # Set main_layout as the layout that occupies the entire widget
+        self.setLayout(self.main_layout) 
 
         # Create the widgets
         self.combo_box = QComboBox()
-        for i in range(1, active_aircrafts + 1): # Use a for loop to add items inside the drop down menu
+        # Use a for loop to add items inside the drop down menu
+        for i in range(1, active_aircrafts + 1): 
             self.combo_box.addItem('Aircraft ' + str(i))
         self.arm_button = QPushButton('ARM / DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -49,7 +52,7 @@ class CommandWindow(QWidget):
         self.mission_load_button = QPushButton('Load Mission')
         self.mission_check_button = QPushButton('Check Mission')
 
-        # set UI properties of the buttons and layout
+        # Set UI properties of the buttons and layout
         self.first_row.setContentsMargins(0,20,0,20)
         self.arm_button.setMinimumHeight(50)
         self.go_button.setMinimumHeight(50)
@@ -57,13 +60,15 @@ class CommandWindow(QWidget):
         self.mission_load_button.setMinimumHeight(30)
         self.checklist_button.setMinimumHeight(30)
        
-        # add the widgets into the layouts
+        # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.mission_check_button)
+
+        # Add the sub-layouts (first_row and second_row) into the main_layout
         self.main_layout.addLayout(self.first_row)
         self.main_layout.addLayout(self.second_row)
 

@@ -18,13 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-import os
-import rospkg
-import __main__
-
-from python_qt_binding import loadUi
 from PyQt5.QtWidgets import *
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
+from python_qt_binding.QtCore import Qt
 from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
@@ -32,14 +27,17 @@ class SummaryWindow(QWidget):
     def __init__(self, active_aircrafts):
         super(SummaryWindow, self).__init__()
         self.setWindowTitle("Summary Page")
-        self.waypoint_plaintext_dict = {} # Dictionary to store the textedits
 
-        # Create the main_layout
+        # Dictionary to store the textedit names
+        self.waypoint_plaintext_dict = {} 
+
+        # Declare the layouts
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
+        # Set main_layout as the layout that occupies the entire widget
         self.setLayout(self.main_layout)
 
-        # create the widgets
+        # Declare the widgets
         summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
         for i in range(1, active_aircrafts + 1):
             self.create_summary(i, summarised_fields)
@@ -52,9 +50,7 @@ class SummaryWindow(QWidget):
 
 
     def create_summary(self, aircraft_no, summarised_fields):
-        self.summary_details_layout = QVBoxLayout()
-         # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
-        
+        self.summary_details_layout = QVBoxLayout()        
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
         self.aircraft_label.setContentsMargins(0, 30, 0, 0)
         self.summary_details_layout.addWidget(self.aircraft_label)
