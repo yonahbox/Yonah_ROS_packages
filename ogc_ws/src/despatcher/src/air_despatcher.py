@@ -70,8 +70,9 @@ class airdespatcher():
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
         self._interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
+        self._tele_interval = self._interval_1 # Interval (seconds) for regular payload over telegrams
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
-        self._tele_interval = self._interval_2 # Interval (seconds) for regular payload over telegram
+        # Note that there is no sbd interval. This interval is controlled by sbd link node
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
@@ -289,14 +290,13 @@ class airdespatcher():
         self._attach_headers("r")
         if self.link_select == 0:
             self._send_regular_payload_tele()
+            rospy.sleep(self._tele_interval)
         elif self.link_select == 1:
             self._send_regular_payload_sms()
+            rospy.sleep(self._sms_interval)
         else:
             self._send_regular_payload_sbd()
-        
-        # Sleep for the specified interval. Note that rospy.Timer
-        # will not allow the time interval to go below min_interval
-        rospy.sleep(self._sms_interval)
+            # The sleep interval is controlled by sbd link node
 
     ############################
     # "Main" function
