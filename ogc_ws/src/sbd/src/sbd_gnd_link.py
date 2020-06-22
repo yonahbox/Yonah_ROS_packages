@@ -107,7 +107,14 @@ class satcommsgnd(satcomms):
         '''Extract MO msg from our web server'''
         values = {'pw':'testpw'} # We cannot use our account pw, because http is unencrypted...
         # Send HTTP post request to Rock 7 server, incoming msg (if any) stored in reply
-        reply_str = requests.post(self._server_url, data=values).text
+        try:
+            reply_str = requests.post(self._server_url, data=values).text
+        except requests.exceptions.ConnectionError:
+            rospy.logerr("Web Server Timed Out")
+            return
+        if "404 Not Found" in reply_str:
+            rospy.logerr("Web Server 404 Not Found; is the URL correct?")
+            return
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
             if self._server_is_new_msg(reply['transmit_time']): 
