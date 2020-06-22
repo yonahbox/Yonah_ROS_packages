@@ -42,7 +42,7 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
 
         # Link switching
-        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
@@ -113,9 +113,11 @@ class gnddespatcher():
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if sender_msgtype == 's':
+                    print('statustext gnd')
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
                 else:
+                    print('ondemand gnd')
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")

@@ -48,13 +48,12 @@ class AircraftInfo(QWidget):
             'Altitude', 
             'Airspeed',  
             'Groundspeed', 
-            'GPS Coordinate', 
+            'GPS', 
             'Throttle', 
             'VTOL Status', 
-            'Windspeed',
             'Target Waypoint',
             'Flying Time',
-            'Vibe status',
+            'Vibe Status',
             'Fuel Level',
             'Quad Battery']
 
