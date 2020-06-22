@@ -110,13 +110,13 @@ class satcommsgnd(satcomms):
         reply_str = requests.post(self._server_url, data=values).text
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
-            if reply['imei'] == self._mt_cred['imei']: # ensure imei is valid
-                if self._server_is_new_msg(reply['transmit_time']):
+            if self._server_is_new_msg(reply['transmit_time']): 
+                if reply['imei'] == self._mt_cred['imei']: # ensure imei is valid
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
-            else:
-                rospy.logwarn("Received unknown msg from " + str(reply['imei']))
+                else:
+                    rospy.logwarn("Received unknown msg from " + str(reply['imei']))
         except (ValueError):
-            rospy.logwarn("Invalid message received")
+            rospy.logwarn("Invalid message received from web server")
     
     ############################
     # Main msg handlers
