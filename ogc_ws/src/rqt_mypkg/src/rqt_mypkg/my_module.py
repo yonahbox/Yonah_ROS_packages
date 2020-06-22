@@ -119,8 +119,8 @@ class MyPlugin(Plugin):
         self.rate = rospy.Rate(2)
         context.add_widget(self._widget)
 
+    # Create layout for Summary scroll window
     def create_tab_windows(self):
-        # Create layout for Summary scroll window
         self.summary_scroll = QScrollArea()
         self.summary_scroll.setMinimumHeight(500)
         self.summary_scroll.setMinimumWidth(600)
@@ -141,8 +141,9 @@ class MyPlugin(Plugin):
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
 
-    # Create a signal-slot mechanism for each function in order to display information
-    # @TODO optimize the code for the signal slot such that only one function is needed
+    ################################
+    # Create Signal Slot functions #
+    ################################
     def ondemand(self, data):
         print('on demand')
         status = Communicate()
@@ -203,7 +204,9 @@ class MyPlugin(Plugin):
         status.waypoint_list_signal.connect(self.waypoint_total_display)
         status.waypoint_list_signal.emit(data.waypoints, data.current_seq)
     
-    # All functions with _display are the functions that takes the information and display it to the UI
+    ##################################################
+    # Handles information from Signal Slot functions #
+    ##################################################
     def groundspeed_display(self, data):
         data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGroundspeed1').setPlainText(data)
@@ -278,7 +281,9 @@ class MyPlugin(Plugin):
         self.SummaryWindow.statustext.appendPlainText(str(data))
         self.aircrafts_info.get('AC1').statustext.appendPlainText(data)
 
-    # Send commands to air_despatcher
+    ######################################
+    # Handles commands to air despatcher #
+    ######################################
     def arming (self):
         message = LinkMessage()
         message.id = 1
@@ -322,15 +327,6 @@ class MyPlugin(Plugin):
    
 # Class that is responsible for signal and slot function
 class Communicate (QObject):
-    # technically, all the signals that has the same input, such as string
-    # can be combined into one variable. However, for clarity purpose,
-    # I split each variable for each display we need to make
-    # regular_paylaod_signal = Signal(RegularPayload)
-    # regular_signal = Signal(RegularPayload)
-    # boolean_signal = Signal(bool)
-    # float_signal = Signal(float, int)
-    # int_signal = Signal(int)
-    # string_signal = Signal(str)
     airspeed_signal = Signal(float, str)
     alt_signal = Signal(float, str)
     arm_signal = Signal(bool, str)
