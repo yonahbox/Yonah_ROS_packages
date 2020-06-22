@@ -57,9 +57,6 @@ class satcomms(rockBlockProtocol):
     def rockBlockConnected(self):
         rospy.loginfo("Rockblock Connected")
 
-    def rockBlockDisconnected(self):
-        rospy.logerr("Rockblock Disconnected")
-    
     #SIGNAL
     def rockBlockSignalUpdate(self,signal):
         rospy.loginfo("Rockblock signal strength: " + str(signal))

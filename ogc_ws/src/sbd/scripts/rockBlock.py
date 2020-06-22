@@ -49,7 +49,6 @@ import regular
 class rockBlockProtocol(object):
     
     def rockBlockConnected(self):pass
-    def rockBlockDisconnected(self):pass
     
     #SIGNAL
     def rockBlockSignalUpdate(self,signal):pass
@@ -124,16 +123,7 @@ class rockBlock(object):
             if( self.s.readline().strip().decode() == "OK" ):                   
                 return True
         return False
-
-
-    def pingception(self):
-        '''Handy function to check the connection is still alive, else throw an Exception'''
-        self._ensureConnectionStatus()
-        self.s.timeout = 5
-        if(self.ping() == False):
-            raise rockBlockException("Unable to ping Rockblock")
-        self.s.timeout = 60
-            
+    
     
     def requestSignalStrength(self):
         '''Return the Iridium Signal Strength; if unsuccesful, return -1'''
@@ -195,103 +185,15 @@ class rockBlock(object):
                 return utc
             else:
                 return 0
-                      
-                            
-    def sendMessage(self, msg, thr_server, mo_is_regular):
-        '''Send an MO msg, and return True/False depending on whether attempt was successful'''
-        self._ensureConnectionStatus()
-
-        if(self.callback != None and callable(self.callback.rockBlockTxStarted) ):
-            self.callback.rockBlockTxStarted()
-
-        self.mo_msg = msg
-
-        if( self._queueMessage(thr_server, mo_is_regular) and self._attemptConnection()  ):
-            # Try a max of 3 unsuccessful times before giving up permanently
-            SESSION_DELAY = 1
-            SESSION_ATTEMPTS = 3
-            while(True):
-                SESSION_ATTEMPTS = SESSION_ATTEMPTS - 1
-                if(SESSION_ATTEMPTS == 0):
-                    break
-                if( self._attemptSession(True) ):
-                    return True
-                else:
-                    time.sleep(SESSION_DELAY)       
-        if(self.callback != None and callable(self.callback.rockBlockTxFailed) ):
-            self.callback.rockBlockTxFailed()
-        return False
     
     
-    def getSerialIdentifier(self):
-        '''Query Rockblock's IMEI number'''
-        self._ensureConnectionStatus()
-        command = "AT+GSN"
-        self.s.write((command + "\r").encode())
-        if(self.s.readline().strip().decode() == command):
-            response = self.s.readline().strip().decode()
-            self.s.readline().strip()  #BLANK
-            self.s.readline().strip() #OK
-            return response
-    
-
-    def setup(self):
-        '''
-        One-time initial setup function (Disables Flow Control)
-        This only needs to be called once, as is stored in non-volitile memory
-        Make sure you DISCONNECT RockBLOCK from power for a few minutes after this command has been issued...
-        '''
-        self._ensureConnectionStatus()
-        # Disable Flow Control
-        command = "AT&K0"
-        self.s.write((command + "\r").encode())
-        if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-            # Store Configuration into Profile0
-            command = "AT&W0"
-            self.s.write((command + "\r").encode())
-            if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                # Use Profile0 as default
-                command = "AT&Y0"
-                self.s.write((command + "\r").encode())
-                if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                    # Flush Memory
-                    command = "AT*F"
-                    self.s.write((command + "\r").encode())
-                    if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                        # self.close()
-                        return True
-        return False        
-    
-
     def close(self):
         '''Close Rockblock serial connection'''
         if(self.s != None):
             self.s.close()
             self.s = None
     
-     
-    @staticmethod
-    def listPorts():
-        '''Handy function to list all available ports (to find out where Rockblock is connected'''
-        if sys.platform.startswith('win'):
-            ports = ['COM' + str(i + 1) for i in range(256)]
-        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-            ports = glob.glob('/dev/tty[A-Za-z]*')
-        elif sys.platform.startswith('darwin'):
-            ports = glob.glob('/dev/tty.*')
-        result = []
-        
-        for port in ports:
-            try:
-                s = serial.Serial(port)
-                s.close()
-                result.append(port)
-            except (OSError, serial.SerialException):
-                pass
-        
-        return result
     
-        
     #Private Methods - Don't call these directly!
     def _packBinaryPrefix(self):
         '''
