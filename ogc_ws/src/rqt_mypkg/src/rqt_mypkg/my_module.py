@@ -107,10 +107,10 @@ class MyPlugin(Plugin):
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
-        rospy.Subscriber('ogc/from_despatcher/ondemand', String, self.ondemand)
+        rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("mavros/state", State, self.mode_status)
-        rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
-        rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
+        rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.regular_payload)
+        # rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
 
         # Publisher List
         self.command_publisher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
@@ -146,58 +146,57 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         print('on demand')
         status = Communicate()
-        status.mode_signal.connect(self.ondemand_display)
-        status.mode_signal.emit(str(data))
+        status.string_signal.connect(self.ondemand_display)
+        status.string_signal.emit(str(data))
 
     def regular_payload(self, data):
-        print('regularpayload')
+        # print('regularpayload')
         status = Communicate()
-        status.string_signal.connect(self.airspeed_display)
-        status.string_signal.emit(data.airspeed)
-        status.string_signal.connect(self.altitude_display)
-        status.string_signal.emit(data.altitude)
-        status.string_signal.connect(self.mode_status_display) 
-        status.string_signal.emit(data.armed)
-        status.string_signal.connect(self.groundspeed_display)
-        status.string_signal.emit(data.groundspeed)
-        status.string_signal.connect(self.throttle_display)
-        status.string_signal.emit(data.throttle)
-        status.string_signal.connect(self.gps_display)
-        status.string_signal.emit(data.lat, data.lon)
-        status.string_signal.connect(self.vibe_display)
-        status.string_signal.emit(data.vibe)
-        status.string_signal.connect(self.vtol_display)
-        status.string_signal.emit(data.vtol)
-        status.string_signal.connect(self.waypoint_display)
-        status.string_signal.emit(data.text)
-        status.string_signal.connect(self.time_display)
-        status.string_signal.emit(data.text)
-        status.string_signal.connect(self.fuel_display)
-        status.string_signal.emit(data.fuel)
-        status.string_signal.connect(self.quad_batt_display)
-        status.string_signal.emit(data.batt)
+        status.airspeed_signal.connect(self.airspeed_display)
+        status.airspeed_signal.emit(data.airspeed, '1')
+        status.altitude_signal.connect(self.altitude_display)
+        status.altitude_signal.emit(data.altitude, '1')
+        # status.int_signal.connect(self.mode_status_display) 
+        # status.int_signal.emit(data.mode)
+        # status.int_signal.connect(self.arm_status_display) 
+        # status.int_signal.emit(data.armed)
+        # status.int_signal.connect(self.groundspeed_display)
+        # status.int_signal.emit(data.groundspeed)
+        # status.int_signal.connect(self.throttle_display)
+        # status.int_signal.emit(data.throttle)
+        # status.int_signal.connect(self.gps_display)
+        # status.int_signal.emit(data.lat, data.lon)
+        # status.int_signal.connect(self.vibe_display)
+        # status.int_signal.emit(data.vibe)
+        # status.int_signal.connect(self.vtol_display)
+        # status.int_signal.emit(data.vtol)
+        # status.int_signal.connect(self.waypoint_display)
+        # status.int_signal.emit(data.text)
+        # status.int_signal.connect(self.time_display)
+        # status.int_signal.emit(data.text)
+        # status.int_signal.connect(self.fuel_display)
+        # status.int_signal.emit(data.fuel)
+        # status.int_signal.connect(self.quad_batt_display)
+        # status.int_signal.emit(data.batt)
         
     def status_text(self, data):
         status = Communicate()
-        status.string_signal.connect(self.status_text_display)
-        status.string_signal.emit(data.text)
+        status.int_signal.connect(self.status_text_display)
+        status.int_signal.emit(data.text)
     
     def mode_status(self, data):
         status = Communicate()
-        status.string_signal.connect(self.mode_status_display)
-        status.string_signal.emit(data.mode)
-
-        status.string_signal.connect(self.arm_status_display)
-        status.string_signal.emit(str(data.armed))
+        status.mode_signal.connect(self.mode_status_display)
+        status.mode_signal.emit(data.mode, '1')
+        status.arm_signal.connect(self.arm_status_display)
+        status.arm_signal.emit(data.armed, '1')
 
     def VFR_HUD(self, data):
         status = Communicate()
-        status.airspeed_signal.connect(self.airspeed_display)
-        status.airspeed_signal.emit(data.airspeed)
-        status.altitude_signal.connect(self.altitude_display)
-        status.altitude_signal.emit(data.altitude)
-        # status.altitude_signal.connect(self.windspeed_display)
-        # status.altitude_signal.emit(data.windspeed)
+        status.float_signal.connect(self.airspeed_display)
+        status.float_signal.emit(data.airspeed)
+        status.float_signal.connect(self.altitude_display)
+        status.float_signal.emit(data.altitude)
 
     def waypoint_total(self, data):
         status = Communicate()
@@ -206,52 +205,58 @@ class MyPlugin(Plugin):
     
     # All functions with _display are the functions that takes the information and display it to the UI
     def groundspeed_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGroundspeed1').setPlainText(data)
     
     def throttle_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftThrottle1').setPlainText(data)
 
     def gps_display(self, lat, lon):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGPS1').setPlainText(lat + lon)
 
-    def windspeed_display(self, data):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftWindspeed1').setPlainText(data)
-
     def vibe_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVibe Status1').setPlainText(data)
 
     def vtol_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVTOL Status1').setPlainText(data)
 
     def waypoint_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftTarget Waypoint1').setPlainText(data)
 
     def time_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFlying Time1').setPlainText(data)
 
     def fuel_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFuel Level1').setPlainText(data)
 
     def quad_batt_display(self, data):
+        data = str(data)
         self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftQuad Battery1').setPlainText(data)
     
-    def mode_status_display(self, mode_status):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftMode1').setPlainText(mode_status)
-        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode1').setPlainText(mode_status)
+    def mode_status_display(self, mode_status, id):
+        mode_status = str(mode_status)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
 
-    def altitude_display(self, altitude):
+    def altitude_display(self, altitude, id):
+        id = str(id)
         altitude = str(round(altitude, 1)) + ' m'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)
-        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAltitude1').setPlainText(altitude)        
-        # self._widget.altitude_textedit.setText(altitude)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftAltitude' + id).setPlainText(altitude)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAltitude' + id).setPlainText(altitude)        
 
-    def airspeed_display(self, airspeed):
+    def airspeed_display(self, airspeed, id):
+        id = str(id)
         airspeed = str(round(airspeed, 1)) + ' m/s'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setStyleSheet("background-color: rgb(255, 0, 0);")     
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)
-        
-        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAirspeed1').setPlainText(airspeed)                
-        # self._widget.airspeed_textedit.setText(airspeed)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftAirspeed' + id).setStyleSheet("Color: rgb(255, 0, 0);")     
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftAirspeed' + id).setPlainText(airspeed)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAirspeed' + id).setPlainText(airspeed)                
 
     def waypoint_total_display(self, total, sequence):
         total = len(total) - 1
@@ -259,14 +264,13 @@ class MyPlugin(Plugin):
         # self._widget.progressBar.setValue(sequence)
         # self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
     
-    def arm_status_display(self, arm_status):
+    def arm_status_display(self, arm_status, id):
         if arm_status == 'False':
             text_to_display = 'DISARMED'
         else:
             text_to_display = 'ARMED'
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftStatus1').setPlainText(text_to_display)        
-        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus1').setPlainText(text_to_display)        
-        # self._widget.arming_textedit.setText(str(text_to_display))
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
     
     def status_text_display(self, status_text):
         self.SummaryWindow.statustext.appendPlainText(status_text)
@@ -293,6 +297,7 @@ class MyPlugin(Plugin):
         # elif self.text_to_display == 'ARMED':
         #     self.arming.publish('DISARM')
         #     print('Now disarm it')
+
     def go_button(self):
         message = LinkMessage()
         message.id = 1
@@ -328,15 +333,16 @@ class Communicate (QObject):
     # can be combined into one variable. However, for clarity purpose,
     # I split each variable for each display we need to make
     # regular_paylaod_signal = Signal(RegularPayload)
-    string_signal = Signal(RegularPayload)
-    boolean_signal = Signal(RegularPayload)
-    float_signal = Signal(RegularPayload)
-    int_signal = Signal(int)
+    # regular_signal = Signal(RegularPayload)
+    # boolean_signal = Signal(bool)
+    # float_signal = Signal(float, int)
+    # int_signal = Signal(int)
+    # string_signal = Signal(str)
     status_text_signal = Signal(str)
-    arm_signal = Signal(bool)
-    mode_signal = Signal(str)
-    altitude_signal = Signal(float)
-    airspeed_signal = Signal(float)
+    arm_signal = Signal(bool, str)
+    mode_signal = Signal(str, str)
+    altitude_signal = Signal(float, str)
+    airspeed_signal = Signal(float, str)
     waypoint_list_signal = Signal(list, int)
     waypoint_index_signal = Signal(int)
 
