@@ -112,7 +112,6 @@ class SMSrx():
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                 self._msg = (self._msglist[4].split(' ', 1)[1].rstrip()).lower()
                 # Forward msg to air_despatcher
-                print(self._msg)
                 self.pub_to_despatcher.publish(self._msg)
             else:
                 rospy.logwarn('Rejected msg from unknown sender ' + sender)
