@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QFont
 from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
@@ -50,13 +51,16 @@ class SummaryWindow(QWidget):
 
 
     def create_summary(self, aircraft_no, summarised_fields):
+        self.styling()
         self.summary_details_layout = QVBoxLayout()        
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
-        self.aircraft_label.setContentsMargins(0, 30, 0, 0)
+        self.aircraft_label.setFont(self.h2)
+        self.aircraft_label.setContentsMargins(0, 20, 0, 0)
         self.summary_details_layout.addWidget(self.aircraft_label)
         
         for i in summarised_fields:
             # 
+            
             self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)
@@ -72,5 +76,8 @@ class SummaryWindow(QWidget):
 
         self.summary_layout.addLayout(self.summary_details_layout)
     
+    def styling(self):
+        self.h2 = QFont("Ubuntu", 12, QFont.Bold) 
+
     def shutdown(self):
         self.close()

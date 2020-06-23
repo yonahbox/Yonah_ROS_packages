@@ -24,6 +24,7 @@ import __main__
 
 from python_qt_binding import loadUi
 from PyQt5.QtWidgets import *
+from python_qt_binding.QtGui import QFont
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from checklist_window import ChecklistWindow
 
@@ -36,12 +37,11 @@ class AircraftInfo(QWidget):
         self.setWindowTitle("Summary Page")
         
         self.waypoint_plaintext_dict = {}
-        # create the layout
+        # Create the layout
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         
-        # create the widgets
         summarised_fields = [
             'Mode', 
             'Status', 
@@ -71,9 +71,11 @@ class AircraftInfo(QWidget):
         self.main_layout.addWidget(self.statustext)
 
     def create_summary(self, aircraft_no, summarised_fields):
+        self.styling()
         self.summary_details_layout = QVBoxLayout()
          # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
+        self.aircraft_label.setFont(self.h2)
         self.summary_details_layout.addWidget(self.aircraft_label)
         for i in summarised_fields:
             self.summary_fields_layout = QHBoxLayout()
@@ -89,6 +91,10 @@ class AircraftInfo(QWidget):
             self.summary_details_layout.addLayout(self.summary_fields_layout)
 
         self.summary_layout.addLayout(self.summary_details_layout)
+
+    def styling(self):
+        self.h2 = QFont("Ubuntu", 15, QFont.Bold) 
+
 
     def shutdown(self):
         self.close()

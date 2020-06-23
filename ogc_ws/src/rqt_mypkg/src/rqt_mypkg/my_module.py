@@ -150,6 +150,7 @@ class MyPlugin(Plugin):
         status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(str(data))
 
+    # TODO reorder the regular payload signal slots
     def regular_payload(self, data):
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
@@ -161,29 +162,29 @@ class MyPlugin(Plugin):
         status.arm_signal.connect(self.arm_status_display) 
         status.arm_signal.emit(data.armed, '1')
         status.groundspeed_signal.connect(self.groundspeed_display)
-        status.groundspeed_signal.emit(data.groundspeed)
+        status.groundspeed_signal.emit(data.groundspeed, '1')
         status.throttle_signal.connect(self.throttle_display)
-        status.throttle_signal.emit(data.throttle)
+        status.throttle_signal.emit(data.throttle, '1')
         status.gps_signal.connect(self.gps_display)
-        status.gps_signal.emit(data.lat, data.lon)
+        status.gps_signal.emit(data.lat, data.lon, '1')
         status.vibe_signal.connect(self.vibe_display)
-        status.vibe_signal.emit(data.vibe)
+        status.vibe_signal.emit(data.vibe, '1')
         status.vtol_signal.connect(self.vtol_display)
-        status.vtol_signal.emit(data.vtol)
+        status.vtol_signal.emit(data.vtol, '1')
         status.wp_signal.connect(self.waypoint_display)
-        status.wp_signal.emit(data.wp)
+        status.wp_signal.emit(data.wp, '1')
         status.time_signal.connect(self.time_display)
-        status.time_signal.emit(data.header.stamp.secs)
+        status.time_signal.emit(data.header.stamp.secs, '1')
         status.fuel_signal.connect(self.fuel_display)
-        status.fuel_signal.emit(data.fuel)
+        status.fuel_signal.emit(data.fuel, '1')
         status.batt_signal.connect(self.quad_batt_display)
-        status.batt_signal.emit(data.batt)
+        status.batt_signal.emit(data.batt, '1')
         
     def status_text(self, data):
         print('status')
         status = Communicate()
         status.ondemand_signal.connect(self.status_text_display)
-        status.ondemand_signal.emit(data.text)
+        status.ondemand_signal.emit(data.text, '1')
     
     def mode_status(self, data):
         status = Communicate()
@@ -195,9 +196,9 @@ class MyPlugin(Plugin):
     def VFR_HUD(self, data):
         status = Communicate()
         status.float_signal.connect(self.airspeed_display)
-        status.float_signal.emit(data.airspeed)
+        status.float_signal.emit(data.airspeed, '1')
         status.float_signal.connect(self.altitude_display)
-        status.float_signal.emit(data.altitude)
+        status.float_signal.emit(data.altitude, '1')
 
     def waypoint_total(self, data):
         status = Communicate()
@@ -207,39 +208,39 @@ class MyPlugin(Plugin):
     ##################################################
     # Handles information from Signal Slot functions #
     ##################################################
-    def groundspeed_display(self, data):
+    def groundspeed_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGroundspeed1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftGroundspeed' + id).setPlainText(data)
     
-    def throttle_display(self, data):
+    def throttle_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftThrottle1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftThrottle' + id).setPlainText(data)
 
-    def gps_display(self, lat, lon):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftGPS1').setPlainText(str(lat + lon))
+    def gps_display(self, lat, lon, id):
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftGPS' + id).setPlainText(str(lat + lon))
 
-    def vibe_display(self, data):
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVibe Status1').setPlainText(str(data))
+    def vibe_display(self, data, id):
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftVibe Status' + id).setPlainText(str(data))
 
-    def vtol_display(self, data):
+    def vtol_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftVTOL Status1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftVTOL Status' + id).setPlainText(data)
 
-    def waypoint_display(self, data):
+    def waypoint_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftTarget Waypoint1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftTarget Waypoint' + id).setPlainText(data)
 
-    def time_display(self, data):
+    def time_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFlying Time1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftFlying Time' + id).setPlainText(data)
 
-    def fuel_display(self, data):
+    def fuel_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftFuel Level1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftFuel Level' + id).setPlainText(data)
 
-    def quad_batt_display(self, data):
+    def quad_batt_display(self, data, id):
         data = str(data)
-        self.aircrafts_info.get('AC1').waypoint_plaintext_dict.get('aircraftQuad Battery1').setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftQuad Battery' + id).setPlainText(data)
     
     def mode_status_display(self, mode_status, id):
         mode_status = str(mode_status)
@@ -273,13 +274,13 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
         self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
     
-    def status_text_display(self, status_text):
+    def status_text_display(self, status_text, id):
         self.SummaryWindow.statustext.appendPlainText(status_text)
-        self.aircrafts_info.get('AC1').statustext.appendPlainText(status_text)
+        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + status_text)
 
-    def ondemand_display(self, data):
+    def ondemand_display(self, data, id):
         self.SummaryWindow.statustext.appendPlainText(str(data))
-        self.aircrafts_info.get('AC1').statustext.appendPlainText(data)
+        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + status_text)
 
     ######################################
     # Handles commands to air despatcher #
