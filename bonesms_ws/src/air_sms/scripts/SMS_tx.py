@@ -260,7 +260,6 @@ class SMStx():
             else:
                 self.pub_to_data.publish("air_sms: Msg sending success")
         except:
-            rospy.logwarn("SSH process into router has been killed.")
             self.pub_to_data.publish("air_sms: Cannot ssh into air router")
             
 
