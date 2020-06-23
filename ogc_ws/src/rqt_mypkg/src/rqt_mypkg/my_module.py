@@ -109,8 +109,8 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("mavros/state", State, self.mode_status)
-        rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.regular_payload)
-        # rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
+        rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD)
+        rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_total)
 
         # Publisher List
         self.command_publisher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
@@ -136,7 +136,6 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(key).setWidgetResizable(True)
             self.aircrafts_info.get(key).setWidget(self.aircrafts_info.get('AC' + str(i)))
             self.tab.addTab(self.aircrafts_info.get(key), 'Aircraft ' + str(i))
-            
         self.tab.setMinimumHeight(500)
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
@@ -145,10 +144,9 @@ class MyPlugin(Plugin):
     # Create Signal Slot functions #
     ################################
     def ondemand(self, data):
-        print('on demand')
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(str(data))
+        status.ondemand_signal.emit(str(data), "")
 
     # TODO reorder the regular payload signal slots
     def regular_payload(self, data):
@@ -181,7 +179,6 @@ class MyPlugin(Plugin):
         status.batt_signal.emit(data.batt, '1')
         
     def status_text(self, data):
-        print('status')
         status = Communicate()
         status.ondemand_signal.connect(self.status_text_display)
         status.ondemand_signal.emit(data.text, '1')
@@ -195,15 +192,15 @@ class MyPlugin(Plugin):
 
     def VFR_HUD(self, data):
         status = Communicate()
-        status.float_signal.connect(self.airspeed_display)
-        status.float_signal.emit(data.airspeed, '1')
-        status.float_signal.connect(self.altitude_display)
-        status.float_signal.emit(data.altitude, '1')
+        status.airspeed_signal.connect(self.airspeed_display)
+        status.airspeed_signal.emit(data.airspeed, '1')
+        status.alt_signal.connect(self.altitude_display)
+        status.alt_signal.emit(data.altitude, '1')
 
     def waypoint_total(self, data):
         status = Communicate()
         status.waypoint_list_signal.connect(self.waypoint_total_display)
-        status.waypoint_list_signal.emit(data.waypoints, data.current_seq)
+        status.waypoint_list_signal.emit(data.waypoints, data.current_seq, '1')
     
     ##################################################
     # Handles information from Signal Slot functions #
@@ -260,14 +257,14 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftAirspeed' + id).setPlainText(airspeed)
         self.SummaryWindow.waypoint_plaintext_dict.get('aircraftAirspeed' + id).setPlainText(airspeed)                
 
-    def waypoint_total_display(self, total, sequence):
+    def waypoint_total_display(self, total, sequence, id):
         total = len(total) - 1
-        # self._widget.progressBar.setRange(0,total)
-        # self._widget.progressBar.setValue(sequence)
-        # self._widget.wp_textedit.setText('Current WP: ' + str(sequence) + ' out of ' + str(total))
+        self.WaypointWindow.waypoint_plaintext_dict.get('progress_bar_aircraft' + id).setRange(0,total)
+        self.WaypointWindow.waypoint_plaintext_dict.get('progress_bar_aircraft' + id).setValue(sequence)
+        self.WaypointWindow.waypoint_plaintext_dict.get('aircraft' + id).setPlainText('Current WP: ' + str(sequence) + ' out of ' + str(total))
     
     def arm_status_display(self, arm_status, id):
-        if arm_status == 'False':
+        if arm_status == 'False' or arm_status == 0:
             text_to_display = 'DISARMED'
         else:
             text_to_display = 'ARMED'
@@ -343,8 +340,8 @@ class Communicate (QObject):
     wp_signal = Signal(int)
     time_signal = Signal(int)
 
-    ondemand_signal = Signal(str)
-    waypoint_list_signal = Signal(list, int)
+    ondemand_signal = Signal(str, str)
+    waypoint_list_signal = Signal(list, int, str)
     waypoint_index_signal = Signal(int)
 
 
