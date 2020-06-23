@@ -42,7 +42,6 @@ class WaypointWindow(QWidget):
         self.main_layout = QHBoxLayout()
         self.buttons_layout = QVBoxLayout()
         self.progressbar_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
 
         # Create the widgets
         for i in range(1, active_aircrafts + 1):
