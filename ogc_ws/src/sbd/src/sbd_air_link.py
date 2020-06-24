@@ -22,10 +22,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ROS/Third-Party
 import rospy
 from std_msgs.msg import String
+from despatcher.msg import LinkMessage
 
 # Local
+from identifiers import Identifiers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
+
+class mo_msg_buffer():
+    '''Buffer to hold MO msg before a mailbox check takes place'''
+    def __init__(self):
+        self.data = "" # actual msg
+        self.write_time = rospy.get_rostime().secs # Time which msg is written to buffer
+        self.target_id = -1 # ID of the client which we are sending to
 
 class satcomms(rockBlockProtocol):
 
@@ -35,18 +44,23 @@ class satcomms(rockBlockProtocol):
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
-        self._buffer = "" # MO msg buffer
-        self._buffer_write_time = rospy.get_rostime().secs
-        self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
-        self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
+
+        # Identifiers
+        identifiers_file = rospy.get_param("~identifiers_file")
+        self._valid_ids = rospy.get_param("~valid_ids")
+        self._is_air = rospy.get_param("~is_air")
+        self._self_id = rospy.get_param("~self_id")
+        self._ids = Identifiers(identifiers_file, self._is_air, self._valid_ids)
+        self._own_serial = self._ids.get_sbd_serial(self._self_id) # Our Rockblock IMEI & Serial
 
         # Rockblock Comms
-        self._own_serial = rospy.get_param("~own_serial", "12345")
-        self._client_serial = rospy.get_param("~client_serial", "12345") # Rockblock serial no of client
+        self._buffer = mo_msg_buffer()
+        self._thr_server = False # True = Comm through web server; False = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
+        self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         try:
-            self._sbdsession = rockBlock.rockBlock(self._portID, self, self._own_serial, self._client_serial)
+            self._sbdsession = rockBlock.rockBlock(self._portID, self, self._own_serial)
         except rockBlockException:
             rospy.signal_shutdown("rockBlock error")
 
@@ -106,34 +120,44 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in MO buffer
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        self._buffer = data.data
-        self._buffer_write_time = rospy.get_rostime().secs
+        self._buffer.data = data.data
+        self._buffer.write_time = rospy.get_rostime().secs
+        self._buffer.target_id = data.id
     
     def sbd_check_mailbox(self, data):
-        '''Initiate an SBD mailbox check'''
+        '''
+        Initiate an SBD mailbox check.
+        This checks for incoming Mobile-Terminated (MT) msgs,
+        and sends outgoing Mobile-Originated (MO) msgs if there are any in the buffer
+        '''
         # If no MO msg, buffer will be empty
         self._count = self._count + 1
         mailchk_time = rospy.get_rostime().secs
+        # Get RB serial number of client
+        client_serial = self._ids.get_sbd_serial(self._buffer.target_id)
+        # print(client_serial)
+        # if not client_serial:
+        #     rospy.logwarn("Invalid recipient")
+        #     return
         # If buffer starts with "r ", it is a regular payload
-        # To-do: Integrate this check with regular.py and make it more robust
         mo_is_regular = False
-        if self._buffer.startswith("r "):
+        if self._buffer.data.startswith("r "):
             mo_is_regular = True
         try:
-            self._sbdsession.messageCheck(self._buffer, self._thr_server, mo_is_regular)
+            self._sbdsession.messageCheck(self._buffer.data, client_serial, self._thr_server, mo_is_regular)
         except rockBlockException:
             # Restart the node if error occurs
             rospy.signal_shutdown("rockBlock error")
         # Clear buffer if no new MO msgs were received after sending the previous MO msg
-        if self._buffer_write_time < mailchk_time:
-            self._buffer = ""
+        if self._buffer.write_time < mailchk_time:
+            self._buffer.data = ""
 
     ############################
     # "Main" function
     ############################
     
     def air_client(self):
-        rospy.Subscriber("ogc/to_sbd", String, self.sbd_get_mo_msg)
+        rospy.Subscriber("ogc/to_sbd", LinkMessage, self.sbd_get_mo_msg)
         message_handler = rospy.Timer(rospy.Duration(self.interval), self.sbd_check_mailbox)
         rospy.spin()
         message_handler.shutdown()

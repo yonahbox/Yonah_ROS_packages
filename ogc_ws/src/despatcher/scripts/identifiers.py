@@ -34,7 +34,7 @@ class Identifiers:
 
 		self.whitelist = []
 		self.whitelist_nums = []
-		self.whitelist_imei = []
+		self.whitelist_rb_serial = []
 		
 		self.rock7_un = ""
 		self.rock7_pw = ""
@@ -55,7 +55,7 @@ class Identifiers:
 			if obj["id"] in self.valid_ids:
 				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
-				self.whitelist_imei.append(obj["imei"])
+				self.whitelist_rb_serial.append(obj["rb_serial"])
 
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
@@ -78,10 +78,15 @@ class Identifiers:
 		# returns the correct value only if the requested id was included in the initial whitelist
 		return device.number if device else 0
 
-	def get_sbd_info(self, id_n):
+	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
-		return (device.imei, device.rb_serial) if device else ()
+		return device.rb_serial if device else ()
+	
+	def get_sbd_imei(self, id_n):
+		device = self.get_device(id_n)
+		# returns the correct value only if the requested id was included in the initial whitelist
+		return device.imei if device else ()
 
 	def get_whitelist(self):
 		return self.whitelist_nums
@@ -94,4 +99,4 @@ class Identifiers:
 		if link == 0 or link == 1:
 			return details in self.whitelist_nums
 		elif link == 2:
-			return details[0] in [x.imei for x in self.whitelist_devs] and details[1] in [y.rb_serial for y in self.whitelist_devs]
+			return details in [y.rb_serial for y in self.whitelist_rb_serial]

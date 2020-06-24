@@ -51,7 +51,7 @@ class airdespatcher():
         rospy.init_node('air_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
         self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to telegram node      
-        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
+        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', LinkMessage, queue_size = 5) # Link to SBD node
 
         # Msg handlers
         self._msg = "" # Stores outgoing msg Air-to-Ground message
@@ -59,14 +59,15 @@ class airdespatcher():
         self._regular_payload_flag = True # Whether we should send regular payload to Ground Control
         self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 2 # 0 = Tele, 1 = SMS, 2 = SBD
+        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
 
-        # Temp params for aircraft/gnd identifiers and prefix
-        # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)
-        # To-do: Work on air/gnd identifiers whitelist file
-        self._is_air = 1 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self._id = 1 # ID number (outgoing msg)
-        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
+        # Air Identifiers (attached to outgoing msgs)
+        self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
+        self._id = rospy.get_param("~self_id") # Our aircraft ID
+
+        # Ground Identifiers. For now we assume only one GCS
+        self.ground_id = rospy.get_param("~ground_ids")[0]
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
@@ -74,8 +75,6 @@ class airdespatcher():
         self._tele_interval = self._interval_1 # Interval (seconds) for regular payload over telegrams
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
         # Note that there is no sbd interval. This interval is controlled by sbd link node
-
-        self.ground_id = rospy.get_param("~ground_ids")[0]
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
@@ -93,14 +92,6 @@ class airdespatcher():
         else:
             self._prev_transmit_time = timestamp
             return True
-
-    def _check_sender_id(self, is_air, id):
-        '''Check identity of the sender'''
-        if is_air:
-            # We got no business with other aircraft... yet
-            return False
-        # To-do: Add in checks for id (maybe a whitelist, compare the IMEI/phone numbers?)
-        return True
     
     def _check_ping(self):
         '''Check for ping commands from Ground Control'''
@@ -194,18 +185,14 @@ class airdespatcher():
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             rospy.loginfo("Received \"" + data.data + "\"")
-            # Handle msg headers, check time + id, and strip out headers
+            # Handle msg headers
             self._recv_msg = data.data.split()
             sender_timestamp = int(self._recv_msg[-1])
             sender_msgtype = str(self._recv_msg[0])
-            sender_is_air = int(self._recv_msg[1])
-            sender_id = int(self._recv_msg[2])
-            if not self._is_new_msg(sender_timestamp) or not self._check_sender_id(sender_is_air, sender_id):
-                return
-            if not sender_msgtype == 'i':
+            if not self._is_new_msg(sender_timestamp) or not sender_msgtype == 'i':
                 # for now, we only accept info level commands
                 return
-            self._recv_msg = self._recv_msg[3:-1]
+            self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
                 self._check_ping()
@@ -247,14 +234,15 @@ class airdespatcher():
     
     def _send_regular_payload_sbd(self):
         '''Send regular payload over SBD Satcomms link'''
-        self.pub_to_sbd.publish(self._msg)
+        message = LinkMessage()
+        message.data = self._msg
+        message.id = self.ground_id
+        self.pub_to_sbd.publish(message)
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        print(self.ground_id)
         message = LinkMessage()
         message.data = self._msg
-        # message.id = 1
         message.id = self.ground_id
         self.pub_to_telegram.publish(message)
     
@@ -269,7 +257,7 @@ class airdespatcher():
         elif self.link_select == 1:
             self.pub_to_sms.publish(message)
         else:
-            self.pub_to_sbd.publish(self._msg)
+            self.pub_to_sbd.publish(message)
         
 
     def check_alerts(self, data):

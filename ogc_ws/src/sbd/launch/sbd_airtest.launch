@@ -8,22 +8,26 @@
     <!-- Serial port that Rockblock is connected to-->
     <arg name="portID" default="/dev/ttyUSB0"/>
 
-    <!-- Rockblock serial no of ourselves and the client-->
-    <arg name="own_serial" default="12345"/>
-    <arg name="client_serial" default="12345"/>
-
     <!-- Sleep interval between SBD mailbox checks -->
     <arg name="interval_1" default="5"/>
     <arg name="interval_2" default="5"/>
     <arg name="interval_3" default="1"/>
 
+    <!-- Identifiers -->
+    <arg name="identifiers_file" default="$(find despatcher)/src/identifiers.json" />
+    <arg name="ground_ids" default="[1]" />
+    <arg name="self_id" default="1" />
+    <arg name="is_air" default="True" />
+
     <!-- sbd link node -->
     <node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="portID" value="$(arg portID)" />
-        <param name="own_serial" value="$(arg own_serial)" />
-        <param name="client_serial" value="$(arg client_serial)" />
         <param name="interval" value="$(arg interval_3)" />
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 
     <!-- air_despatcher node -->
@@ -31,6 +35,8 @@
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="interval_1" value="$(arg interval_1)" />
         <param name="interval_2" value="$(arg interval_2)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 
 </launch>

@@ -79,7 +79,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback, own_serial, client_serial):
+    def __init__(self, portId, callback, own_serial):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -89,14 +89,9 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
-        self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
         self.own_serial = own_serial # Own Rockblock serial no
         
         # Init steps related to packing and unpacking of binary regular payload
-        self.serial_0 = (own_serial >> 16) & 0xFF # Three bytes of own serial number (for MT msg)
-        self.serial_1 = (own_serial >> 8) & 0xFF
-        self.serial_2 = own_serial & 0xFF
-        self.rb_pre, self.rb_pre_len = self._packBinaryPrefix() # Pack the Rockblock binary prefix first
         self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
         
         try:
@@ -140,7 +135,7 @@ class rockBlock(object):
         return -1   
      
     
-    def messageCheck(self, momsg, thr_server, mo_is_regular):
+    def messageCheck(self, momsg, client_serial, thr_server, mo_is_regular):
         '''
         Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty
         Arguments:
@@ -158,7 +153,7 @@ class rockBlock(object):
         have_queued_msg = False
         if momsg:
             self.mo_msg = momsg
-            if self._queueMessage(thr_server, mo_is_regular):
+            if self._queueMessage(client_serial, thr_server, mo_is_regular):
                 have_queued_msg = True # msg was successfully queued
         if( self._attemptConnection() and self._attemptSession(have_queued_msg) ):
             return True
@@ -195,7 +190,7 @@ class rockBlock(object):
     
     
     #Private Methods - Don't call these directly!
-    def _packBinaryPrefix(self):
+    def _packBinaryPrefix(self, client_serial):
         '''
         Binary-compress the prefix required to send msg to another Rockblock
         Returns the compressed prefix and length of the compressed prefix
@@ -203,14 +198,14 @@ class rockBlock(object):
         pre_1 = (b'RB',)
         s1 = struct.Struct('2s')
         packed_1 = s1.pack(*pre_1)
-        pre_2 = (self.client_serial,)
+        pre_2 = (int(client_serial),)
         s2 = struct.Struct('> I')
         packed_2 = s2.pack(*pre_2)
         # Rock Seven insists that serial no is packed into 3 bytes, big endian. So remove one byte
         return packed_1 + packed_2[1:], s1.size + s2.size - 1
 
 
-    def _queueMessage(self, thr_server, mo_is_regular):
+    def _queueMessage(self, client_serial, thr_server, mo_is_regular):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
@@ -222,11 +217,10 @@ class rockBlock(object):
         # If communicating through gnd Rockblock, prepare client Rockblock prefix
         if not thr_server:
             if mo_is_regular:
-                # For regular payload: RB prefix already compressed for us during initialization
-                msg = self.rb_pre
-                msglen = self.rb_pre_len
+                # If it is a regular payload, compress the prefix
+                msg, msglen = self._packBinaryPrefix(client_serial)
             else:
-                msg = "RB00" + str(self.client_serial)
+                msg = "RB00" + str(client_serial)
         
         if mo_is_regular:
             # Pack regular payload
@@ -453,8 +447,7 @@ class rockBlock(object):
             return
 
         try:
-            if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
-            and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
+            if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B'):
                 # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
                 # There should be 2nd check for msg prefix = 'r', but luckily for us, a RB + serial in binary compressed
                 # only occurs for binary compressed regular payloads! This saves on an additional check
