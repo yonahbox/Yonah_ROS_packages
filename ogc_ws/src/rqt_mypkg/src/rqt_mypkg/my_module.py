@@ -68,6 +68,8 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
         # Get the number of active aircrafts here
+        self.initial_time = 0
+        self.destination_id = 1
         self.active_aircrafts = 5
         self.aircrafts_info = {}
         for i in range (self.active_aircrafts + 1):
@@ -97,7 +99,8 @@ class MyPlugin(Plugin):
         self.checklist_opened = 0
 
         # Connect each button to a function
-        self.CommandWindow.arm_button.pressed.connect(self.arming)
+        self.CommandWindow.combo_box.currentIndexChanged.connect(self.combo_box_change)
+        self.CommandWindow.arm_button.pressed.connect(self.arm_button)
         self.CommandWindow.go_button.pressed.connect(self.go_button)
         # self.CommandWindow.mission_check_button.pressed.connect(self.check_mission)
         # self.CommandWindow.mission_load_button.pressed.connect(self.load_mission)
@@ -228,7 +231,8 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftTarget Waypoint' + id).setPlainText(data)
 
     def time_display(self, data, id):
-        data = str(data)
+        self.time = data
+        data = str(data - self.initial_time)
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftFlying Time' + id).setPlainText(data)
 
     def fuel_display(self, data, id):
@@ -268,6 +272,7 @@ class MyPlugin(Plugin):
             text_to_display = 'DISARMED'
         else:
             text_to_display = 'ARMED'
+            self.initial_time = self.time
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
         self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
     
@@ -282,21 +287,19 @@ class MyPlugin(Plugin):
     ######################################
     # Handles commands to air despatcher #
     ######################################
-    def arming (self):
+    def combo_box_change(self, i):
+        self.destination_id = i + 1
+
+    def arm_button (self):
         message = LinkMessage()
-        message.id = 1
+        message.id = self.destination_id
+        print(self.destination_id)
         message.data = 'arm'
         self.command_publisher.publish(message)
-        # self.status_text_display('Arming message sent')
-        # if self.text_to_display == 'DISARMED':
-        #     self.arming.publish('ARM')
-        # elif self.text_to_display == 'ARMED':
-        #     self.arming.publish('DISARM')
-        #     print('Now disarm it')
 
     def go_button(self):
         message = LinkMessage()
-        message.id = 1
+        message.id = self.destination_id
         message.data = 'mode 5'
         self.command_publisher.publish(message)
         print('go')
