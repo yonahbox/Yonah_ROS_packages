@@ -37,9 +37,9 @@ class RegularPayloadException(Exception):
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements
 # Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18
-# struct_cmd:      s B B B  H   B B B B  B H    H   B    H  B  B  B  H  I
+# struct_cmd:      s B B B  H   B B B B  B H    B   H    B  B  B  B  H  I
 # Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0 1591089280
-struct_cmd = "> s B B B H B B B B B H H B H B B B H I" 
+struct_cmd = "> s B B B H B B B B B H B H B B B B H I" 
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
