@@ -74,3 +74,8 @@ class CommandWindow(QWidget):
 
     def shutdown(self):
         self.close()
+
+    def waypoint_load(self, id):
+        text, ok = QInputDialog.getText(self, 'Waypoint Load', 'Load waypoint to Aircraft '+ str(id))
+        if ok:
+            self.loaded_waypoint = [text, id]

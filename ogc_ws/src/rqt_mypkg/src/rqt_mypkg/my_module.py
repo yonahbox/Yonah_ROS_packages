@@ -40,8 +40,7 @@ from waypoint_window import WaypointWindow
 from summary_window import SummaryWindow
 from command_window import CommandWindow
 from aircraft_info import *
-
-#[DA] Class MyPlugin inherits Plugin and Plugin is qt_gui.plugin.Plugin
+import regular 
 class MyPlugin(Plugin):
 
     def __init__(self, context):
@@ -80,7 +79,7 @@ class MyPlugin(Plugin):
         self.WaypointWindow = WaypointWindow(self.active_aircrafts)
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
         self.CommandWindow = CommandWindow(self.active_aircrafts)
-
+        
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
@@ -103,7 +102,7 @@ class MyPlugin(Plugin):
         self.CommandWindow.arm_button.pressed.connect(self.arm_button)
         self.CommandWindow.go_button.pressed.connect(self.go_button)
         # self.CommandWindow.mission_check_button.pressed.connect(self.check_mission)
-        # self.CommandWindow.mission_load_button.pressed.connect(self.load_mission)
+        self.CommandWindow.mission_load_button.pressed.connect(self.mission_load_button)
         self.CommandWindow.checklist_button.pressed.connect(self.ChecklistWindow.show)
         
         #Subscriber lists
@@ -118,8 +117,8 @@ class MyPlugin(Plugin):
         # Publisher List
         self.command_publisher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
         # self.mission_publisher = rospy.Publisher('load_mission', String, queue_size = 5)
-
         self.rate = rospy.Rate(2)
+
         context.add_widget(self._widget)
 
     # Create layout for Summary scroll window
@@ -158,16 +157,20 @@ class MyPlugin(Plugin):
         status.airspeed_signal.emit(data.airspeed, '1')
         status.alt_signal.connect(self.altitude_display)
         status.alt_signal.emit(data.alt, '1')
-        status.mode_signal.connect(self.mode_status_display) 
-        status.mode_signal.emit(data.mode, '1')
         status.arm_signal.connect(self.arm_status_display) 
         status.arm_signal.emit(data.armed, '1')
+        status.batt_signal.connect(self.quad_batt_display)
+        status.batt_signal.emit(data.batt, '1')
+        status.fuel_signal.connect(self.fuel_display)
+        status.fuel_signal.emit(data.fuel, '1')
         status.groundspeed_signal.connect(self.groundspeed_display)
         status.groundspeed_signal.emit(data.groundspeed, '1')
-        status.throttle_signal.connect(self.throttle_display)
-        status.throttle_signal.emit(data.throttle, '1')
         status.gps_signal.connect(self.gps_display)
         status.gps_signal.emit(data.lat, data.lon, '1')
+        status.mode_signal.connect(self.mode_status_display) 
+        status.mode_signal.emit(data.mode, '1')
+        status.throttle_signal.connect(self.throttle_display)
+        status.throttle_signal.emit(data.throttle, '1')
         status.vibe_signal.connect(self.vibe_display)
         status.vibe_signal.emit(data.vibe, '1')
         status.vtol_signal.connect(self.vtol_display)
@@ -176,10 +179,6 @@ class MyPlugin(Plugin):
         status.wp_signal.emit(data.wp, '1')
         status.time_signal.connect(self.time_display)
         status.time_signal.emit(data.header.stamp.secs, '1')
-        status.fuel_signal.connect(self.fuel_display)
-        status.fuel_signal.emit(data.fuel, '1')
-        status.batt_signal.connect(self.quad_batt_display)
-        status.batt_signal.emit(data.batt, '1')
         
     def status_text(self, data):
         status = Communicate()
@@ -244,7 +243,9 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftQuad Battery' + id).setPlainText(data)
     
     def mode_status_display(self, mode_status, id):
-        mode_status = str(mode_status)
+        mode_list = ['MANUAL','CIRCLE','STABILIZE','TRAINING','ACRO','FBWA','FBWB','CRUISE','AUTOTUNE','AUTO','RTL',
+                     'LOITER','LAND','GUIDED','INITIALISING','QSTABILIZE','QHOVER','QLOITER','MANUAL','QLAND']
+        mode_status = modelist[mode_status] # Convert the integer to a mode
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
         self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
 
@@ -287,22 +288,29 @@ class MyPlugin(Plugin):
     ######################################
     # Handles commands to air despatcher #
     ######################################
+    def create_link_message(self, destination_id, data):
+        message = LinkMessage()
+        message.id = destination_id
+        message.data = data
+        self.command_publisher.publish(message)
+
     def combo_box_change(self, i):
         self.destination_id = i + 1
 
     def arm_button (self):
-        message = LinkMessage()
-        message.id = self.destination_id
-        print(self.destination_id)
-        message.data = 'arm'
-        self.command_publisher.publish(message)
+        data = 'arm'
+        self.create_link_message(self.destination_id, data)
 
     def go_button(self):
-        message = LinkMessage()
-        message.id = self.destination_id
-        message.data = 'mode 5'
-        self.command_publisher.publish(message)
-        print('go')
+        data = 'mode 5'
+        self.create_link_message(self.destination_id, data)
+
+    def mission_load_button(self):
+        self.CommandWindow.waypoint_load(self.destination_id)
+        data = self.CommandWindow.loaded_waypoint[0]
+        load_destination_id = self.CommandWindow.loaded_waypoint[1]
+        self.create_link_message(load_destination_id, data)
+
 
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
@@ -331,7 +339,6 @@ class Communicate (QObject):
     airspeed_signal = Signal(float, str)
     alt_signal = Signal(float, str)
     arm_signal = Signal(bool, str)
-    status_text_signal = Signal(str)
     batt_signal = Signal(int)
     fuel_signal = Signal(int)
     groundspeed_signal = Signal(int)
@@ -343,7 +350,9 @@ class Communicate (QObject):
     wp_signal = Signal(int)
     time_signal = Signal(int)
 
+    status_text_signal = Signal(str)
     ondemand_signal = Signal(str, str)
+    
     waypoint_list_signal = Signal(list, int, str)
     waypoint_index_signal = Signal(int)
 
