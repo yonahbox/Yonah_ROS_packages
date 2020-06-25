@@ -81,8 +81,12 @@ class SMStx():
         }
 
         # Initialise SSH
-        self.ssh = RuTOS.start_client(self._ip, self._username)
-        rospy.loginfo("Connected to router")
+        try:
+            self.ssh = RuTOS.start_client(self._ip, self._username)
+            rospy.loginfo("Connected to router")
+        except:
+            rospy.logerr("Could not connect to the router")
+            raise
     
     ########################################
     # Interaction with MAVROS Services/Nodes
@@ -257,6 +261,9 @@ class SMStx():
             if "Timeout\n" in sendstatus:
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
                 self.pub_to_data.publish("air_sms: Msg sending Timeout")
+            elif "Connection lost" in sendstatus:
+                rospy.logerr("Connection to router lost!")
+                self.pub_to_data.publish("air_sms: Lost connection to router")
             else:
                 self.pub_to_data.publish("air_sms: Msg sending success")
         except:
@@ -287,5 +294,12 @@ class SMStx():
         message_sender.shutdown()
 
 if __name__=='__main__':
-    run = SMStx()
-    run.prepare()
+    try:
+        run = SMStx()
+        run.prepare()
+    finally:
+        try:
+            run.ssh.close()
+            rospy.loginfo("Connection to router closed")
+        except:
+            pass
