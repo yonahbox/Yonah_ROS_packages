@@ -106,27 +106,31 @@ class StatusTextGround:
 
 	def callback(self, data):
 		try:
+			headers = data.data.split()[:3]
 			payload = data.data.split()[3] # Strip out message headers
+			timestamp = str(data.data.split()[-1])
 			pts, d = payload.split(".", 1)
 			self.prefix = pts[0]
 			self.type = int(pts[1])
 			self.status = int(pts[2:])
 			self.details = d
 		except (ValueError, IndexError):
-			self.pub.publish("Unknown statustext")
+			self.pub.publish(",".join(headers) + "," + "Unknown statustext" + "," + timestamp)
 			return
 
 		try: 
 			if self.type == 1:
-				self.pub.publish(prefixtable[self.prefix] + " Executing " + texttable[self.type][self.status])
+				text = str(prefixtable[self.prefix] + " Executing " + texttable[self.type][self.status])
 			elif self.type == 2:
-				self.pub.publish(prefixtable[self.prefix] + " Reached waypoint " + str(self.status) + " dist " + str("%.0f" % float(self.details)))
+				text = str(prefixtable[self.prefix] + " Reached waypoint " + str(self.status) + " dist " + str("%.0f" % float(self.details)))
 			elif self.type == 3 and self.status == 1:
-				self.pub.publish(prefixtable[self.prefix] + " " + texttable[self.type][self.status] + str(self.details))
+				text = str(prefixtable[self.prefix] + " " + texttable[self.type][self.status] + str(self.details))
 			else:
-				self.pub.publish(prefixtable[self.prefix] + " " + texttable[self.type][self.status])
+				text = str(prefixtable[self.prefix] + " " + texttable[self.type][self.status])
 		except KeyError:
-			self.pub.publish("Unknown statustext")
+			text = str("Unknown statustext")
+		finally:
+			self.pub.publish(",".join(headers) + "," + text + "," + timestamp)
 
 	def main(self):
 		rospy.Subscriber("ogc/from_despatcher/statustext", String, self.callback)
