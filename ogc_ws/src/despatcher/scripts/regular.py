@@ -122,7 +122,7 @@ def convert_to_rosmsg(entries):
     rosmsg.airspeed = int(entries[3])
     rosmsg.alt = int(entries[4])
     rosmsg.armed = int(entries[5])
-    rosmsg.battery = int(entries[6])
+    rosmsg.batt = int(entries[6])
     rosmsg.fuel = int(entries[7])
     rosmsg.groundspeed = int(entries[8])
     rosmsg.lat = int(entries[9]) + float(entries[10])/10000 #

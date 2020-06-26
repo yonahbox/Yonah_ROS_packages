@@ -26,7 +26,6 @@
         <param name="interval" value="$(arg interval_3)" />
         <param name="identifiers_file" value="$(arg identifiers_file)" />
         <param name="is_air" value="$(arg is_air)" />
-        <param name="self_id" value="$(arg self_id)" />
         <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 

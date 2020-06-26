@@ -79,7 +79,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback, own_serial):
+    def __init__(self, portId, callback):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -89,7 +89,6 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
-        self.own_serial = own_serial # Own Rockblock serial no
         
         # Init steps related to packing and unpacking of binary regular payload
         self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
@@ -447,7 +446,7 @@ class rockBlock(object):
             return
 
         try:
-            if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B'):
+            if len(response) > 5 and response[0] == ord('R') and response[1] == ord('B'):
                 # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
                 # There should be 2nd check for msg prefix = 'r', but luckily for us, a RB + serial in binary compressed
                 # only occurs for binary compressed regular payloads! This saves on an additional check
@@ -464,7 +463,7 @@ class rockBlock(object):
                 # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
                 # Encoded response is suffixed with \r\n and two pad bytes
                 content = response.strip()[:-2].decode()
-                if content.startswith("RB00" + str(self.own_serial)):
+                if len(content) > 9 and content.startswith("RB00"):
                     # Remove Rockblock to Rockblock prefix if needed
                     content = content[9:]
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 

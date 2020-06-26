@@ -34,7 +34,7 @@ class mo_msg_buffer():
     def __init__(self):
         self.data = "" # actual msg
         self.write_time = rospy.get_rostime().secs # Time which msg is written to buffer
-        self.target_id = -1 # ID of the client which we are sending to
+        self.target_id = 1 # ID of the client which we are sending to
 
 class satcomms(rockBlockProtocol):
 
@@ -49,18 +49,16 @@ class satcomms(rockBlockProtocol):
         identifiers_file = rospy.get_param("~identifiers_file")
         self._valid_ids = rospy.get_param("~valid_ids")
         self._is_air = rospy.get_param("~is_air")
-        self._self_id = rospy.get_param("~self_id")
         self._ids = Identifiers(identifiers_file, self._is_air, self._valid_ids)
-        self._own_serial = self._ids.get_sbd_serial(self._self_id) # Our Rockblock IMEI & Serial
 
         # Rockblock Comms
         self._buffer = mo_msg_buffer()
-        self._thr_server = False # True = Comm through web server; False = Comm through gnd Rockblock
+        self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
         self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         try:
-            self._sbdsession = rockBlock.rockBlock(self._portID, self, self._own_serial)
+            self._sbdsession = rockBlock.rockBlock(self._portID, self)
         except rockBlockException:
             rospy.signal_shutdown("rockBlock error")
 
@@ -135,10 +133,9 @@ class satcomms(rockBlockProtocol):
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
         client_serial = self._ids.get_sbd_serial(self._buffer.target_id)
-        # print(client_serial)
-        # if not client_serial:
-        #     rospy.logwarn("Invalid recipient")
-        #     return
+        if not client_serial:
+            rospy.logwarn("Invalid recipient")
+            return
         # If buffer starts with "r ", it is a regular payload
         mo_is_regular = False
         if self._buffer.data.startswith("r "):

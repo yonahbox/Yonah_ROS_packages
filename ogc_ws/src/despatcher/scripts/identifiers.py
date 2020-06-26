@@ -88,8 +88,14 @@ class Identifiers:
 		# returns the correct value only if the requested id was included in the initial whitelist
 		return device.imei if device else ()
 
+	def get_sbd_credentials(self):
+		return self.rock7_un, self.rock7_pw, self.aws_url
+
 	def get_whitelist(self):
 		return self.whitelist_nums
+
+	def get_sbd_whitelist(self):
+		return self.whitelist_rb_serial
 
 	# link:
 	#	0: telegram
