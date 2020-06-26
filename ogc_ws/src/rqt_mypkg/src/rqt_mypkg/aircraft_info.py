@@ -37,11 +37,12 @@ class AircraftInfo(QWidget):
         self.setWindowTitle("Summary Page")
         
         self.waypoint_plaintext_dict = {}
+        self.initial_time = 0
         # Create the layout
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
-        
+    
         summarised_fields = [
             'Mode', 
             'Status', 
@@ -94,7 +95,6 @@ class AircraftInfo(QWidget):
 
     def styling(self):
         self.h2 = QFont("Ubuntu", 15, QFont.Bold) 
-
 
     def shutdown(self):
         self.close()

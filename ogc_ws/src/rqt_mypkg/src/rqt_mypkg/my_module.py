@@ -67,7 +67,7 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
         # Get the number of active aircrafts here
-        self.initial_time = 0
+        self.time = 0
         self.destination_id = 1
         self.active_aircrafts = 5
         self.aircrafts_info = {}
@@ -148,9 +148,8 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(str(data), "")
+        status.ondemand_signal.emit(str(data), "1")
 
-    # TODO reorder the regular payload signal slots
     def regular_payload(self, data):
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
@@ -216,7 +215,7 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftThrottle' + id).setPlainText(data)
 
     def gps_display(self, lat, lon, id):
-        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftGPS' + id).setPlainText(str(lat + lon))
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftGPS' + id).setPlainText(str(lat) +', ' + str(lon))
 
     def vibe_display(self, data, id):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftVibe Status' + id).setPlainText(str(data))
@@ -226,13 +225,27 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftVTOL Status' + id).setPlainText(data)
 
     def waypoint_display(self, data, id):
-        data = str(data)
-        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftTarget Waypoint' + id).setPlainText(data)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftTarget Waypoint' + id).setPlainText(str(data))
+        self.WaypointWindow.waypoint_plaintext_dict.get('progress_bar_aircraft' + id).setRange(0,10)
+        self.WaypointWindow.waypoint_plaintext_dict.get('progress_bar_aircraft' + id).setValue(data)
+        self.WaypointWindow.waypoint_plaintext_dict. get('aircraft' + id).setPlainText('Current WP: ' + str(data) + ' out of ' + str(10))
 
-    def time_display(self, data, id):
-        self.time = data
-        data = str(data - self.initial_time)
-        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftFlying Time' + id).setPlainText(data)
+    def time_display(self, AC_time, id):
+        print(AC_time)
+        self.time = AC_time # sets the UI time to the data time
+        print('initial time' + str(self.aircrafts_info.get('AC' + id).initial_time))
+        time_in_seconds = AC_time - self.aircrafts_info.get('AC' + id).initial_time
+        print('time in seconds' + str(time_in_seconds))
+        minutes = time_in_seconds // 60
+        hours = time_in_seconds // 3600
+        seconds = time_in_seconds - (minutes * 60) - (hours * 3600)
+        if seconds < 10:
+            seconds = '0' + str(seconds)
+        if minutes < 10:
+            minutes = '0' + str(minutes)
+        if hours < 10:
+            hours = '0' + str(hours)
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftFlying Time' + id).setPlainText(str(hours) + ':' + str(minutes) + ':' + str(seconds))
 
     def fuel_display(self, data, id):
         data = str(data)
@@ -243,11 +256,11 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftQuad Battery' + id).setPlainText(data)
     
     def mode_status_display(self, mode_status, id):
-        mode_list = ['MANUAL','CIRCLE','STABILIZE','TRAINING','ACRO','FBWA','FBWB','CRUISE','AUTOTUNE','AUTO','RTL',
-                     'LOITER','LAND','GUIDED','INITIALISING','QSTABILIZE','QHOVER','QLOITER','MANUAL','QLAND']
-        mode_status = modelist[mode_status] # Convert the integer to a mode
-        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
-        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode_status)
+        mode_list = ['MANUAL','CIRCLE','STABILIZE','TRAINING','ACRO','FBWA','FBWB','CRUISE','AUTOTUNE', '','AUTO','RTL',
+                     'LOITER','','LAND','GUIDED','INITIALISING','QSTABILIZE','QHOVER','QLOITER','MANUAL','QLAND']
+        mode = mode_list[mode_status] # Convert the integer to a mode
+        self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode)
+        self.SummaryWindow.waypoint_plaintext_dict.get('aircraftMode' + id).setPlainText(mode)
 
     def altitude_display(self, altitude, id):
         id = str(id)
@@ -273,17 +286,17 @@ class MyPlugin(Plugin):
             text_to_display = 'DISARMED'
         else:
             text_to_display = 'ARMED'
-            self.initial_time = self.time
         self.aircrafts_info.get('AC' + id).waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
         self.SummaryWindow.waypoint_plaintext_dict.get('aircraftStatus' + id).setPlainText(text_to_display)        
     
     def status_text_display(self, status_text, id):
         self.SummaryWindow.statustext.appendPlainText(status_text)
-        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + status_text)
+        print(self.aircrafts_info)
+        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + data)
 
     def ondemand_display(self, data, id):
         self.SummaryWindow.statustext.appendPlainText(str(data))
-        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + status_text)
+        self.aircrafts_info.get('AC' + id).statustext.appendPlainText(id + ': ' + str(data))
 
     ######################################
     # Handles commands to air despatcher #
@@ -298,19 +311,29 @@ class MyPlugin(Plugin):
         self.destination_id = i + 1
 
     def arm_button (self):
+        self.aircrafts_info.get('AC' + str(self.destination_id)).initial_time = self.time
         data = 'arm'
+        statustext_message = "Aircraft {} has been ARMED".format(self.destination_id)
+        self.SummaryWindow.statustext.appendPlainText(statustext_message)
+        self.aircrafts_info.get('AC' + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
 
     def go_button(self):
-        data = 'mode 5'
+        data = 'mode 10'
+        statustext_message = "Aircraft {} mode has been set to 5".format(self.destination_id)
+        self.SummaryWindow.statustext.appendPlainText(statustext_message)
+        self.aircrafts_info.get('AC' + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
 
     def mission_load_button(self):
         self.CommandWindow.waypoint_load(self.destination_id)
-        data = self.CommandWindow.loaded_waypoint[0]
+        data = "wp " + self.CommandWindow.loaded_waypoint[0]
+        
         load_destination_id = self.CommandWindow.loaded_waypoint[1]
+        statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
+        self.SummaryWindow.statustext.appendPlainText(statustext_message)
+        self.aircrafts_info.get('AC' + str(load_destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(load_destination_id, data)
-
 
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
@@ -339,16 +362,16 @@ class Communicate (QObject):
     airspeed_signal = Signal(float, str)
     alt_signal = Signal(float, str)
     arm_signal = Signal(bool, str)
-    batt_signal = Signal(int)
-    fuel_signal = Signal(int)
-    groundspeed_signal = Signal(int)
-    gps_signal = Signal(float, float)    
+    batt_signal = Signal(int, str)
+    fuel_signal = Signal(int, str)
+    groundspeed_signal = Signal(int, str)
+    gps_signal = Signal(float, float, str)    
     mode_signal = Signal(int, str)
-    throttle_signal = Signal(int)
-    vibe_signal = Signal(int)
-    vtol_signal = Signal(int)
-    wp_signal = Signal(int)
-    time_signal = Signal(int)
+    throttle_signal = Signal(int, str)
+    vibe_signal = Signal(int, str)
+    vtol_signal = Signal(int, str)
+    wp_signal = Signal(int, str)
+    time_signal = Signal(int, str)
 
     status_text_signal = Signal(str)
     ondemand_signal = Signal(str, str)

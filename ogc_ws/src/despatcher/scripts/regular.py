@@ -75,29 +75,29 @@ def convert_to_str(mo_msg):
     return string
 
 def convert_mode_to_int (mode):
-        d = {
-            'MANUAL': 0,
-            'CIRCLE': 1,
-            'STABILIZE': 2,
-            'TRAINING': 3,
-            'ACRO': 4,
-            'FBWA': 5,
-            'FBWB': 6,
-            'CRUISE': 7,
-            'AUTOTUNE': 8,
-            'AUTO': 10,
-            'RTL': 11,
-            'LOITER': 12,
-            'LAND': 14,
-            'GUIDED': 15,
-            'INITIALISING': 16,
-            'QSTABILIZE': 17,
-            'QHOVER': 18,
-            'QLOITER': 19,
-            'MANUAL': 20,
-            'QLAND': 21
-        }
-        return d.get(mode)
+    mode_dictionary = {
+        'MANUAL': 0,
+        'CIRCLE': 1,
+        'STABILIZE': 2,
+        'TRAINING': 3,
+        'ACRO': 4,
+        'FBWA': 5,
+        'FBWB': 6,
+        'CRUISE': 7,
+        'AUTOTUNE': 8,
+        'AUTO': 10,
+        'RTL': 11,
+        'LOITER': 12,
+        'LAND': 14,
+        'GUIDED': 15,
+        'INITIALISING': 16,
+        'QSTABILIZE': 17,
+        'QHOVER': 18,
+        'QLOITER': 19,
+        'MANUAL': 20,
+        'QLAND': 21
+    }
+    return mode_dictionary.get(mode)
 
 ########################################
 # Gnd despatcher
