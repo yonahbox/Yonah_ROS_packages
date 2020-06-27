@@ -96,6 +96,12 @@ class Identifiers:
 	def get_whitelist(self):
 		return self.whitelist_nums
 
+	# Does a lazy check to see if the received message is from a valid sender
+	# Trusts that the sender of the message was correctly identified in the message headers
+	# Can be fooled by imitating the message headers
+	def is_valid_message_lazy(self, message):
+		return int(message[2]) == (0 if self.is_air else 1) and int(message[4]) in self.valid_ids
+
 	# link:
 	#	0: telegram
 	#	1: sms
