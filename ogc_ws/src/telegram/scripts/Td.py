@@ -172,7 +172,7 @@ class Td():
 		else:
 			self.send({
 				'@type': 'sendMessage',
-				'chat_id': self.sel_get_chat_id(chat_id),
+				'chat_id': self._get_chat_id(chat_id),
 				'input_message_content': {
 					'@type': 'inputMessageVenue',
 					'venue': {
@@ -259,6 +259,15 @@ class Td():
 						self.command_user_ids.append(result["id"])
 
 			return result
+
+	def set_read(self, chat_id, message_id):
+		print('marking as read')
+		self.send({
+			'@type': 'viewMessages',
+			'chat_id': chat_id,
+			'message_ids': [message_id],
+			'force_read': True
+		})
 
 	# destroy instance of libtdjson
 	def destroy(self):
