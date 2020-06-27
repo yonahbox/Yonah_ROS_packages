@@ -97,6 +97,12 @@ class Td():
 				return chat.chat_id
 		return False
 
+	def _get_local_chat(self, id_n):
+		for chat in self.chat_list:
+			if chat.chat_id == id_n:
+				return chat
+		return False
+
 	# Send request to telegram
 	def send(self, query):
 		query = json.dumps(query).encode('utf-8')
@@ -258,15 +264,34 @@ class Td():
 						chat.set_chat_id(result["id"])
 						self.command_user_ids.append(result["id"])
 
+			# This gives specific information about a message
+			# needed to keep track of what messages have been received
+			elif recv_type == "message":
+				if result.get('@extra') == "sent from Td.py" and result["is_outgoing"]:
+					chat = self._get_local_chat(result["chat_id"])
+					chat.add_message(result["id"])
+
+			# message id changed when after it is sent
+			# this is used to update the message id when needed
+			elif recv_type == "updateMessageSendSucceeded":
+				chat = self._get_local_chat(result["message"]["chat_id"])
+				chat.replace_message(result["old_message_id"], result["message"]["id"])
+
+			# This is for receiving the read receipts
+			elif recv_type == "updateChatReadOutbox":
+				chat = self._get_local_chat(result["chat_id"])
+				chat.read_message(result["last_read_outbox_message_id"])
+
 			return result
 
+	# Mark a message as read (double tick in app)
 	def set_read(self, chat_id, message_id):
 		print('marking as read')
 		self.send({
 			'@type': 'viewMessages',
 			'chat_id': chat_id,
 			'message_ids': [message_id],
-			'force_read': True
+			'force_read': True	# This is currently needed to work
 		})
 
 	# destroy instance of libtdjson
@@ -285,6 +310,7 @@ class Chat():
 		self.whitelist_id = whitelist_id	# as defined in the identifiers file
 		self.title = ""
 		self.phone_number = phone_number
+		self.unread_messages = []			# List of message ids sent to an instance of the class
 
 		# type of chat:
 		#	0: unknown
@@ -296,6 +322,20 @@ class Chat():
 		self.basic_group_id = 0
 		self.group_members = []
 		self.basic_complete = False
+
+	# Add message id to list
+	def add_message(self, message_id):
+		self.unread_messages.append(message_id)
+
+	# remove message id from list (mark as read)
+	def read_message(self, message_id):
+		index = self.unread_messages.index(message_id)
+		self.unread_messages = self.unread_messages[index+1:]
+
+	# update message id when needed
+	def replace_message(self, old_id, new_id):
+		index = self.unread_messages.index(old_id)
+		self.unread_messages[index] = new_id
 	
 	def set_chat_id(self, chat_id):
 		self.chat_id = chat_id
