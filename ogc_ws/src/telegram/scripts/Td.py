@@ -22,6 +22,7 @@ from identifiers import Identifiers
 
 class Td():
 	def __init__(self, tdlib_dir, identifiers_loc, is_air, whitelist_devs):
+		# Creates interface for libtdjson. This is a C library so it requires some initial setup
 		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
 		tdjson = CDLL(tdjson_path)
 
@@ -55,47 +56,53 @@ class Td():
 		fatal_error_cb = fatal_error_callback_type(self._fatal_error_cb)
 		set_log_fatal_error_callback(fatal_error_cb)
 
-		self.tdlib_dir = tdlib_dir
-		self.is_air = is_air
-		self.whitelist_devs = whitelist_devs
+		# Setup the Td class itself
+		self.tdlib_dir = tdlib_dir				# Location fo the telegram client created by the tele_auth script
+		self.is_air = is_air					# Boolean to know if it is running in the air side or ground side
+		self.whitelist_devs = whitelist_devs	# whitelisted ids as defined in the identifiers file
+		self.chat_list = []						# List of whitelisted chats
+		self.command_user_ids = []				# List of user ids to easily check if sender is whitelisted
 		
+		# Initialize identifiers class to handle whitelisting
 		self._ids = Identifiers(identifiers_loc, self.is_air, self.whitelist_devs)
 
-		self.chat_list = []
-
+		# Create a new isntance of the Chat class for each whitelisted device
 		for num in self.whitelist_devs:
 			self.chat_list.append(Chat(num, self._ids.get_number(num)))
 
+		# Search the recently contacted chats for whitelisted numbers
 		self.get_chats()
 
-		self.command_users = []
-		self.command_user_ids = []
-		
-
+		# Reduce verbosity to reduce cluttering the log
 		self._execute({
 			'@type': 'setLogVerbosityLevel',
 			'new_verbosity_level': 1
 		})
 
+	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
 		print('TDLiB fatal error: ', error)
 
+	# Called for interacting with the telegram account
 	def _execute(self, query):
 		query = json.dumps(query).encode('utf-8')
 		result = self._client_execute(None, query)
 		if result:
 			return json.loads(result.decode('utf-8'))
-		
+	
+	# Get chat id associated with a specific id number as defined in the identifiers file
 	def _get_chat_id(self, id_n):
 		for chat in self.chat_list:
 			if chat.whitelist_id == id_n:
 				return chat.chat_id
 		return False
 
+	# Send request to telegram
 	def send(self, query):
 		query = json.dumps(query).encode('utf-8')
 		self._client_send(self.client, query)
 
+	# Wrapper to send text message to a specific id
 	def send_message(self, id_n, msg):
 		chat_id = self._get_chat_id(id_n)
 		if not chat_id:
@@ -115,10 +122,12 @@ class Td():
 			'@extra': 'sent from Td.py'
 		})
 
+	# Wrapper to send text messages to multiple numbers
 	def send_message_multi(self, ids, msg):
 		for id_n in ids:
 			self.send_message(id_n, msg)
 
+	# Wrapper to send an image to a specific number
 	def send_image(self, id_n, path):
 		if not self.setup_complete():
 			self.get_chats()
@@ -136,6 +145,7 @@ class Td():
 				}
 			})
 
+	# Wrapper to send a video to a specific number
 	def send_video(self, id_n, path):
 		if not self.setup_complete():
 			self.get_chats()
@@ -153,6 +163,8 @@ class Td():
 				}
 			})
 
+	# Wrapper to send a gps location to a specific number
+	# 	coordinates is expected to be a tuple of (latitude, longitude)
 	def send_location(self, id_n, title, coordinates):
 		if not self.setup_complete():
 			self.get_chats()
@@ -175,25 +187,29 @@ class Td():
 				}
 			})
 
-	
+	# Get the 10 most recent chats	
 	def get_chats(self):
 		self.send({
 			'@type': 'getChats',
 			'limit': 10
 		})
 
+	# Get specific information about a chat using its chat id
 	def _get_chat_info(self, chat_id):
 		self.send({
 			'@type': 'getChat',
 			'chat_id': chat_id
 		})
 
+	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
 		if result_orig:
+			# convert received string to a json dictionary
 			result = json.loads(result_orig.decode('utf-8'))
 			recv_type = result['@type']
 
+			# handles authorization with the telegram account
 			if recv_type == 'updateAuthorizationState':
 				auth_state = result['authorization_state']['@type']
 				if auth_state == 'authorizationStateWaitTdlibParameters':
@@ -217,34 +233,47 @@ class Td():
 						'@type': 'checkDatabaseEncryptionKey',
 						'key': 'my_key' #need to change this
 					})
+
+			# this gives a list of chats
 			elif recv_type == 'updateChatOrder':
+				# checks if the chat has already been handled
 				if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
 					self._get_chat_info(result['chat_id'])
+
+			# This gives specific information about a chat
 			elif recv_type == 'chat':
-				# print(result)
+				# If it is a private chat, get information about the user
 				if result['type']['@type'] == 'chatTypePrivate':
 					self.send({
 						'@type': 'getUser',
 						'user_id': result['type']['user_id']
 					})
+
+			# This gives specific information about a user
 			elif recv_type == 'user':
 				for chat in self.chat_list:
+					# Checks if the user is a whitelisted number
 					if chat.phone_number == result["phone_number"]:
+						# get relevant information about user
 						chat.set_chat_id(result["id"])
 						self.command_user_ids.append(result["id"])
 
 			return result
 
+	# destroy instance of libtdjson
 	def destroy(self):
 		self._client_destroy(self.client)
 	
+	# Check if the object has managed to locate all chats with the whitelisted numbers
+	# returns Boolean
 	def setup_complete(self):
 		return all([chat.basic_complete for chat in self.chat_list])
 
+# Helper class to store details about the chats in telegram
 class Chat():
 	def __init__(self, whitelist_id, phone_number):
 		self.chat_id = 0
-		self.whitelist_id = whitelist_id
+		self.whitelist_id = whitelist_id	# as defined in the identifiers file
 		self.title = ""
 		self.phone_number = phone_number
 
@@ -254,7 +283,7 @@ class Chat():
 		#	2: Group
 		self.chat_type = 0
 
-		# Only applicable for basic groups (chat type 2 below)
+		# Only applicable for basic groups (chat type 2 above)
 		self.basic_group_id = 0
 		self.group_members = []
 		self.basic_complete = False
