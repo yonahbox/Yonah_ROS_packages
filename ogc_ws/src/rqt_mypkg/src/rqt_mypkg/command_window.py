@@ -46,27 +46,35 @@ class CommandWindow(QWidget):
         # Use a for loop to add items inside the drop down menu
         for i in range(1, active_aircrafts + 1): 
             self.combo_box.addItem('Aircraft ' + str(i))
-        self.arm_button = QPushButton('ARM / DISARM')
+        self.arm_button = QPushButton('ARM')
+        self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
         self.mission_load_button = QPushButton('Load Mission')
         self.mission_check_button = QPushButton('Check Mission')
+        self.change_mode_button = QPushButton('Change Mode')
 
         # Set UI properties of the buttons and layout
-        self.first_row.setContentsMargins(0,20,0,20)
-        self.arm_button.setMinimumHeight(50)
-        self.go_button.setMinimumHeight(50)
-        self.mission_check_button.setMinimumHeight(30)
-        self.mission_load_button.setMinimumHeight(30)
-        self.checklist_button.setMinimumHeight(30)
+        top_row = 60 # Minimum height for the top row buttons
+        bottom_row = 40 # Minimum height for the bottom row buttons
+        self.first_row.setContentsMargins(0,20,0,15)
+        self.arm_button.setMinimumHeight(top_row)
+        self.disarm_button.setMinimumHeight(top_row)
+        self.go_button.setMinimumHeight(top_row)
+        self.mission_check_button.setMinimumHeight(bottom_row)
+        self.mission_load_button.setMinimumHeight(bottom_row)
+        self.checklist_button.setMinimumHeight(bottom_row)
+        self.change_mode_button.setMinimumHeight(bottom_row)
        
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
+        self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.mission_check_button)
+        self.second_row.addWidget(self.change_mode_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
         self.main_layout.addLayout(self.first_row)
@@ -74,8 +82,4 @@ class CommandWindow(QWidget):
 
     def shutdown(self):
         self.close()
-
-    def waypoint_load(self, id):
-        text, ok = QInputDialog.getText(self, 'Waypoint Load', 'Load waypoint to Aircraft '+ str(id))
-        if ok:
-            self.loaded_waypoint = [text, id]
+    
