@@ -44,7 +44,6 @@ from popup_window import *
 from aircraft_info import *
 
 class MyPlugin(Plugin):
-
     def __init__(self, context):
         super(MyPlugin, self).__init__(context)
         # Give QObjects reasonable names
@@ -75,6 +74,9 @@ class MyPlugin(Plugin):
         self.aircrafts_info = {}
         for i in range (self.active_aircrafts + 1):
             self.aircrafts_info["AC" + str(i)] = Aircraft1(i)
+
+        self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
+                          "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"]
 
         # Declare variables for each imported class
         self.ChecklistWindow = ChecklistWindow()
@@ -257,9 +259,10 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftQuad Battery" + id).setPlainText(data)
     
     def mode_status_display(self, mode_status, id):
-        mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE", "","AUTO","RTL",
-                     "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"]
-        mode = mode_list[mode_status] # Convert the integer to a mode
+        # Rewrite the mode list with blanks to convert int
+        self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
+                          "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"] 
+        mode = self.mode_list[mode_status] # Convert the integer to a mode
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
 
@@ -338,7 +341,7 @@ class MyPlugin(Plugin):
     def mission_load_button(self):
         self.PopupMessages.user_input_textbox("Waypoint Load", "Load waypoint to Aircraft ", self.destination_id)
         if self.PopupMessages.input_text == []:
-            return 0 # If else is clicked, return nothing
+            return 0 # When else is clicked, return nothing
         elif self.PopupMessages.input_text[0] == "":
             statustext_message = "ERROR: Please input a valid waypoint file"
         else:
@@ -347,12 +350,44 @@ class MyPlugin(Plugin):
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.aircrafts_info.get("AC" + str(load_destination_id)).statustext.appendPlainText(statustext_message)
             self.create_link_message(load_destination_id, data)
-
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
     def change_mode_button(self):
-        self.PopupMessages.confirmation_window("Warning Message", "change mode is initialised")
-        return 0
+        self.dialog = QDialog()
+        
+        self.dialog.setWindowTitle("Change Mode")
+        self.label = QLabel("Select MODE to change into")
+
+        self.combo_box = QComboBox()
+        for i in self.mode_list:
+            self.combo_box.addItem(i)
+
+        self.combo_box.currentIndexChanged.connect(self.combo_box_change)
+        self.mode_change = self.combo_box.currentText()
+        box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            centerButtons=True,)
+        box.accepted.connect(self.dropdown_accept)
+        box.rejected.connect(self.dropdown_reject)
+        lay = QVBoxLayout(self.dialog)
+        lay.addWidget(self.label)
+        lay.addWidget(self.combo_box)
+        lay.addWidget(box)
+        self.dialog.show()
+
+    def combo_box_change(self, i):
+        self.mode_change = self.mode_list[i]
+
+    def dropdown_accept(self):
+        data = self.mode_change
+        statustext_message = "Aircraft {} mode has been set to {}".format(self.destination_id, data)
+        self.SummaryWindow.statustext.appendPlainText(statustext_message)
+        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
+        self.create_link_message(self.destination_id, data)
+        self.dialog.close()
+
+    def dropdown_reject(self):
+        self.dialog.close()
 
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
