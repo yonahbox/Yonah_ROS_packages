@@ -20,33 +20,60 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-import subprocess
+import paramiko
 
 def hello_world_from_rutos():
     '''Sanity Checks'''
     print("My RuTOS module is alive and successfully imported")    
 
-def send_msg(hostname, GCS_no, msg):
+def start_client(ip, user):
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect(ip, username=user)
+    return ssh
+
+def send_msg(ssh, GCS_no, msg):
     '''Send msg to the specified GCS number'''
-    subprocess.call(["ssh", "%s"%(hostname), "gsmctl -S -s '%s %s'"%(GCS_no, msg)], shell=False)
+    _, stdout, _ = ssh.exec_command("gsmctl -S -s '%s %s'"%(GCS_no, msg))
+    sendstatus = stdout.readlines()
+    return sendstatus
     
-def extract_msg(hostname, n):
+def extract_msg(ssh, count):
     '''Extract an incoming message in the router's nth entry and return it as a raw string'''
-    msglist_raw = subprocess.check_output(["ssh", "%s"%(hostname), "gsmctl -S -r %d"%(n)], shell=False)
-    return msglist_raw
+    _, stdout, _ = ssh.exec_command("gsmctl -S -r %d"%(count))
+    msglist = stdout.readlines()
+    return msglist
 
-def delete_msg(hostname, n):
+def delete_msg(ssh, count):
     '''Delete the nth message in the onboard router'''
-    subprocess.call(["ssh", "%s"%(hostname), "gsmctl -S -d %d"%(n)], shell=False)
+    ssh.exec_command("gsmctl -S -d %d"%(count))
+    return
 
-def get_gps_coords(hostname):
+def blink_button(ssh):
+    ssh.exec_command("gpio.sh invert DOUT1")
+
+def button_on(ssh):
+    ssh.exec_command("gpio.sh set DOUT1")
+
+def check_button(ssh):
+    _, stdout, _ = ssh.exec_command("gpio.sh get DIN1")
+    button_state = int(str(stdout.readlines())[2])
+    return button_state
+
+def get_gps_coords(ssh):
     '''Get GPS coordinates of router'''
-    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -i -x"], shell=False)
+    _, stdout, _ = ssh.exec_command("gpsctl -i -x")
+    coords = stdout.readlines()
+    return coords
 
-def get_gps_alt(hostname):
+def get_gps_alt(ssh):
     '''Get GPS altitude of router'''
-    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -a"], shell=False)
+    _, stdout, _ = ssh.exec_command("gpsctl -a")
+    alt = stdout.readlines()
+    return alt
 
-def get_gps_speed(hostname):
+def get_gps_speed(ssh):
     '''Get GPS speed of router'''
-    subprocess.call(["gpsctl", "%s"%(hostname), "gpsctl -v"], shell=False)
+    _, stdout, _ = ssh.exec_command("gpsctl -v")
+    speed = stdout.readlines()
+    return speed

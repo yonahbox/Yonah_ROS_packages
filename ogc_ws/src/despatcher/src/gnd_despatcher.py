@@ -19,13 +19,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# Standard Library
-import subprocess
-
 # ROS/Third-Party
 import rospy
-from despatcher.msg import RegularPayload
+
 from std_msgs.msg import String
+from despatcher.msg import RegularPayload
+from despatcher.msg import LinkMessage
 
 # Local
 import regular
@@ -35,12 +34,15 @@ class gnddespatcher():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
-        self.pub_to_sms = rospy.Publisher('ogc/to_sms', String, queue_size = 5) # Link to SMS node
+        self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
-        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', String, queue_size = 5) # Link to Telegram node
+        self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
+
+        # Link switching
+        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
@@ -59,14 +61,19 @@ class gnddespatcher():
         if data.data.split()[0] not in whitelisted_prefixes:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
+            msg = LinkMessage()
+            msg.id = data.id
             # Add msg headers
-            msg = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
+            msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
                 " " + data.data + " " + str(rospy.get_rostime().secs)
             # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
-            self.pub_to_sms.publish(msg)
-            self.pub_to_sbd.publish(msg)
+            if self.link_select == 0:
+                self.pub_to_telegram.publish(msg)
+            elif self.link_select == 1:
+                self.pub_to_sms.publish(msg)
+            else:
+                self.pub_to_sbd.publish(msg)
             self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
-            self.pub_to_telegram.publish(data.data)
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
@@ -121,7 +128,7 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
-        rospy.Subscriber("ogc/to_despatcher", String, self.handle_outgoing_msgs)
+        rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
         rospy.spin()
 
 if __name__=='__main__':

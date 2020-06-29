@@ -17,6 +17,7 @@
 
 import rospy
 from std_msgs.msg import String
+from despatcher.msg import LinkMessage
 
 import sys
 import os
@@ -25,8 +26,8 @@ import json
 
 from Td import Td, Chat
 
-def tdlib_cb(msg, td):
-	td.send_message(msg.data)
+def tdlib_topic_cb(msg, td):
+	td.send_message(msg.id, msg.data)
 
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
@@ -55,26 +56,32 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")
-		chat_name = rospy.get_param("~monitored_chat")
-		command_users = rospy.get_param("~command_whitelist")
-		rospy.loginfo(command_users)
-		td = Td(tdlib_dir, chat_name, command_users)
+		identifiers_file = rospy.get_param("~identifiers_file")
+		valid_ids = rospy.get_param("~valid_ids")
+		is_air = rospy.get_param("~is_air")
+		self_id = rospy.get_param("~self_id")
+
+		# rospy.loginfo(command_users)
+		td = Td(tdlib_dir, identifiers_file, is_air, valid_ids)
 
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True
 		recv_thread.start()
 
-		rospy.Subscriber('ogc/to_telegram', String, tdlib_cb, td)
+		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, td)
 
 		rospy.logwarn(os.getcwd())
 		rate = rospy.Rate(1)
 		while not td.setup_complete():
+			rospy.loginfo("NOT COMPLETE YET")
 			td.get_chats()
 			rate.sleep()
 
 		rospy.loginfo('setup complete')
-		td.send_message('setup complete')
-		
+
+		# inform all valid nodes that the link is up
+		td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
+
 		rospy.spin()
 
 	except rospy.ROSInterruptException:

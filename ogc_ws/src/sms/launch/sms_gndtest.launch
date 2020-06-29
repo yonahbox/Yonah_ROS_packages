@@ -1,26 +1,31 @@
 <!-- launch file for Yonah main SMS Telemetry Node on GCS as a standalone (for testing purposes)-->
 
 <launch>
-
-    <!-- please fill in the phone no of the client (e.g. if running this on air, fill in ground phone no,
-     and vice versa). Enclose it in '' to recognise it as a string (instead of int)-->
-    <arg name="client_phone_no" default="'12345678'"/>
-
-    <!-- phone numbers authorized to send commands to GCS. Whitelist should be in same folder as nodes-->
-    <arg name="whitelist" default="$(find sms)/src/whitelist.txt"/>
-
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
     <!-- hostname and IP of onboard cellular router -->
-    <arg name="router_hostname" default="root@192.168.1.1" />
+    <arg name="router_username" default="root" />
+    <arg name="router_ip" default="192.168.1.1" />
+
+
+    <!-- Identifiers -->
+    <arg name="identifiers_file" default="" />
+    <arg name="air_ids" default="[3]" />
+    <arg name="self_id" default="2" />
+    <arg name="is_air" default="False" />
+
 
     <!-- sms_link node -->
     <node pkg="sms" type="sms_link.py" name="sms_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <param name="whitelist" value="$(arg whitelist)" />
-        <param name="router_hostname" value = "$(arg router_hostname)"/>
-        <param name="client_phone_no" value="$(arg client_phone_no)" />
+        <param name="router_username" value="$(arg router_username)" />
+        <param name="router_ip" value="$(arg router_ip)" />
+
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
     </node>
 
     <!-- ground_despatcher node -->

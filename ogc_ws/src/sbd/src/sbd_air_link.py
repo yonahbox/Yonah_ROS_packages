@@ -68,17 +68,17 @@ class satcomms(rockBlockProtocol):
         rospy.loginfo("Rockblock signal strength good")
 
     def rockBlockSignalFail(self):
-        self._pub_to_despatcher.publish("Mailbox check failed, signal strength low")
+        rospy.logwarn("Mailbox check failed, signal strength low")
     
     #MT
     def rockBlockRxStarted(self):
-        self._pub_to_despatcher.publish("Starting mailbox check attempt " + str(self._count))
+        rospy.loginfo("Starting mailbox check attempt " + str(self._count))
 
     def rockBlockRxFailed(self, mo_msg):
         if mo_msg == " ":
-            self._pub_to_despatcher.publish("Mailbox check " + str(self._count) + " failed")
+            rospy.logwarn("Mailbox check " + str(self._count) + " failed")
         else:
-            self._pub_to_despatcher.publish("Mailbox check " + str(self._count) + " failed, message \'" +\
+            rospy.logwarn("Mailbox check " + str(self._count) + " failed, message \'" +\
                 mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
@@ -95,10 +95,10 @@ class satcomms(rockBlockProtocol):
         rospy.logwarn("Rockblock msg not sent: " + momsg)
 
     def rockBlockTxSuccess(self,momsn, momsg):
-        self._pub_to_despatcher.publish("SBD message sent: " + momsg)
+        rospy.loginfo("SBD message sent: " + momsg)
 
     def rockBlockTxBlankMsg(self):
-        self._pub_to_despatcher.publish("Mailbox check " + str(self._count) + " complete")
+        rospy.loginfo("Mailbox check " + str(self._count) + " complete")
 
     ############################
     # Rockblock MO/MT msg calls
