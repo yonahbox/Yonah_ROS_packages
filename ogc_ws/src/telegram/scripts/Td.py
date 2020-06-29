@@ -103,6 +103,16 @@ class Td():
 				return chat
 		return False
 
+	def _get_chat_number(self, chat_id):
+		chat = self._get_local_chat(chat_id)
+		if chat:
+			return chat.phone_number
+
+	def check_valid_message(self, event):
+		number = self._get_chat_number(event["message"]["sender_user_id"])
+		if number:
+			return self._ids.is_valid_sender(0, number)
+
 	# Send request to telegram
 	def send(self, query):
 		query = json.dumps(query).encode('utf-8')
@@ -280,7 +290,8 @@ class Td():
 			# This is for receiving the read receipts
 			elif recv_type == "updateChatReadOutbox":
 				chat = self._get_local_chat(result["chat_id"])
-				chat.read_message(result["last_read_outbox_message_id"])
+				if chat:
+					chat.read_message(result["last_read_outbox_message_id"])
 
 			return result
 

@@ -102,6 +102,14 @@ class Identifiers:
 	def is_valid_message_lazy(self, message):
 		return int(message[2]) == (0 if self.is_air else 1) and int(message[4]) in self.valid_ids
 
+	def is_valid_sender(self, link, details):
+		if link == 0:
+			return str(details) in self.whitelist_nums
+		elif link == 1:
+			return details[1:] in self.whitelist_nums
+		elif link == 2:
+			return details in self.whitelist_imei
+
 	# link:
 	#	0: telegram
 	#	1: sms
