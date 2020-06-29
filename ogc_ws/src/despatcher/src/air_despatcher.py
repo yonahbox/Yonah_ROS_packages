@@ -321,7 +321,7 @@ class airdespatcher():
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
-        rospy.Subscriber("mavros/mission/reached", WaypointReached, self.payloads.get_wp_reached)
+        rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.payloads.get_wp_reached)
         rospy.Subscriber("ogc/statustext", YonahStatusText, self.get_status_text)
         rospy.Subscriber("mavros/vibration/raw/vibration", Vibration, self.payloads.get_vibe_status)
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
