@@ -295,7 +295,6 @@ class MyPlugin(Plugin):
     
     def status_text_display(self, status_text, id):
         self.SummaryWindow.statustext.appendPlainText(status_text)
-        print(self.aircrafts_info)
         self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + data)
 
     def ondemand_display(self, data, id):
@@ -333,7 +332,7 @@ class MyPlugin(Plugin):
 
     def go_button(self):
         data = "mode 10"
-        statustext_message = "Aircraft {} mode has been set to 5".format(self.destination_id)
+        statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
@@ -359,7 +358,7 @@ class MyPlugin(Plugin):
         self.combo_box = QComboBox()
         for i in self.mode_list:
             self.combo_box.addItem(i)
-        self.combo_box.currentIndexChanged.connect(self.combo_box_change)
+        self.combo_box.currentIndexChanged.connect(self.mode_combo_box)
         self.mode_change = self.combo_box.currentText()
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -372,7 +371,7 @@ class MyPlugin(Plugin):
         lay.addWidget(box)
         self.dialog.show()
 
-    def combo_box_change(self, i):
+    def mode_combo_box(self, i):
         self.mode_change = self.mode_list[i]
 
     def dropdown_accept(self):
