@@ -55,12 +55,12 @@ class SMSrx():
 		self.rate = rospy.Rate(2)
 
 		# Initialise SSH
-        try:
-            self.ssh = RuTOS.start_client(self._ip, self._username)
-            rospy.loginfo("Connected to router")
-        except:
-            rospy.logerr("Could not connect to the router")
-            raise
+		try:
+			self.ssh = RuTOS.start_client(self._ip, self._username)
+			rospy.loginfo("Connected to router")
+		except:
+			rospy.logerr("Could not connect to the router")
+			raise
 		
 		# Security and safety measures
 		self.populatewhitelist()
@@ -178,8 +178,8 @@ class SMSrx():
 					pass
 				elif 'Timeout.\n' in self.msglist:
 					rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-		        elif 'Connection lost' in self.msglist:
-	            	rospy.logerr("Connection to router lost!")
+				elif 'Connection lost' in self.msglist:
+					rospy.logerr("Connection to router lost!")
 				else:
 					# extract sender number (2nd word of 3rd line in msglist)
 					sender = self.msglist[2].split()[1]
@@ -206,9 +206,9 @@ if __name__=='__main__':
     try:
         run = SMSrx()
         run.client()
-    finally:
-        try:
-            run.ssh.close()
-            rospy.loginfo("Connection to router closed")
-        except:
-            pass
+    except:
+        rospy.loginfo("Failed to start node")
+        raise
+    else:
+        run.ssh.close()
+        rospy.loginfo("Connection to router closed")

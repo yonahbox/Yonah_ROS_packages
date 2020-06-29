@@ -139,9 +139,9 @@ if __name__=='__main__':
     try:
         run = SMSrx()
         run.client()
-    finally:
-        try:
-            run.ssh.close()
-            rospy.loginfo("Connection to router closed")
-        except:
-            pass
+    except:
+        rospy.loginfo("Failed to start node")
+        raise
+    else:
+        run.ssh.close()
+        rospy.loginfo("Connection to router closed")

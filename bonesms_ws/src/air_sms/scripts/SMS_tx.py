@@ -295,11 +295,11 @@ class SMStx():
 
 if __name__=='__main__':
     try:
-        run = SMStx()
-        run.prepare()
-    finally:
-        try:
-            run.ssh.close()
-            rospy.loginfo("Connection to router closed")
-        except:
-            pass
+        run = SMSrx()
+        run.client()
+    except:
+        rospy.loginfo("Failed to start node")
+        raise
+    else:
+        run.ssh.close()
+        rospy.loginfo("Connection to router closed")
