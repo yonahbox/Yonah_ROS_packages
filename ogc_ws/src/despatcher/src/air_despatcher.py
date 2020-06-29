@@ -19,9 +19,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# Standard Library
-import subprocess
-
 # ROS/Third-Party
 import rospy
 import csv
@@ -41,46 +38,8 @@ from statustext.msg import YonahStatusText
 
 # Local
 from regular import air_payload
+from waypoint import WP
 
-# Global variables
-waypoints = []
-
-class WP(object):
-
-    # Creates a csv dialect to read the waypoint file properly
-    class CSVDialect(csv.Dialect):
-        delimiter = '\t'
-        doublequote = False
-        skipinitialspace = True
-        lineterminator = '\r\n'
-        quoting = csv.QUOTE_NONE
-
-    def read(self, wpfile):
-        f = open(wpfile, "r")
-        # There are header lines which identify waypoint files
-        pastheaderline = False
-        for data in csv.reader(f, self.CSVDialect):
-            if not pastheaderline:
-                qgc, wpl, ver = data[0].split(' ', 3)
-                ver = int(ver)
-                if qgc == 'QGC' and wpl == 'WPL' and (ver == 110 or ver ==120):
-                    pastheaderline = True
-
-            else:
-                # Convert waypoints into Waypoint format
-                waypoints.append(Waypoint(
-                    is_current = bool(int(data[1])),
-                    frame = int(data[2]),
-                    command = int(data[3]),
-                    param1 = float(data[4]),
-                    param2 = float(data[5]),
-                    param3 = float(data[6]),
-                    param4 = float(data[7]),
-                    x_lat = float(data[8]),
-                    y_long = float(data[9]),
-                    z_alt = float(data[10]),
-                    autocontinue = bool(int(data[11]))
-                ))
 
 class airdespatcher():
 
@@ -213,9 +172,7 @@ class airdespatcher():
                 self._send_ack()
 
     def _check_mission(self):
-        global waypoints
         wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
-        # wpfolder = "/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/"
         """Check for mission/waypoint commands from Ground Control"""
         if self._recv_msg[0] == "wp":
             if self._recv_msg[1] == 'set':
@@ -233,16 +190,18 @@ class airdespatcher():
                 self.hop = False
                 # Reset mission and waypoints list
                 self.missionlist = []
-                waypoints = []
                 readwp = WP()
                 try:
-                    readwp.read(str(wpfolder + wp_file))
+                    waypoints = readwp.read(str(wpfolder + wp_file))
                     wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
                     # Push waypoints, check if successful
                     if wp(0, waypoints).success:
                         self._send_ack()
                 except FileNotFoundError:
                     self._msg  = "Specified file not found"
+                    self.sendmsg("e")
+                except:
+                    self._msg = "Invalid waypoint file"
                     self.sendmsg("e")
             else:
                 return
@@ -263,6 +222,11 @@ class airdespatcher():
                     # Ignores # comments
                     if line.startswith('#'):
                         continue
+                    # Returns if a waypoint file is loaded instead
+                    elif line.startswith("QGC WPL"):
+                        self._msg = "This is a waypoint file. Please load a mission file."
+                        self.sendmsg("e")
+                        return
                     try:
                         g = open(str(wpfolder + line.rstrip()), "r") # Open and close to check each wp file
                         g.close()
@@ -271,7 +235,6 @@ class airdespatcher():
                         self._msg = str(line.rstrip() + "-->File not found")
                         self.sendmsg("e")
                         # Set to non-hop (in this case it is used as a switch for the next step)
-                        # Could not think of another way to elegantly implement this
                         self.hop = False
                 f.close()
                 # Returns if any of the files in mission list weren't found
@@ -279,18 +242,19 @@ class airdespatcher():
                     return
                 # Somehow there is a need to open the file again after the try block finishes
                 f = open(str(wpfolder + mission_file), "r")
+                # This appends the waypoint files into mission list
                 for line in f:
                     if line.startswith('#'):
                         continue
                     self.missionlist.append(line.rstrip())
                 f.close()
                 # Prints the missions for operator to check
-                self._msg = "Missions: " + " ".join(self.missionlist)
+                self._msg = "Missions: " + ", ".join(self.missionlist)
                 self.sendmsg("i")
                 # Load first mission
                 self.current_mission = 0
                 readwp = WP()
-                readwp.read(str(wpfolder + self.missionlist[0]))
+                waypoints = readwp.read(str(wpfolder + self.missionlist[0]))
                 wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
                 if wp(0, waypoints).success:
                     # This acknowledgement implies that the mission list has no errors and the first mission is loaded
@@ -312,7 +276,7 @@ class airdespatcher():
                 waypoints = []
                 readwp = WP()
                 try:
-                    readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
+                    waypoints = readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
                     wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
                     if wp(0, waypoints).success:
                         self._send_ack()
