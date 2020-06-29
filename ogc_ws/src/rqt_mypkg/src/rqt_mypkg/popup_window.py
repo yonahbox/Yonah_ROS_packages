@@ -28,9 +28,6 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
-        self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
-                     "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"]
-        self.mode_change = self.mode_list[0] # Set default value of mode_change
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
@@ -56,45 +53,6 @@ class PopupMessages(QWidget):
         self.message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         self.message.show()
         self.message.buttonClicked.connect(self.message_action)
-    
-    def user_input_dropdown(self, title, message):
-        self.dialog = QDialog()
-        
-        self.dialog.setWindowTitle(title)
-        self.label = QLabel(message)
-
-        self.combo_box = QComboBox()
-        for i in self.mode_list:
-            self.combo_box.addItem(i)
-
-        self.combo_box.currentIndexChanged.connect(self.combo_box_change)
-        box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            centerButtons=True,
-        )
-        box.accepted.connect(self.dropdown_accept)
-        box.rejected.connect(self.dropdown_reject)
-        lay = QVBoxLayout(self.dialog)
-        lay.addWidget(self.label)
-        lay.addWidget(self.combo_box)
-        lay.addWidget(box)
-        
-        self.dialog.show()
-
-    def combo_box_change(self, i):
-        self.mode_change = self.mode_list[i]
-
-    def dropdown_accept(self):
-        self.dialog.close()
-        mode = self.mode_change
-        statustext_message = "Aircraft {} mode has been set to 5".format(self.destination_id)
-        self.SummaryWindow.statustext.appendPlainText(statustext_message)
-        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
-        self.create_link_message(self.destination_id, data)
-
-    def dropdown_reject(self):
-        self.dialog.close()
-        
 
     # Determines what happens after dialog_window pops up from ok_button
     def message_action(self, i):

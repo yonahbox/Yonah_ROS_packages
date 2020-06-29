@@ -192,7 +192,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display)
+        status.mode_signal.connect(self.mode_status_display_sitl)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")
@@ -215,20 +215,25 @@ class MyPlugin(Plugin):
     def groundspeed_display(self, data, id):
         data = str(data)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftGroundspeed" + id).setPlainText(data)
-    
+        rospy.logdebug_throttle(30, "[AC {} GNDSPEED display] {}".format(int(id), data))
+
     def throttle_display(self, data, id):
         data = str(data)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftThrottle" + id).setPlainText(data)
+        rospy.logdebug_throttle(30, "[AC {} THROTTLE display] {}".format(int(id), data))
 
     def gps_display(self, lat, lon, id):
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftGPS" + id).setPlainText(str(lat) +", " + str(lon))
+        rospy.logdebug_throttle(30, "[AC {} GPS display] {}".format(int(id), data))
 
     def vibe_display(self, data, id):
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftVibe Status" + id).setPlainText(str(data))
+        rospy.logdebug_throttle(30, "[AC {} VIBE display] {}".format(int(id), data))
 
     def vtol_display(self, data, id):
         data = str(data)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftVTOL Status" + id).setPlainText(data)
+        rospy.logdebug_throttle(30, "[AC {} VTOL display] {}".format(int(id), data))
 
     def waypoint_display(self, data, id):
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftTarget Waypoint" + id).setPlainText(str(data))
@@ -253,11 +258,13 @@ class MyPlugin(Plugin):
     def fuel_display(self, data, id):
         data = str(data)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftFuel Level" + id).setPlainText(data)
+        rospy.logdebug_throttle(30, "[AC {} FUEL display] {}".format(int(id), data))
 
     def quad_batt_display(self, data, id):
         data = str(data)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftQuad Battery" + id).setPlainText(data)
-    
+        rospy.logdebug_throttle(30, "[AC {} QUAD BATT display] {}".format(int(id), data))
+
     def mode_status_display(self, mode_status, id):
         # Rewrite the mode list with blanks to convert int
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
@@ -265,12 +272,20 @@ class MyPlugin(Plugin):
         mode = self.mode_list[mode_status] # Convert the integer to a mode
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
+        rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), mode_status))
+
+    def mode_status_display_sitl(self, mode_status, id):
+        mode_status = str(mode_status)
+        self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode_status)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode_status)
+        rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), mode_status))
 
     def altitude_display(self, altitude, id):
         id = str(id)
         altitude = str(round(altitude, 1)) + " m"
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftAltitude" + id).setPlainText(altitude)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + id).setPlainText(altitude)        
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + id).setPlainText(altitude)
+        rospy.logdebug_throttle(30, "[AC {} ALTITUDE display] {}".format(int(id), altitude))
 
     def airspeed_display(self, airspeed, id):
         id = str(id)
@@ -278,12 +293,14 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftAirspeed" + id).setStyleSheet("Color: rgb(255, 0, 0);")     
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftAirspeed" + id).setPlainText(airspeed)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + id).setPlainText(airspeed)                
-
+        rospy.logdebug_throttle(30, "[AC {} AIRSPEED display] {}".format(int(id), airspeed))
+        
     def waypoint_total_display(self, total, sequence, id):
         total = len(total) - 1
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,total)
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(sequence)
         self.WaypointWindow.waypoint_plaintext_dict.get("aircraft" + id).setPlainText("Current WP: " + str(sequence) + " out of " + str(total))
+        rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
     def arm_status_display(self, arm_status, id):
         if arm_status == "False" or arm_status == 0:
@@ -295,11 +312,13 @@ class MyPlugin(Plugin):
     
     def status_text_display(self, status_text, id):
         self.SummaryWindow.statustext.appendPlainText(status_text)
-        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + data)
+        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + status_text)
+        rospy.logdebug("[AC %d status_text] %s", int(id), status_text)
 
     def ondemand_display(self, data, id):
         self.SummaryWindow.statustext.appendPlainText(str(data))
         self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + str(data))
+        rospy.logdebug("[AC %d on_demand] %s", int(id), data)
 
     ######################################
     # Handles commands to air despatcher #
@@ -318,17 +337,19 @@ class MyPlugin(Plugin):
             self.PopupMessages.confirmation_window("Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
         data = "arm"
-        statustext_message = "Aircraft {} has been ARMED".format(self.destination_id)
+        statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
+        rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
     
     def disarm_button (self):
         data = "disarm"
-        statustext_message = "Aircraft {} has been DISARMED".format(self.destination_id)
+        statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
+        rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
 
     def go_button(self):
         data = "mode 10"
@@ -336,6 +357,7 @@ class MyPlugin(Plugin):
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
+        rospy.logdebug("[AC %d go_button] %s", self.destination_id, statustext_message)
 
     def mission_load_button(self):
         self.PopupMessages.user_input_textbox("Waypoint Load", "Load waypoint to Aircraft ", self.destination_id)
@@ -349,12 +371,14 @@ class MyPlugin(Plugin):
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.aircrafts_info.get("AC" + str(load_destination_id)).statustext.appendPlainText(statustext_message)
             self.create_link_message(load_destination_id, data)
+            rospy.logdebug("[AC %d Mission Load Button] %s", self.destination_id, statustext_message)
+
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
     def change_mode_button(self):
         self.dialog = QDialog()
         self.dialog.setWindowTitle("Change Mode")
-        self.label = QLabel("Select MODE to change into")
+        self.label = QLabel("Select MODE for Aircraft " + str(self.destination_id))
         self.combo_box = QComboBox()
         for i in self.mode_list:
             self.combo_box.addItem(i)
@@ -381,6 +405,7 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
         self.dialog.close()
+        rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
 
     def dropdown_reject(self):
         self.dialog.close()
