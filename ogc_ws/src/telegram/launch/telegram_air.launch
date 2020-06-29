@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="/home/ubuntu+/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
 	<arg name="identifiers_file"  default="/home/ubuntu/identifiers.json" />
@@ -42,5 +42,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="self_id" value="$(arg self_id)" />
 	</node>
 </launch>
