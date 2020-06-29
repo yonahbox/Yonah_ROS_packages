@@ -27,10 +27,13 @@ import rospy
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
+from mavros_msgs.srv import WaypointPush
 from std_msgs.msg import String
+from mavros_msgs.msg import Waypoint
 
 # Local
 import RuTOS
+from waypoint import WP
 
 class SMSrx():
 	
@@ -50,6 +53,7 @@ class SMSrx():
 		rospy.wait_for_service('mavros/cmd/arming')
 		rospy.wait_for_service('mavros/set_mode')
 		rospy.wait_for_service('mavros/mission/set_current')
+		rospy.wait_for_service('mavros/mission/push')
 		self.sms_sender = rospy.Publisher('sendsms', String, queue_size = 5)
 		rospy.init_node('SMS_rx', anonymous=False)
 		self.rate = rospy.Rate(2)
@@ -65,6 +69,10 @@ class SMSrx():
 		# Security and safety measures
 		self.populatewhitelist()
 		self.purge_residual_sms()
+
+		# Mission-related variables
+		self.hop = False
+		self.missionlist = []
 
 	def populatewhitelist(self):
 		"""Fill up whitelisted numbers. Note that whitelist.txt must be in same folder as this script"""
@@ -141,6 +149,8 @@ class SMSrx():
 				break
 
 	def checkMission(self):
+		# wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
+		wpfolder = "/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/"
 		"""Check for mission/waypoint commands from Ground Control"""
 		if "wp" in self.msg:
 			wp_breakdown = self.msg.split()
@@ -153,14 +163,102 @@ class SMSrx():
 					if wp_set(wp_seq = int(seq_no)).success == True:
 						self.log_and_ack_msg()
 				elif wp_breakdown[1] == 'load':            
-					# Message structure: wp load <wp file name>; extract 3rd word to get wp file
+					# Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
 					# Assume that wp file is located in root directory of Beaglebone
-					# To do: Switch to WaypointPush service; currently no way to determine whether WPs successfully loaded
 					wp_file = wp_breakdown[2]
-					subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
-					self.log_and_ack_msg()
+					# Set to non-hop mission
+					self.hop = False
+					# Reset mission and waypoints list
+					self.missionlist = []
+					readwp = WP()
+					try:
+						waypoints = readwp.read(str(wpfolder + wp_file))
+						wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+						# Push waypoints, check if successful
+						if wp(0, waypoints).success:
+							self.log_and_ack_msg()
+					except FileNotFoundError:
+						print("Specified file not found")
+					except:
+						print("Invalid waypoint file")
+						raise
 				else:
 					return
+		if "mission" in self.msg:
+			mission_breakdown = self.msg.split()
+			if mission_breakdown[1] == 'load':
+				# Message structure: mission load <mission file name.txt>
+				self.missionlist = []
+				# Change to hop-mission mode
+				self.hop = True
+				mission_file = mission_breakdown[2]
+				try:
+					f = open(str(wpfolder + mission_file), "r")
+				except FileNotFoundError:
+					print("Specified file not found")
+					return
+				for line in f:
+					# Ignores # comments
+					if line.startswith('#'):
+						continue
+					# Returns if a waypoint file is loaded instead
+					elif line.startswith("QGC WPL"):
+						print("This is a waypoint file. Please load a mission file.")
+						return
+					try:
+						g = open(str(wpfolder + line.rstrip()), "r") # Open and close to check each wp file
+						g.close()
+					except FileNotFoundError:
+						# Specify which file in the list is not found
+						print(str(line.rstrip() + "-->File not found"))
+						# Set to non-hop (in this case it is used as a switch for the next step)
+						self.hop = False
+				f.close()
+				# Returns if any of the files in mission list weren't found
+				if not self.hop:
+					return
+				# Somehow there is a need to open the file again after the try block finishes
+				f = open(str(wpfolder + mission_file), "r")
+				# This appends the waypoint files into mission list
+				for line in f:
+					if line.startswith('#'):
+						continue
+					self.missionlist.append(line.rstrip())
+				f.close()
+				# Prints the missions for operator to check
+				print("Missions: " + ", ".join(self.missionlist))
+				# Load first mission
+				self.current_mission = 0
+				readwp = WP()
+				waypoints = readwp.read(str(wpfolder + self.missionlist[0]))
+				wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+				if wp(0, waypoints).success:
+					# This acknowledgement implies that the mission list has no errors and the first mission is loaded
+					self.log_and_ack_msg()
+
+			elif mission_breakdown[1] == 'next':
+				# Message structure: wp next (no arguments)
+				if not self.hop: # Checks if hop mission
+					print("Please load a mission file")
+					return
+				self.current_mission += 1
+				if self.current_mission >= len(self.missionlist):
+					self.hop = False
+					self.current_mission = 0
+					print("There are no more missions")
+					return
+				waypoints = []
+				readwp = WP()
+				try:
+					waypoints = readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
+					wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+					if wp(0, waypoints).success:
+						self.log_and_ack_msg()
+				# This error should never be raised if everything above works
+				except FileNotFoundError:
+					print("Specified file not found")
+			else:
+				return
 	
 	############################
 	# "Main" function
@@ -203,12 +301,12 @@ class SMSrx():
 			self.rate.sleep()
 
 if __name__=='__main__':
-    try:
-        run = SMSrx()
-        run.client()
-    except:
-        rospy.loginfo("Failed to start node")
-        raise
-    else:
-        run.ssh.close()
-        rospy.loginfo("Connection to router closed")
+	try:
+		run = SMSrx()
+		run.client()
+	except:
+		rospy.loginfo("Failed to start node")
+		raise
+	else:
+		run.ssh.close()
+		rospy.loginfo("Connection to router closed")

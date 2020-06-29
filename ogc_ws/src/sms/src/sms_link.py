@@ -117,7 +117,7 @@ class SMSrx():
             if sender[1:] in self._ids.get_whitelist():
                 rospy.loginfo('Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
-                self._msg = (self._msglist[4].split(' ', 1)[1].rstrip()).lower()
+                self._msg = self._msglist[4].split(' ', 1)[1].rstrip()
                 # Forward msg to air_despatcher
                 self.pub_to_despatcher.publish(self._msg)
             else:

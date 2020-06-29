@@ -295,7 +295,7 @@ class SMStx():
 
 if __name__=='__main__':
     try:
-        run = SMSrx()
+        run = SMStx()
         run.client()
     except:
         rospy.loginfo("Failed to start node")

@@ -59,4 +59,4 @@ class WP(object):
                     z_alt = float(data[10]),
                     autocontinue = bool(int(data[11]))
                 ))
-                return waypoints
+        return waypoints
