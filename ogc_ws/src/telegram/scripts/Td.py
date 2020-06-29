@@ -21,7 +21,7 @@ import json
 from identifiers import Identifiers
 
 class Td():
-	def __init__(self, tdlib_dir, identifiers_loc, is_air, whitelist_devs):
+	def __init__(self, tdlib_dir, identifiers_loc, is_air, self_id, whitelist_devs):
 		# Creates interface for libtdjson. This is a C library so it requires some initial setup
 		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
 		tdjson = CDLL(tdjson_path)
@@ -62,9 +62,9 @@ class Td():
 		self.whitelist_devs = whitelist_devs	# whitelisted ids as defined in the identifiers file
 		self.chat_list = []						# List of whitelisted chats
 		self.command_user_ids = []				# List of user ids to easily check if sender is whitelisted
-		
+		self.self_id = self_id 					# id number as defined in identfiers file of this device
 		# Initialize identifiers class to handle whitelisting
-		self._ids = Identifiers(identifiers_loc, self.is_air, self.whitelist_devs)
+		self._ids = Identifiers(identifiers_loc, self.is_air, self.self_id, self.whitelist_devs)
 
 		# Create a new isntance of the Chat class for each whitelisted device
 		for num in self.whitelist_devs:

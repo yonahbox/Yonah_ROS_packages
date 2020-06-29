@@ -52,6 +52,7 @@ def tdlib_recv():
 
 				# ignore messages sent before node was started
 				if event['message']['date'] < boot_time:
+					rospy.loginfo("Ignoring old messages")
 					return
 
 				message = event['message']['content']['text']['text']
@@ -80,7 +81,7 @@ if __name__ == '__main__':
 		self_id = rospy.get_param("~self_id") 					# id of the device this is running on
 
 		# Initialize Td class, handles all the telegram actions for the node
-		td = Td(tdlib_dir, identifiers_file, is_air, valid_ids)
+		td = Td(tdlib_dir, identifiers_file, is_air, self_id, valid_ids)
 
 		# Creates a new thread for running the receive function
 		recv_thread = Thread(target=tdlib_recv)

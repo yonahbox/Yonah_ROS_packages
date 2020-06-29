@@ -28,10 +28,12 @@ class Device:
 		self.rb_serial = rb_serial
 
 class Identifiers:
-	def __init__(self, json_file, is_air, valid_ids):
+	def __init__(self, json_file, is_air, self_id, valid_ids):
 		self.json_file = json_file	# Location of identifiers file
 		self.is_air = is_air		# Boolean to know if it is running air side or ground side
+		self.self_id = self_id 		# id number as defined in the identifiers file of the device this runs on
 		self.valid_ids = valid_ids	# List of whitelisted ids as defined the identifiers file
+		self.self_device = None		# Information about the device this runs one
 
 		self.whitelist = []			# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []	# List of whitelisted numbers (contains phone number of the whitelisted devices)
@@ -61,6 +63,11 @@ class Identifiers:
 				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_imei.append(obj["imei"])
+
+		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
+			if obj["id"] == self.self_id:
+				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"])
+				break
 
 		# for standalone numbers (not currently in use)
 		for num in self.json_obj["standalone"]:
@@ -95,6 +102,12 @@ class Identifiers:
 	# return the whitelisted phone numbers
 	def get_whitelist(self):
 		return self.whitelist_nums
+
+	def get_self_serial(self):
+		return self.self_device.rb_serial
+
+	def get_self_imei(self):
+		return self.self_device.imei
 
 	# Does a lazy check to see if the received message is from a valid sender
 	# Trusts that the sender of the message was correctly identified in the message headers
