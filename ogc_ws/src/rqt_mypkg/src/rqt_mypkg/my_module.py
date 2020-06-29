@@ -354,14 +354,11 @@ class MyPlugin(Plugin):
 
     def change_mode_button(self):
         self.dialog = QDialog()
-        
         self.dialog.setWindowTitle("Change Mode")
         self.label = QLabel("Select MODE to change into")
-
         self.combo_box = QComboBox()
         for i in self.mode_list:
             self.combo_box.addItem(i)
-
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
         self.mode_change = self.combo_box.currentText()
         box = QDialogButtonBox(
@@ -432,7 +429,6 @@ class Communicate (QObject):
     
     waypoint_list_signal = Signal(list, int, str)
     waypoint_index_signal = Signal(int)
-
 
 def color(color):
     if color == "red":
