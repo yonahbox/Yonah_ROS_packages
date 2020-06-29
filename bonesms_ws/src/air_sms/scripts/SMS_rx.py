@@ -149,8 +149,7 @@ class SMSrx():
 				break
 
 	def checkMission(self):
-		# wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
-		wpfolder = "/home/huachen/Yonah/Yonah_ROS_packages/Waypoints/"
+		wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
 		"""Check for mission/waypoint commands from Ground Control"""
 		if "wp" in self.msg:
 			wp_breakdown = self.msg.split()
