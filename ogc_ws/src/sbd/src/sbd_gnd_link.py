@@ -55,6 +55,10 @@ class satcommsgnd(satcomms):
         self._init_variables()
         self._mt_cred['username'], self._mt_cred['password'], self._server_url = self._ids.get_sbd_credentials()
 
+        # Three least significant bytes of own serial, used for binary unpack of regular payload
+        self._serial_0 = (self._own_serial >> 16) & 0xFF
+        self._serial_1 = (self._own_serial >> 8) & 0xFF
+        self._serial_2 = self._own_serial & 0xFF
     
     ############################
     # Server Message handlers.
@@ -72,7 +76,8 @@ class satcommsgnd(satcomms):
     def _server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
-        if len(response) > 5 and response[0] == ord('R')and response[1] == ord('B'):
+        if len(response) >= 5 and response[0] == ord('R')and response[1] == ord('B') and \
+        response[2] == self._serial_0 and response[3] == self._serial_1 and response[4] == self._serial_2:
             # Sometimes, msgs sent to another Rockblock also end up in the web server
             # Hence, strip Rockblock 2 Rockblock prefix if present
             response = response[5:]

@@ -11,7 +11,7 @@
     <!-- Sleep interval between SBD mailbox checks -->
     <arg name="interval_1" default="5"/>
     <arg name="interval_2" default="5"/>
-    <arg name="interval_3" default="1"/>
+    <arg name="interval_3" default="5"/>
 
     <!-- Identifiers -->
     <arg name="identifiers_file" default="$(find despatcher)/src/identifiers.json" />
@@ -26,6 +26,7 @@
         <param name="interval" value="$(arg interval_3)" />
         <param name="identifiers_file" value="$(arg identifiers_file)" />
         <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
         <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 

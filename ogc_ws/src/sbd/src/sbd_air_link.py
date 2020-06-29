@@ -49,16 +49,18 @@ class satcomms(rockBlockProtocol):
         identifiers_file = rospy.get_param("~identifiers_file")
         self._valid_ids = rospy.get_param("~valid_ids")
         self._is_air = rospy.get_param("~is_air")
+        self._self_id = rospy.get_param("~self_id")
         self._ids = Identifiers(identifiers_file, self._is_air, self._valid_ids)
 
         # Rockblock Comms
         self._buffer = mo_msg_buffer()
+        self._own_serial = int(self._ids.get_sbd_own_serial(self._self_id)) # Our own rockblock serial
         self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
         self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         try:
-            self._sbdsession = rockBlock.rockBlock(self._portID, self)
+            self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
             rospy.signal_shutdown("rockBlock error")
 

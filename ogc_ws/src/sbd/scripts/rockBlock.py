@@ -79,7 +79,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback):
+    def __init__(self, portId, own_serial, callback):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -92,6 +92,9 @@ class rockBlock(object):
         
         # Init steps related to packing and unpacking of binary regular payload
         self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
+        self.serial_0 = (own_serial >> 16) & 0xFF # Three bytes of own serial number (for MT msg)
+        self.serial_1 = (own_serial >> 8) & 0xFF
+        self.serial_2 = own_serial & 0xFF
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -446,7 +449,8 @@ class rockBlock(object):
             return
 
         try:
-            if len(response) > 5 and response[0] == ord('R') and response[1] == ord('B'):
+            if len(response) >= 5 and response[0] == ord('R') and response[1] == ord('B')\
+            and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
                 # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
                 # There should be 2nd check for msg prefix = 'r', but luckily for us, a RB + serial in binary compressed
                 # only occurs for binary compressed regular payloads! This saves on an additional check

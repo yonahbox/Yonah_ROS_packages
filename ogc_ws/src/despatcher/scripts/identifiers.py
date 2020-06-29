@@ -90,6 +90,19 @@ class Identifiers:
 
 	def get_sbd_credentials(self):
 		return self.rock7_un, self.rock7_pw, self.aws_url
+	
+	def get_sbd_own_serial(self, self_id):
+		# Get our own rockblock serial number (in string form), return -1 if not found
+		with open(self.json_file) as file:
+			try:
+				self.json_obj = json.load(file)
+			except JSONDecodeError:
+				print("invalid identifier file")
+				return -1
+		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
+			if obj["id"] == self_id:
+				return obj["rb_serial"]
+		return -1
 
 	def get_whitelist(self):
 		return self.whitelist_nums
