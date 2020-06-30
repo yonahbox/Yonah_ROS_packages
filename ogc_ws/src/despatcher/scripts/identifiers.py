@@ -37,7 +37,7 @@ class Identifiers:
 
 		self.whitelist = []			# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []	# List of whitelisted numbers (contains phone number of the whitelisted devices)
-		self.whitelist_imei = []	# List of whitelisted imei numbers (contains imei number for whitelisted rockblock modules) - will be changed to serial number
+		self.whitelist_rb_serial=[]	# List of whitelisted rb serial numbers (contains imei number for whitelisted rockblock modules) - will be changed to serial number
 		
 		self.rock7_un = ""			# username for rockblock
 		self.rock7_pw = ""			# password for rockblock
@@ -62,7 +62,7 @@ class Identifiers:
 			if obj["id"] in self.valid_ids:
 				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"]))
 				self.whitelist_nums.append(obj["number"])
-				self.whitelist_imei.append(obj["imei"])
+				self.whitelist_rb_serial.append(obj["rb_serial"])
 
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
@@ -93,12 +93,19 @@ class Identifiers:
 		# returns the correct value only if the requested id was included in the initial whitelist
 		return device.number if device else 0
 
-	# returns a tuple containing sbd relevant information associated with id if it is whitelisted
-	def get_sbd_info(self, id_n):
+	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
-		return (device.imei, device.rb_serial) if device else ()
+		return device.rb_serial if device else ()
+	
+	def get_sbd_imei(self, id_n):
+		device = self.get_device(id_n)
+		# returns the correct value only if the requested id was included in the initial whitelist
+		return device.imei if device else ()
 
+	def get_sbd_credentials(self):
+		return self.rock7_un, self.rock7_pw, self.aws_url
+	
 	# return the whitelisted phone numbers
 	def get_whitelist(self):
 		return self.whitelist_nums
@@ -121,7 +128,7 @@ class Identifiers:
 		elif link == 1:
 			return details[1:] in self.whitelist_nums
 		elif link == 2:
-			return details in self.whitelist_imei
+			return details in self.whitelist_rb_serial
 
 	# link:
 	#	0: telegram
@@ -131,4 +138,4 @@ class Identifiers:
 		if link == 0 or link == 1:
 			return details in self.whitelist_nums
 		elif link == 2:
-			return details[0] in [x.imei for x in self.whitelist_devs] and details[1] in [y.rb_serial for y in self.whitelist_devs]
+			return details in [y.rb_serial for y in self.whitelist_rb_serial]
