@@ -17,11 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib_gnd"/>
+	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
 	<arg name="log_output" default="screen"/>
   
-	<arg name="identifiers_file" default="" />
-	<arg name="air_ids" default="[1]" />
+	<arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
+	<arg name="air_ids" default="[4]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 
@@ -35,5 +35,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	</node>
 
 	<!-- ground despatcher node -->
-	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)"></node>
+	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="self_id" value="$(arg self_id)" />
+	</node>
 </launch>

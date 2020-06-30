@@ -67,7 +67,7 @@ class airdespatcher():
         # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)
         # To-do: Work on air/gnd identifiers whitelist file
         self._is_air = 1 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self._id = 1 # ID number (outgoing msg)
+        self._id = rospy.get_param("~self_id") # ID number (outgoing msg)
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
         # Intervals btwn msgs
