@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="/home/ubuntu+/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
 	<arg name="identifiers_file"  default="/home/ubuntu/identifiers.json" />

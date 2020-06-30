@@ -61,6 +61,7 @@
         <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="self_id" value="$(arg self_id)" />
 	</node>
 
 	<!-- air statustext handler node -->
@@ -69,10 +70,10 @@
 	</node>
 
 	<!-- rff node -->
-	<!-- <node pkg="rff" name="rff" type="rff.py" output="$(arg log_output)">
+	<node pkg="rff" name="rff" type="rff.py" output="$(arg log_output)">
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
 	</node>
- -->
+
 </launch>
