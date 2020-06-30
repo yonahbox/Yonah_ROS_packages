@@ -10,7 +10,7 @@
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
-	<arg name="air_ids" default="[4]" />
+	<arg name="air_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 	
@@ -47,11 +47,12 @@
 	<!-- sbd link node -->
 	<!-- <node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-		<param name="portID" value="$(arg portID)" />
-		<param name="own_serial" value="$(arg own_serial)" />
-		<param name="client_serial" value="$(arg client_serial)" />
 		<param name="interval" value="$(arg interval_3)" />
-		<param name="credentials" value="$(arg credentials)" />
+        <param name="portID" value="$(arg portID)" />
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node> -->
 
 	<!-- gnd despatcher node -->
