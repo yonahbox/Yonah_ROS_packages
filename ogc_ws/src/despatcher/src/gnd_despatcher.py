@@ -113,9 +113,11 @@ class gnddespatcher():
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if sender_msgtype == 's':
+                    print('statustext gnd')
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
                 else:
+                    print('ondemand gnd')
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
