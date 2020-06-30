@@ -19,26 +19,28 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-# Standard Library
-import subprocess
-
 # ROS/Third-Party
 import rospy
+import csv
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
 from mavros_msgs.msg import WaypointReached
+from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
+from mavros_msgs.srv import WaypointPush
 from std_msgs.msg import String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
 # Local
 from regular import air_payload
+from waypoint import WP
+
 
 class airdespatcher():
 
@@ -65,7 +67,7 @@ class airdespatcher():
         # Severity lvl not declared as classwide param as it changes constantly (we want to avoid race conditions!)
         # To-do: Work on air/gnd identifiers whitelist file
         self._is_air = 1 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self._id = 1 # ID number (outgoing msg)
+        self._id = rospy.get_param("~self_id") # ID number (outgoing msg)
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
         # Intervals btwn msgs
@@ -80,6 +82,10 @@ class airdespatcher():
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
+        rospy.wait_for_service('mavros/mission/push')
+
+        self.hop = False
+        self.missionlist = []
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -170,8 +176,9 @@ class airdespatcher():
                 self._send_ack()
 
     def _check_mission(self):
+        wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
         """Check for mission/waypoint commands from Ground Control"""
-        if self._recv_msg[0] == "wp" and len(self._recv_msg) == 3:
+        if self._recv_msg[0] == "wp":
             if self._recv_msg[1] == 'set':
                 # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
                 wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
@@ -179,13 +186,108 @@ class airdespatcher():
                 # Set target waypoint, check if successful
                 if wp_set(wp_seq = int(seq_no)).success == True:
                     self._send_ack()
-            elif self._recv_msg[1] == 'load':            
-                # Message structure: wp load <wp file name>; extract 3rd word to get wp file
-                # Assume that wp file is located in root directory of Beaglebone
-                # To do: Switch to WaypointPush service; currently no way to determine whether WPs successfully loaded
+            elif self._recv_msg[1] == 'load':
+                # Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
+                # Assume that wp file is located in Waypoints folder of Beaglebone
                 wp_file = self._recv_msg[2]
-                subprocess.call(["rosrun", "mavros", "mavwp", "load", "/home/ubuntu/%s"%(wp_file)], shell=False)
-                self._send_ack()
+                # Set to non-hop mission
+                self.hop = False
+                # Reset mission and waypoints list
+                self.missionlist = []
+                readwp = WP()
+                try:
+                    waypoints = readwp.read(str(wpfolder + wp_file))
+                    wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                    # Push waypoints, check if successful
+                    if wp(0, waypoints).success:
+                        self._send_ack()
+                except FileNotFoundError:
+                    self._msg  = "Specified file not found"
+                    self.sendmsg("e")
+                except:
+                    self._msg = "Invalid waypoint file"
+                    self.sendmsg("e")
+            else:
+                return
+        if self._recv_msg[0] == "mission":
+            if self._recv_msg[1] == 'load':
+                # Message structure: mission load <mission file name.txt>
+                self.missionlist = []
+                # Change to hop-mission mode
+                self.hop = True
+                mission_file = self._recv_msg[2]
+                try:
+                    f = open(str(wpfolder + mission_file), "r")
+                except FileNotFoundError:
+                    self._msg = "Specified file not found"
+                    self.sendmsg("e")
+                    return
+                for line in f:
+                    # Ignores # comments
+                    if line.startswith('#'):
+                        continue
+                    # Returns if a waypoint file is loaded instead
+                    elif line.startswith("QGC WPL"):
+                        self._msg = "This is a waypoint file. Please load a mission file."
+                        self.sendmsg("e")
+                        return
+                    try:
+                        g = open(str(wpfolder + line.rstrip()), "r") # Open and close to check each wp file
+                        g.close()
+                    except FileNotFoundError:
+                        # Specify which file in the list is not found
+                        self._msg = str(line.rstrip() + "-->File not found")
+                        self.sendmsg("e")
+                        # Set to non-hop (in this case it is used as a switch for the next step)
+                        self.hop = False
+                f.close()
+                # Returns if any of the files in mission list weren't found
+                if not self.hop:
+                    return
+                # Somehow there is a need to open the file again after the try block finishes
+                f = open(str(wpfolder + mission_file), "r")
+                # This appends the waypoint files into mission list
+                for line in f:
+                    if line.startswith('#'):
+                        continue
+                    self.missionlist.append(line.rstrip())
+                f.close()
+                # Prints the missions for operator to check
+                self._msg = "Missions: " + ", ".join(self.missionlist)
+                self.sendmsg("i")
+                # Load first mission
+                self.current_mission = 0
+                readwp = WP()
+                waypoints = readwp.read(str(wpfolder + self.missionlist[0]))
+                wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                if wp(0, waypoints).success:
+                    # This acknowledgement implies that the mission list has no errors and the first mission is loaded
+                    self._send_ack()
+
+            elif self._recv_msg[1] == 'next':
+                # Message structure: wp next (no arguments)
+                if not self.hop: # Checks if hop mission
+                    self._msg = "Please load a mission file"
+                    self.sendmsg("e")
+                    return
+                self.current_mission += 1
+                if self.current_mission >= len(self.missionlist):
+                    self.hop = False
+                    self.current_mission = 0
+                    self._msg = "There are no more missions"
+                    self.sendmsg("e")
+                    return
+                waypoints = []
+                readwp = WP()
+                try:
+                    waypoints = readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
+                    wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                    if wp(0, waypoints).success:
+                        self._send_ack()
+                # This error should never be raised if everything above works
+                except FileNotFoundError:
+                    self._msg = "Specified file not found"
+                    self.sendmsg("e")
             else:
                 return
 
@@ -216,7 +318,7 @@ class airdespatcher():
                 self._check_arming()
             elif "mode" in self._recv_msg:
                 self._check_mode()
-            elif "wp" in self._recv_msg:
+            elif "wp" in self._recv_msg or "mission" in self._recv_msg:
                 self._check_mission()
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
@@ -250,7 +352,6 @@ class airdespatcher():
 
     def _send_regular_payload_tele(self):
         '''Send regular payload over Telegram link'''
-        print(self.ground_id)
         message = LinkMessage()
         message.data = self._msg
         # message.id = 1
@@ -269,7 +370,6 @@ class airdespatcher():
             self.pub_to_sms.publish(message)
         else:
             self.pub_to_sbd.publish(self._msg)
-        
 
     def check_alerts(self, data):
         '''Check for special alerts'''
