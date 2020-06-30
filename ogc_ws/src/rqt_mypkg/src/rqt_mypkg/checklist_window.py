@@ -25,12 +25,13 @@ from python_qt_binding.QtWidgets import QHBoxLayout, QTreeWidget, QTreeWidgetIte
 from python_qt_binding.QtCore import Qt
 
 class ChecklistWindow(QWidget):
-    def __init__(self):
+    def __init__(self, aircraft_id):
         super(ChecklistWindow, self).__init__()
         # Set properties of the window
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
         self.move(200,100)
+        self.aircraft_id = aircraft_id
         
         # Relative path for the default BPO and BTO checklist
         BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')

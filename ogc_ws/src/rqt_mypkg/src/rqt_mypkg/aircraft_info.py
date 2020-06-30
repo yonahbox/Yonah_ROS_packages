@@ -31,7 +31,7 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 # @TODO change the variable names. As of now it is heavily referenced from the summary page
 # AircraftInfo is the parent widget for all the other aircrafts
 class AircraftInfo(QWidget):
-    def __init__(self, no_aircraft):
+    def __init__(self, aircraft_id):
         super(AircraftInfo, self).__init__()
         self.setWindowTitle("Summary Page")
         
@@ -57,8 +57,8 @@ class AircraftInfo(QWidget):
             'Fuel Level',
             'Quad Battery']
 
-        self.active_aircrafts = no_aircraft
-        self.create_summary(self.active_aircrafts, summarised_fields)
+        self.aircraft_id = aircraft_id
+        self.create_summary(self.aircraft_id, summarised_fields)
         self.statustext_label = QLabel('Status Text')
         self.statustext_label.setContentsMargins(0, 30, 0, 0)
         self.statustext = QPlainTextEdit()

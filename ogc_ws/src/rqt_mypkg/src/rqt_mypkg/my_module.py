@@ -67,23 +67,25 @@ class MyPlugin(Plugin):
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (" (%d)" % context.serial_number()))
         
-        # Get the number of active aircrafts here
+        # Declare constants
         self.time = 0
         self.destination_id = 1
         self.active_aircrafts = 10
         self.aircrafts_info = {}
+        self.checklist_info = {}
         for i in range (self.active_aircrafts + 1):
-            self.aircrafts_info["AC" + str(i)] = Aircraft1(i)
+            self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
+            self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
 
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"]
 
         # Declare variables for each imported class
-        self.ChecklistWindow = ChecklistWindow()
+        self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.active_aircrafts)
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
         self.CommandWindow = CommandWindow(self.active_aircrafts)
-        self.PopupMessages = PopupMessages()
+
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
@@ -108,7 +110,7 @@ class MyPlugin(Plugin):
         self.CommandWindow.disarm_button.pressed.connect(self.disarm_button)
         self.CommandWindow.go_button.pressed.connect(self.go_button)
         self.CommandWindow.mission_load_button.pressed.connect(self.mission_load_button)
-        self.CommandWindow.checklist_button.pressed.connect(self.ChecklistWindow.show)
+        self.CommandWindow.checklist_button.pressed.connect(self.checklist_button)
         self.CommandWindow.change_mode_button.pressed.connect(self.change_mode_button)
         
         # Subscriber lists
@@ -380,6 +382,9 @@ class MyPlugin(Plugin):
 
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
+    def checklist_button(self):
+        self.checklist_info.get("AC" + str(self.destination_id)).show()
+
     def change_mode_button(self):
         self.dialog = QDialog()
         self.dialog.setWindowTitle("Change Mode")
@@ -418,7 +423,9 @@ class MyPlugin(Plugin):
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
-        self.ChecklistWindow.shutdown()
+        # Shutdown all the checklist windows
+        for i in range (self.active_aircrafts):
+            self.checklist_info.get("AC" + str(i)).shutdown()
         self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
 
