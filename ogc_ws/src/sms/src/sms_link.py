@@ -61,7 +61,7 @@ class SMSrx():
         self._valid_ids = rospy.get_param("~valid_ids")
         self._is_air = rospy.get_param("~is_air")
         self._self_id = rospy.get_param("~self_id")
-        self._ids = Identifiers(identifiers_file, self._is_air, self._valid_ids)
+        self._ids = Identifiers(identifiers_file, self._is_air, self._self_id, self._valid_ids)
         
         # Security and safety measures
         self._purge_residual_sms()

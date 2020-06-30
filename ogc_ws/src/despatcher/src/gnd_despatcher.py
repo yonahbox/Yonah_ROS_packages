@@ -35,20 +35,21 @@ class gnddespatcher():
         '''Initialize all message entries'''
         rospy.init_node('gnd_despatcher', anonymous=False)
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
-        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', String, queue_size = 5) # Link to SBD node
+        self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', LinkMessage, queue_size = 5) # Link to SBD node
         self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to Telegram node
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
 
         # Link switching
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 2 # 0 = Tele, 1 = SMS, 2 = SBD
 
-        # Temp params for msg headers
-        # To-do: Work on air/gnd identifiers whitelist file
-        self._is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self._id = rospy.get_param("~self_id") # ID number (outgoing msg)
+        # Gnd Identifiers and msg headers (attached to outgoing msgs)
+        self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
+        self._id = rospy.get_param("~self_id") # Our GCS ID
         self._severity = "i" # Outgoing msg severity level
+
+        # Used to handle incoming msgs
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 
     ###########################################
@@ -66,7 +67,6 @@ class gnddespatcher():
             # Add msg headers
             msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
                 " " + data.data + " " + str(rospy.get_rostime().secs)
-            # To-do: Add if-else statement to handle 3 links, add feedback for sms node on successful publish of msg
             if self.link_select == 0:
                 self.pub_to_telegram.publish(msg)
             elif self.link_select == 1:
@@ -87,14 +87,6 @@ class gnddespatcher():
             self._prev_transmit_time = timestamp
             return True
     
-    def _check_sender_id(self, is_air, id):
-        '''Check identity of the sender'''
-        if not is_air:
-            # We got no business with other GCS... yet
-            return False
-        # To-do: Add in checks for id (maybe a whitelist, compare the IMEI/phone numbers?)
-        return True
-    
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
@@ -102,10 +94,8 @@ class gnddespatcher():
             entries = data.data.split()
             sender_timestamp = int(entries[-1])
             sender_msgtype = str(entries[0])
-            sender_is_air = int(entries[1])
-            sender_id = int(entries[2])
-            if not self._is_new_msg(sender_timestamp) or not self._check_sender_id(sender_is_air, sender_id):
-                # Check if it is new msg and is from valid sender
+            if not self._is_new_msg(sender_timestamp):
+                # Check if it is new msg
                 return
             if regular.is_regular(sender_msgtype, len(entries)):
                 # Check if it is regular payload

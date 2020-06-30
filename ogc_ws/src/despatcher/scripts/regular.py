@@ -35,11 +35,13 @@ class RegularPayloadException(Exception):
 
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
-# Everything is standardized to big endian to keep in line with Rock 7's requirements
+# Everything is standardized to big endian to keep in line with Rock 7's requirements'
 # Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18 19
-# struct_cmd:      s B B B  H   B B B B  B H    H   B    H  B  B  B  H  B  I
+# struct_cmd:      s B B B  h   B B B B  b H    b   H    B  B  B  B  H  B  I
 # Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0  10 1591089280
-struct_cmd = "> s B B B H B B B B B H H B H B B B H B I" 
+
+struct_cmd = "> s B B B h B B B B b H b H B B B B H B I" 
+
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -123,7 +125,7 @@ def convert_to_rosmsg(entries):
     rosmsg.is_aircraft = int(entries[1])
     rosmsg.vehicle_no = int(entries[2])
     rosmsg.airspeed = int(entries[3])
-    rosmsg.alt = int(entries[4])
+    rosmsg.alt = int(entries[4]) # can be negative
     rosmsg.armed = int(entries[5])
     rosmsg.batt = int(entries[6])
     rosmsg.fuel = int(entries[7])
@@ -132,7 +134,7 @@ def convert_to_rosmsg(entries):
     rosmsg.lon = int(entries[11]) + float(entries[12])/10000
     rosmsg.mode = int(entries[13])
     rosmsg.throttle = float(entries[14])/10
-    rosmsg.vibe = int(entries[15])
+    rosmsg.vibe = int(entries[15]) 
     rosmsg.vtol = int(entries[16])
     rosmsg.wp = int(entries[17])
     rosmsg.wp_total = int(entries[18])
