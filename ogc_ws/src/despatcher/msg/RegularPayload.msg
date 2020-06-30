@@ -9,7 +9,7 @@ uint8 vehicle_no
 
 # Data
 uint8 airspeed
-uint16 alt
+int16 alt
 bool armed
 uint8 mode
 uint16 groundspeed
