@@ -70,7 +70,7 @@ class MyPlugin(Plugin):
         # Get the number of active aircrafts here
         self.time = 0
         self.destination_id = 1
-        self.active_aircrafts = 5
+        self.active_aircrafts = 10
         self.aircrafts_info = {}
         for i in range (self.active_aircrafts + 1):
             self.aircrafts_info["AC" + str(i)] = Aircraft1(i)
@@ -93,6 +93,7 @@ class MyPlugin(Plugin):
         self._widget.verticalLayout.addWidget(self.scroll)
         # Create the tab windows for the aircraft-specific information
         self.create_tab_windows()
+        self.tab.currentChanged.connect(self.tab_change)
 
         # Add both layouts into the main layout
         self._widget.verticalLayout2.addWidget(self.tab)
@@ -121,7 +122,6 @@ class MyPlugin(Plugin):
 
         # Publisher List
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
-        # self.mission_publisher = rospy.Publisher("load_mission", String, queue_size = 5)
         self.rate = rospy.Rate(2)
 
         context.add_widget(self._widget)
@@ -146,6 +146,12 @@ class MyPlugin(Plugin):
         self.tab.setMinimumHeight(500)
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
+    
+    def tab_change(self, i):
+        if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
+            i = 1
+        self.CommandWindow.combo_box.setCurrentIndex(i - 1)
+
 
     ################################
     # Create Signal Slot functions #

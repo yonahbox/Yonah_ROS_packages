@@ -51,7 +51,6 @@ class CommandWindow(QWidget):
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
         self.mission_load_button = QPushButton('Load Mission')
-        self.mission_check_button = QPushButton('Check Mission')
         self.change_mode_button = QPushButton('Change Mode')
 
         # Set UI properties of the buttons and layout
@@ -61,7 +60,6 @@ class CommandWindow(QWidget):
         self.arm_button.setMinimumHeight(top_row)
         self.disarm_button.setMinimumHeight(top_row)
         self.go_button.setMinimumHeight(top_row)
-        self.mission_check_button.setMinimumHeight(bottom_row)
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
@@ -73,7 +71,6 @@ class CommandWindow(QWidget):
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
         self.second_row.addWidget(self.mission_load_button)
-        self.second_row.addWidget(self.mission_check_button)
         self.second_row.addWidget(self.change_mode_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
