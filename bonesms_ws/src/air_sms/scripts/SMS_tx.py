@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Standard Library
 import datetime
-import subprocess
+import paramiko
 from time import sleep
 
 # ROS/Third-Party
@@ -48,7 +48,8 @@ class SMStx():
     def __init__(self):
         '''Initialize all message entries'''
         rospy.init_node('SMS_tx', anonymous=False)
-        self.router_hostname = rospy.get_param("~router_hostname","root@192.168.1.1") # Hostname and IP of onboard router
+        self._username = rospy.get_param("~router_username","root") # Hostname of onboard router
+        self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
         self.pub_to_data = rospy.Publisher('sms_to_data', String, queue_size = 5) # Publish to air_data node
         self.rate = rospy.Rate(0.2) # It seems that I can specify whatever we want here; the real rate is determined by self.interval
         self.regular_payload_flag = False # Whether we should send regular payload to Ground Control
@@ -78,6 +79,14 @@ class SMStx():
             "vibe": (0.0,0.0,0.0),
             "clipping": (0,0,0),
         }
+
+        # Initialise SSH
+        try:
+            self.ssh = RuTOS.start_client(self._ip, self._username)
+            rospy.loginfo("Connected to router")
+        except:
+            rospy.logerr("Could not connect to the router")
+            raise
     
     ########################################
     # Interaction with MAVROS Services/Nodes
@@ -248,14 +257,16 @@ class SMStx():
         timestamp = datetime.datetime.now().replace(microsecond=0) 
         self.msg = str(timestamp) + " " + self.msg # Add timestamp to outgoing messages
         try:
-            sendstatus = RuTOS.send_msg(self.router_hostname, self.GCS_no, self.msg)
-            if sendstatus == "Timeout":
+            sendstatus = RuTOS.send_msg(self.ssh, self.GCS_no, self.msg)
+            if "Timeout\n" in sendstatus:
                 rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
                 self.pub_to_data.publish("air_sms: Msg sending Timeout")
+            elif "Connection lost" in sendstatus:
+                rospy.logerr("Connection to router lost!")
+                self.pub_to_data.publish("air_sms: Lost connection to router")
             else:
                 self.pub_to_data.publish("air_sms: Msg sending success")
-        except(subprocess.CalledProcessError):
-            rospy.logwarn("SSH process into router has been killed.")
+        except:
             self.pub_to_data.publish("air_sms: Cannot ssh into air router")
             
 
@@ -283,5 +294,12 @@ class SMStx():
         message_sender.shutdown()
 
 if __name__=='__main__':
-    run = SMStx()
-    run.prepare()
+    try:
+        run = SMStx()
+        run.client()
+    except:
+        rospy.loginfo("Failed to start node")
+        raise
+    else:
+        run.ssh.close()
+        rospy.loginfo("Connection to router closed")

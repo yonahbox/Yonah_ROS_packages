@@ -42,7 +42,8 @@
 		<arg name="short_interval" value="$(arg short_interval)"/>
 		<arg name="long_interval" value="$(arg long_interval)"/>
 		<arg name="log_output" value="$(arg log_output)"/>
-		<arg name="router_hostname" value="$(arg router_hostname)" />
+		<param name="router_username" value="$(arg router_username)" />
+		<param name="router_ip" value="$(arg router_ip)" />
 	</include>
 
 </launch>

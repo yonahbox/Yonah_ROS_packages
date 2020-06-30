@@ -25,8 +25,6 @@ from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QC
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
 from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-import __main__
-from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 class WaypointWindow(QWidget):
@@ -42,7 +40,6 @@ class WaypointWindow(QWidget):
         self.main_layout = QHBoxLayout()
         self.buttons_layout = QVBoxLayout()
         self.progressbar_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
 
         # Create the widgets
         for i in range(1, active_aircrafts + 1):
@@ -67,8 +64,9 @@ class WaypointWindow(QWidget):
 
         self.waypoint_header_layout.addWidget(self.aircraft_label)
         self.waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)])
-        self.waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
         self.waypoint_layout.addLayout(self.waypoint_header_layout)
+        self.waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
+        
         self.progressbar_layout.addLayout(self.waypoint_layout)
     
     def shutdown(self):
