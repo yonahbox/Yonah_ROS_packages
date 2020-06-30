@@ -25,8 +25,6 @@ from python_qt_binding.QtWidgets import QFileDialog, QGraphicsScene, QWidget, QC
 from python_qt_binding.QtWidgets import QScrollArea, QPushButton, QVBoxLayout, QCheckBox, QHBoxLayout
 from python_qt_binding.QtWidgets import QAction, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-import __main__
-from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 class WaypointWindow(QWidget):

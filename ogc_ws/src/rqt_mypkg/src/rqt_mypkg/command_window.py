@@ -25,7 +25,7 @@ import __main__
 from python_qt_binding import loadUi
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-from checklist_window import ChecklistWindow
+from .checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 # Self-note: Consider changing the structure of the code to not over-populate the init

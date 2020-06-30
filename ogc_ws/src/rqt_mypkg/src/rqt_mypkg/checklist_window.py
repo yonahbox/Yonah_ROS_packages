@@ -23,7 +23,6 @@ import rospkg
 from python_qt_binding.QtWidgets import QFileDialog, QWidget, QPushButton, QVBoxLayout
 from python_qt_binding.QtWidgets import QHBoxLayout, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import Qt
-import __main__
 
 class ChecklistWindow(QWidget):
     def __init__(self):

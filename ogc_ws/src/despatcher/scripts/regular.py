@@ -97,7 +97,10 @@ def convert_mode_to_int (mode):
         'MANUAL': 20,
         'QLAND': 21
     }
-    return mode_dictionary.get(mode)
+    if mode_dictionary.get(mode) == None:
+        return 0
+    else:
+        return mode_dictionary.get(mode)
 
 ########################################
 # Gnd despatcher

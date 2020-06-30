@@ -36,12 +36,12 @@ from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstra
 from python_qt_binding.QtGui import QIcon, QImage, QPainter
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
-from checklist_window import ChecklistWindow
-from waypoint_window import WaypointWindow
-from summary_window import SummaryWindow
-from command_window import CommandWindow
-from popup_window import *
-from aircraft_info import *
+from .checklist_window import ChecklistWindow
+from .waypoint_window import WaypointWindow
+from .summary_window import SummaryWindow
+from .command_window import CommandWindow
+from .popup_window import *
+from .aircraft_info import *
 
 class MyPlugin(Plugin):
     def __init__(self, context):
@@ -106,7 +106,6 @@ class MyPlugin(Plugin):
         self.CommandWindow.arm_button.pressed.connect(self.arm_button)
         self.CommandWindow.disarm_button.pressed.connect(self.disarm_button)
         self.CommandWindow.go_button.pressed.connect(self.go_button)
-        # self.CommandWindow.mission_check_button.pressed.connect(self.check_mission)
         self.CommandWindow.mission_load_button.pressed.connect(self.mission_load_button)
         self.CommandWindow.checklist_button.pressed.connect(self.ChecklistWindow.show)
         self.CommandWindow.change_mode_button.pressed.connect(self.change_mode_button)
@@ -192,7 +191,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display_sitl)
+        status.mode_signal.connect(self.mode_status_display)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")

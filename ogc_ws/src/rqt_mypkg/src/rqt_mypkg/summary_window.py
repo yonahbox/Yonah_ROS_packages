@@ -21,7 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QFont
-from checklist_window import ChecklistWindow
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 class SummaryWindow(QWidget):
@@ -60,7 +59,6 @@ class SummaryWindow(QWidget):
         
         for i in summarised_fields:
             # 
-            
             self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)
