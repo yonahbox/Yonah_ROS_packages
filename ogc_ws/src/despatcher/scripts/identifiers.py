@@ -106,19 +106,6 @@ class Identifiers:
 	def get_sbd_credentials(self):
 		return self.rock7_un, self.rock7_pw, self.aws_url
 	
-	def get_sbd_own_serial(self, self_id):
-		# Get our own rockblock serial number (in string form), return -1 if not found
-		with open(self.json_file) as file:
-			try:
-				self.json_obj = json.load(file)
-			except JSONDecodeError:
-				print("invalid identifier file")
-				return -1
-		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
-			if obj["id"] == self_id:
-				return obj["rb_serial"]
-		return -1
-
 	# return the whitelisted phone numbers
 	def get_whitelist(self):
 		return self.whitelist_nums
@@ -141,7 +128,7 @@ class Identifiers:
 		elif link == 1:
 			return details[1:] in self.whitelist_nums
 		elif link == 2:
-			return details in self.whitelist_imei
+			return details in self.whitelist_rb_serial
 
 	# link:
 	#	0: telegram

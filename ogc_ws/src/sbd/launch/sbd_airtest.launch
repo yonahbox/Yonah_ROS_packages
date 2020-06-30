@@ -14,7 +14,7 @@
     <arg name="interval_3" default="5"/>
 
     <!-- Identifiers -->
-    <arg name="identifiers_file" default="$(find despatcher)/src/identifiers.json" />
+    <arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
     <arg name="ground_ids" default="[1]" />
     <arg name="self_id" default="1" />
     <arg name="is_air" default="True" />

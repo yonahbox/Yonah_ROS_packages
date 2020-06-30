@@ -123,7 +123,7 @@ class satcommsgnd(satcomms):
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
             if self._server_is_new_msg(reply['transmit_time']): 
-                if reply['serial'] in self._ids.get_sbd_whitelist(): # ensure imei is valid
+                if self._ids.is_valid_sender(2, reply['serial']): # ensure rb serial is valid
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
                 else:
                     rospy.logwarn("Received unknown msg from Rockblock " + str(reply['serial']))
