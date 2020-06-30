@@ -25,6 +25,7 @@ import csv
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
+from mavros_msgs.msg import WaypointList
 from mavros_msgs.msg import WaypointReached
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import Vibration
@@ -189,9 +190,9 @@ class airdespatcher():
                 readwp = WP()
                 try:
                     waypoints = readwp.read(str(wpfolder + wp_file))
-                    wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                    wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
                     # Push waypoints, check if successful
-                    if wp(0, waypoints).success:
+                    if wppush(0, waypoints).success:
                         self._send_ack()
                 except FileNotFoundError:
                     self._msg  = "Specified file not found"
@@ -251,8 +252,8 @@ class airdespatcher():
                 self.current_mission = 0
                 readwp = WP()
                 waypoints = readwp.read(str(wpfolder + self.missionlist[0]))
-                wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                if wp(0, waypoints).success:
+                wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                if wppush(0, waypoints).success:
                     # This acknowledgement implies that the mission list has no errors and the first mission is loaded
                     self._send_ack()
 
@@ -273,8 +274,8 @@ class airdespatcher():
                 readwp = WP()
                 try:
                     waypoints = readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
-                    wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                    if wp(0, waypoints).success:
+                    wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+                    if wppush(0, waypoints).success:
                         self._send_ack()
                 # This error should never be raised if everything above works
                 except FileNotFoundError:
