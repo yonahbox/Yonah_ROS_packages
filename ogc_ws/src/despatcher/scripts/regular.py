@@ -179,7 +179,7 @@ class air_payload():
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        self.entries["airspeeds"] = int(data.airspeed)
+        self.entries["airspeed"] = int(data.airspeed)
         self.entries["groundspeed"] = int(data.groundspeed)
         self.entries["throttle"] = int(data.throttle*10)
         self.entries["alt"] = int(data.altitude)
@@ -195,7 +195,7 @@ class air_payload():
     def get_wp_reached(self, data):
         '''Obtain information on which waypoint has been reached'''
         self.entries["wp"] = data.current_seq
-        self.entries["wp_total"] = data.waypoints - 1
+        self.entries["wp_total"] = len(data.waypoints) - 1
 
     def get_VTOL_mode(self, data):
         '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''
