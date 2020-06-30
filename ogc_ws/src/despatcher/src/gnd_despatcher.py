@@ -42,12 +42,12 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
 
         # Link switching
-        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Temp params for msg headers
         # To-do: Work on air/gnd identifiers whitelist file
         self._is_air = 0 # 1 if aircraft, 0 if GCS (outgoing msg)
-        self._id = 1 # ID number (outgoing msg)
+        self._id = rospy.get_param("~self_id") # ID number (outgoing msg)
         self._severity = "i" # Outgoing msg severity level
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
 

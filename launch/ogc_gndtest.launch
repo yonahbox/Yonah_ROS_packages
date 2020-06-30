@@ -10,7 +10,7 @@
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
-	<arg name="ground_ids" default="[1]" />
+	<arg name="air_ids" default="[4]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 	
@@ -30,7 +30,7 @@
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
 		<param name="self_id" value="$(arg self_id" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
 	<!-- sms_link node -->
@@ -41,7 +41,7 @@
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
 		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 	
 	<!-- sbd link node -->
@@ -57,6 +57,7 @@
 	<!-- gnd despatcher node -->
 	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="self_id" value="$(arg self_id)" />
 	</node>
 
 	<!-- gnd statustext handler node -->
@@ -65,8 +66,8 @@
 	</node>
 
 	<!-- rqt node -->
-	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui" -->
-	<!-- respawn="true" respawn_delay="3" output="$(arg log_output)"> -->
-	<!-- </node> -->
+	<node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node>
 
 </launch>
