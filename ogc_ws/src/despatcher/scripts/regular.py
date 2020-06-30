@@ -35,11 +35,12 @@ class RegularPayloadException(Exception):
 
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
-# Everything is standardized to big endian to keep in line with Rock 7's requirements
-# Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18
-# struct_cmd:      s B B B  H   B B B B  B H    B   H    B  B  B  B  H  I
-# Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0 1591089280
-struct_cmd = "> s B B B H B B B B B H B H B B B B H I" 
+# Everything is standardized to big endian to keep in line with Rock 7's requirements'
+# Note: This struct layout is wrong. But it will be fixed in RS's branch later
+# Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18 19
+# struct_cmd:      s B B B  H   B B B B  B H    H   B    H  B  B  B  H  B  I
+# Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0  10 1591089280
+struct_cmd = "> s B B B H B B B B B H H B H B B B H B I" 
 no_of_entries = len(struct_cmd.split()[1:])
 
 def get_compressed_len():
@@ -66,7 +67,7 @@ def convert_to_list(mo_msg):
 
 def convert_to_str(mo_msg):
     '''Convert regular payload msg from list to string after struct unpacking, to standardize with other links'''
-    # Example: (b'r', 1, 1, 30, 226, 1, 10, 30, 1, 1, 2, 2315, 102, 6857, 4, 0, 0, 20, 1591159898)
+    # Example: (b'r', 1, 1, 30, 226, 1, 1, 1, 30, 2, 2315, 102, 6857, 0, 1, 20, 0, 0, 10, 1591089280)
     string = str(mo_msg)
     string = string.replace('b\'r\'', 'r', 1) # The 'r' msg prefix is still byte encoded
     bad_char = ",()"
@@ -75,29 +76,32 @@ def convert_to_str(mo_msg):
     return string
 
 def convert_mode_to_int (mode):
-        d = {
-            'MANUAL': 0,
-            'CIRCLE': 1,
-            'STABILIZE': 2,
-            'TRAINING': 3,
-            'ACRO': 4,
-            'FBWA': 5,
-            'FBWB': 6,
-            'CRUISE': 7,
-            'AUTOTUNE': 8,
-            'AUTO': 10,
-            'RTL': 11,
-            'LOITER': 12,
-            'LAND': 14,
-            'GUIDED': 15,
-            'INITIALISING': 16,
-            'QSTABILIZE': 17,
-            'QHOVER': 18,
-            'QLOITER': 19,
-            'MANUAL': 20,
-            'QLAND': 21
-        }
-        return d.get(mode)
+    mode_dictionary = {
+        'MANUAL': 0,
+        'CIRCLE': 1,
+        'STABILIZE': 2,
+        'TRAINING': 3,
+        'ACRO': 4,
+        'FBWA': 5,
+        'FBWB': 6,
+        'CRUISE': 7,
+        'AUTOTUNE': 8,
+        'AUTO': 10,
+        'RTL': 11,
+        'LOITER': 12,
+        'LAND': 14,
+        'GUIDED': 15,
+        'INITIALISING': 16,
+        'QSTABILIZE': 17,
+        'QHOVER': 18,
+        'QLOITER': 19,
+        'MANUAL': 20,
+        'QLAND': 21
+    }
+    if mode_dictionary.get(mode) == None:
+        return 0
+    else:
+        return mode_dictionary.get(mode)
 
 ########################################
 # Gnd despatcher
@@ -125,14 +129,15 @@ def convert_to_rosmsg(entries):
     rosmsg.batt = int(entries[6])
     rosmsg.fuel = int(entries[7])
     rosmsg.groundspeed = int(entries[8])
-    rosmsg.lat = int(entries[9]) + float(entries[10])/10000 #
-    rosmsg.lon = int(entries[11]) + float(entries[12])/10000 #
+    rosmsg.lat = int(entries[9]) + float(entries[10])/10000
+    rosmsg.lon = int(entries[11]) + float(entries[12])/10000
     rosmsg.mode = int(entries[13])
     rosmsg.throttle = float(entries[14])/10
     rosmsg.vibe = int(entries[15])
     rosmsg.vtol = int(entries[16])
-    rosmsg.wp = int(entries[17]) #
-    rosmsg.header.stamp.secs = int(entries[18])
+    rosmsg.wp = int(entries[17])
+    rosmsg.wp_total = int(entries[18])
+    rosmsg.header.stamp.secs = int(entries[19])
     return rosmsg
 
 ########################################
@@ -157,7 +162,8 @@ class air_payload():
             "throttle": 0,
             "vibe" : 0,
             "vtol": 0,
-            "wp": 0
+            "wp": 0,
+            "wp_total": 0
         }
         self.ping_entries = {
             "vibe": (0.0, 0.0, 0.0),
@@ -172,7 +178,7 @@ class air_payload():
     
     def get_VFR_HUD_data(self, data):
         '''Obtain VFR_HUD data from mavros/vfr_hud'''
-        self.entries["airspeed"] = int(data.airspeed)
+        self.entries["airspeeds"] = int(data.airspeed)
         self.entries["groundspeed"] = int(data.groundspeed)
         self.entries["throttle"] = int(data.throttle*10)
         self.entries["alt"] = int(data.altitude)
@@ -187,7 +193,8 @@ class air_payload():
 
     def get_wp_reached(self, data):
         '''Obtain information on which waypoint has been reached'''
-        self.entries["wp"] = data.wp_seq
+        self.entries["wp"] = data.current_seq
+        self.entries["wp_total"] = data.waypoints - 1
 
     def get_VTOL_mode(self, data):
         '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''

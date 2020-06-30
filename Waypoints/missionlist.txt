@@ -1,2 +1,0 @@
-FlyToRemote.txt
-ReturnFromRemote.txt
