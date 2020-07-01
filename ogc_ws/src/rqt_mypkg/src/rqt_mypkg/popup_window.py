@@ -44,6 +44,13 @@ class PopupMessages(QWidget):
         else:
             self.input_text = []
     
+    def emergency_disarm(self):
+        num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
+        if ok:
+            data = "disarm"
+            self.create_link_message(self.destination_id, data)
+            rospy.logdebug("[AC %d EMERGENCY DISARM] %s", num, statustext_message)
+    
     def arm_window(self, id, message_type, title, message, text = "Do you still want to continue?"):
         self.destination_id = id
         self.message = QMessageBox()

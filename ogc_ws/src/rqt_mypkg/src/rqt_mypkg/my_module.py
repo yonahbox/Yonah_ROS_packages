@@ -33,7 +33,7 @@ from despatcher.msg import LinkMessage
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
-from python_qt_binding.QtGui import QIcon, QImage, QPainter
+from python_qt_binding.QtGui import QIcon, QImage, QPainter, QKeySequence
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
 from .checklist_window import ChecklistWindow
@@ -44,12 +44,12 @@ from .popup_window import *
 from .aircraft_info import *
 
 class MyPlugin(Plugin):
-    def __init__(self, context = "None"):
+    def __init__(self, context):
         super(MyPlugin, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName("main_window")
         self._widget = QWidget()
-        
+        context.add_widget(self._widget)
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "resource", "second_window.ui")
         
@@ -124,14 +124,20 @@ class MyPlugin(Plugin):
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
         self.rate = rospy.Rate(2)
 
-    #     QShortcut(QKeySequence(self.tr("Ctrl+O", "File|Open")),
-    #                  self.disarming)
+        self.shortcuts()
 
+    def shortcuts(self):
+        disarming = QShortcut(self._widget)
+        disarming.setKey(Qt.CTRL + Qt.Key_J)
+        disarming.activated.connect(self.disarming)
 
-    #     context.add_widget(self._widget)
+        shutdown = QShortcut(self._widget)
+        shutdown.setKey(Qt.ALT + Qt.Key_F4)
+        shutdown.activated.connect(self.shutdown_plugin)
 
-    # def disarming(self):
-    #     print("DISARMING")
+    def disarming(self):
+        self.PopupMessages.emergency_disarm()
+    
     # Create layout for Summary scroll window
     def create_tab_windows(self):
         self.summary_scroll = QScrollArea()
