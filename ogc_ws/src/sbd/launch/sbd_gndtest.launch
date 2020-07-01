@@ -12,9 +12,9 @@
     <arg name="portID" default="/dev/ttyUSB0"/>
 
     <!-- Identifiers -->
-    <arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
     <arg name="air_ids" default="[1]" />
-    <arg name="self_id" default="1" />
+    <arg name="self_id" default="1" />)
     <arg name="is_air" default="False" />
 
     <!-- sbd link node -->

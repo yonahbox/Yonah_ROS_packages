@@ -4,24 +4,21 @@
 	<arg name="log_output" default="screen" />
 	<arg name="interval_1" default="10"/>
 	<arg name="interval_2" default="60"/>
-	<arg name="interval_3" default="1"/>
+	<arg name="interval_3" default="5"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
 
 	<!-- identifiers args -->
-	<arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
+	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
 	<arg name="air_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 	
 	<!-- tele args -->
-	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
-	<arg name="own_serial" default="12345"/>
-	<arg name="client_serial" default="12345"/>
-	<arg name="credentials" default="$(find sbd)/src/login.txt"/>
 
 	<!-- tele link node -->
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
@@ -45,7 +42,7 @@
 	</node>
 	
 	<!-- sbd link node -->
-	<!-- <node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
+	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
@@ -53,7 +50,7 @@
         <param name="is_air" value="$(arg is_air)" />
         <param name="self_id" value="$(arg self_id)" />
         <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
-	</node> -->
+	</node>
 
 	<!-- gnd despatcher node -->
 	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
