@@ -19,7 +19,6 @@ import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails
-from identifiers.srv import CheckSender
 
 import sys
 import os
@@ -85,7 +84,6 @@ if __name__ == '__main__':
 		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
 
 		rospy.wait_for_service("identifiers/get/number")
-		rospy.wait_for_service("identifiers/check/proper")
 
 		identifiers_get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
 
