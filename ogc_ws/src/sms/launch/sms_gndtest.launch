@@ -10,9 +10,9 @@
 
 
     <!-- Identifiers -->
-    <arg name="identifiers_file" default="" />
-    <arg name="air_ids" default="[3]" />
-    <arg name="self_id" default="2" />
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+    <arg name="air_ids" default="[4]" />
+    <arg name="self_id" default="4" />
     <arg name="is_air" default="False" />
 
 
@@ -25,7 +25,7 @@
 
     <node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
         <param name="identifiers_file" value="$(arg identifiers_file)" />
-        <param name="is_air" value="$(is_air)" />
+        <param name="is_air" value="$(arg is_air)" />
         <param name="self_id" value="$(arg self_id)" />
         <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
     </node>
@@ -33,6 +33,7 @@
     <!-- ground_despatcher node -->
     <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="self_id" value="$(arg self_id)" />
     </node>
 
     <!-- ground test node -->
