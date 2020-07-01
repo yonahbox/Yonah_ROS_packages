@@ -18,6 +18,8 @@
 import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
+from identifiers.srv import GetDetails
+from identifiers.srv import CheckSender
 
 import sys
 import os
@@ -33,7 +35,8 @@ def tdlib_topic_cb(msg, td):
 # Function to receive all messages from telegram
 # runs in a seperate thread
 def tdlib_recv():
-	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10) 
+	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
+	identifiers_check_validity = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
 	# Loop runs indefinitely, checking for any updates in telegram
 	boot_time = rospy.get_rostime().secs
 	while True: 
@@ -43,17 +46,23 @@ def tdlib_recv():
 			# log details if there is an error
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
-			#checks if the message received is from a whitelisted number
-			if event['@type'] == 'updateNewMessage' and td.check_valid_message(event):
-			# event['message']['sender_user_id'] in td.command_user_ids:
-				# ignore outgoing messages
-				if event['message']['is_outgoing'] == True:
-					return
+			# new message received 
+			if event['@type'] == 'updateNewMessage':
+				# ignore outgoing messages and messages sent before the node was started
+				if event['message']['is_outgoing'] or event["message"]["date"] < boot_time:
+					continue
 
 				# ignore messages sent before node was started
-				if event['message']['date'] < boot_time:
-					rospy.loginfo("Ignoring old messages")
-					return
+				# if event['message']['date'] < boot_time:
+					# rospy.loginfo("Ignoring old messages")
+					# continue
+
+				print(event)
+				#checks if the message received is from a whitelisted number
+				# td already has a "whitelist" when it is setup
+				sender_number = td.get_chat_number(event["message"]["sender_user_id"])
+				if not sender_number:
+					continue
 
 				message = event['message']['content']['text']['text']
 				from_tele_pub.publish(message)
@@ -73,15 +82,24 @@ def tdlib_recv():
 
 if __name__ == '__main__':
 	try:
-		rospy.init_node('tele_ros', anonymous=False)
+		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")			# Location of the telegram account, created by the tele_auth script
-		identifiers_file = rospy.get_param("~identifiers_file")	# Location of the identifiers file
 		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
-		is_air = rospy.get_param("~is_air")						# Boolean value to check if this is running in the air side or ground side
-		self_id = rospy.get_param("~self_id") 					# id of the device this is running on
+
+		rospy.wait_for_service("identifiers/get/number")
+		rospy.wait_for_service("identifiers/check/proper")
+
+		identifiers_get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
+
+		whitelist_info = {}
+		for id_n in valid_ids:
+			number = identifiers_get_number(id_n)
+			if number.data:
+				whitelist_info[id_n] = number.data
+
 
 		# Initialize Td class, handles all the telegram actions for the node
-		td = Td(tdlib_dir, identifiers_file, is_air, self_id, valid_ids)
+		td = Td(tdlib_dir, whitelist_info)
 
 		# Creates a new thread for running the receive function
 		recv_thread = Thread(target=tdlib_recv)
@@ -96,6 +114,7 @@ if __name__ == '__main__':
 		while not td.setup_complete():
 			rospy.loginfo("NOT COMPLETE YET")
 			td.get_chats()
+			# td.receive()
 			rate.sleep()
 
 		rospy.loginfo('setup complete')

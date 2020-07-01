@@ -19,6 +19,7 @@ import rospy
 
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
+from identifiers.srv import CheckSender, CheckSenderResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -34,7 +35,7 @@ class ServiceHandler:
 		return GetDetailsResponse(self._ids.get_sbd_serial(request.id))
 
 	def check_valid_message(self, request):
-		return CheckValidMessage(self._ids.is_valid_sender(request.link, request.details))
+		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
 
 if __name__ == '__main__':
@@ -49,6 +50,6 @@ if __name__ == '__main__':
 	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
-
+	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 
 	rospy.spin()

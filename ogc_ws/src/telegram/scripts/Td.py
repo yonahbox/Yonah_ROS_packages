@@ -21,7 +21,7 @@ import json
 from identifiers import Identifiers
 
 class Td():
-	def __init__(self, tdlib_dir, identifiers_loc, is_air, self_id, whitelist_devs):
+	def __init__(self, tdlib_dir, whitelist_info):
 		# Creates interface for libtdjson. This is a C library so it requires some initial setup
 		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
 		tdjson = CDLL(tdjson_path)
@@ -58,17 +58,13 @@ class Td():
 
 		# Setup the Td class itself
 		self.tdlib_dir = tdlib_dir				# Location fo the telegram client created by the tele_auth script
-		self.is_air = is_air					# Boolean to know if it is running in the air side or ground side
-		self.whitelist_devs = whitelist_devs	# whitelisted ids as defined in the identifiers file
+		self.whitelist_info = whitelist_info	# whitelisted ids as defined in the identifiers file
 		self.chat_list = []						# List of whitelisted chats
 		self.command_user_ids = []				# List of user ids to easily check if sender is whitelisted
-		self.self_id = self_id 					# id number as defined in identfiers file of this device
-		# Initialize identifiers class to handle whitelisting
-		self._ids = Identifiers(identifiers_loc, self.is_air, self.self_id, self.whitelist_devs)
 
 		# Create a new isntance of the Chat class for each whitelisted device
-		for num in self.whitelist_devs:
-			self.chat_list.append(Chat(num, self._ids.get_number(num)))
+		for id_n,num in self.whitelist_info.items():
+			self.chat_list.append(Chat(id_n, num))
 
 		# Search the recently contacted chats for whitelisted numbers
 		self.get_chats()
@@ -97,21 +93,18 @@ class Td():
 				return chat.chat_id
 		return False
 
-	def _get_local_chat(self, id_n):
+	def _get_local_chat(self, chat_id):
 		for chat in self.chat_list:
-			if chat.chat_id == id_n:
+			if chat.chat_id == chat_id:
 				return chat
 		return False
 
-	def _get_chat_number(self, chat_id):
+	def get_chat_number(self, chat_id):
 		chat = self._get_local_chat(chat_id)
 		if chat:
 			return chat.phone_number
-
-	def check_valid_message(self, event):
-		number = self._get_chat_number(event["message"]["sender_user_id"])
-		if number:
-			return self._ids.is_valid_sender(0, number)
+		else:
+			return None
 
 	# Send request to telegram
 	def send(self, query):

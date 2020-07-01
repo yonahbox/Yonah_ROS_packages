@@ -28,11 +28,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<param name="identifiers_file" value="$(arg identifiers_file)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<param name="is_air" value="$(arg is_air)" />
 		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>		
 	</node>
+
+	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="identifiers_file" value="$(arg identifiers_file)" />
+		<param name="is_air" value="$(arg is_air)" />
+		<param name="self_id" value="$(arg self_id)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	</node>	
 
 	<!-- ground despatcher node -->
 	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">

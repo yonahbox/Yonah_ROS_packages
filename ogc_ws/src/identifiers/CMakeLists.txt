@@ -57,6 +57,7 @@ catkin_python_setup()
 add_service_files(
   FILES
   GetDetails.srv
+  CheckSender.srv
 )
 
 ## Generate actions in the 'action' folder

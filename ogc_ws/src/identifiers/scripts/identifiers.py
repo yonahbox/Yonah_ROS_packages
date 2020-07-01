@@ -125,7 +125,7 @@ class Identifiers:
 
 	def is_valid_sender(self, link, details):
 		if link == 0:
-			return str(details) in self.whitelist_nums
+			return details in self.whitelist_nums
 		elif link == 1:
 			return details[1:] in self.whitelist_nums
 		elif link == 2:
