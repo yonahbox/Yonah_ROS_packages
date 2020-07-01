@@ -333,13 +333,15 @@ class Chat():
 
 	# remove message id from list (mark as read)
 	def read_message(self, message_id):
-		index = self.unread_messages.index(message_id)
-		self.unread_messages = self.unread_messages[index+1:]
+		index = self.unread_messages.index(message_id) if message_id in self.unread_messages else None
+		if index:
+			self.unread_messages = self.unread_messages[index+1:]
 
 	# update message id when needed
 	def replace_message(self, old_id, new_id):
-		index = self.unread_messages.index(old_id)
-		self.unread_messages[index] = new_id
+		index = self.unread_messages.index(old_id) if old_id in self.unread_messages else None
+		if index:
+			self.unread_messages[index] = new_id
 	
 	def set_chat_id(self, chat_id):
 		self.chat_id = chat_id
