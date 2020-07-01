@@ -26,6 +26,7 @@ import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 from identifiers import Identifiers
+from identifiers.srv import CheckSender, GetDetails
 
 # Local
 import RuTOS
@@ -57,11 +58,10 @@ class SMSrx():
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
 
         # identifiers work
-        identifiers_file = rospy.get_param("~identifiers_file")
-        self._valid_ids = rospy.get_param("~valid_ids")
-        self._is_air = rospy.get_param("~is_air")
-        self._self_id = rospy.get_param("~self_id")
-        self._ids = Identifiers(identifiers_file, self._is_air, self._self_id, self._valid_ids)
+        rospy.wait_for_service("identifiers/check/proper")
+        rospy.wait_for_service("identifiers/get/number")
+        self._identifiers_valid_sender = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+        self._identifiers_get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
         
         # Security and safety measures
         self._purge_residual_sms()
@@ -92,7 +92,12 @@ class SMSrx():
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
         rospy.loginfo("Sending SMS: " + data.data)
-        sendstatus = RuTOS.send_msg(self.ssh, "+"+str(self._ids.get_number(data.id)), data.data)
+        number = self._identifiers_get_number(data.id)
+        if number is None:
+            rospy.logerr("Invalid ID number")
+            return
+
+        sendstatus = RuTOS.send_msg(self.ssh, "+"+number, data.data)
         if "Timeout\n" in sendstatus:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
@@ -114,8 +119,9 @@ class SMSrx():
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
             # Ensure sender is whitelisted before extracting message
-            # if sender[1:] in self._ids.get_whitelist():
-            if self._ids.is_valid_sender(1, sender):
+            is_valid_sender = self._identifiers_valid_sender(1, sender)
+            if is_valid_sender.result:
+            # if self._ids.is_valid_sender(1, sender):
                 rospy.loginfo('Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                 self._msg = self._msglist[4].split(' ', 1)[1].rstrip()

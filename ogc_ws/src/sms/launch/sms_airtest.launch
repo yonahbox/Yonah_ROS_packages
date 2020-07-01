@@ -2,7 +2,7 @@
 
 <launch>
 
-    <arg name="identifiers_file" default="/home/rumesh/codes/test_identifiers_2.json" />
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
     <arg name="ground_ids" default="[1]" />
     <arg name="self_id" default="1" />
     <arg name="is_air" default="True" />
@@ -28,6 +28,13 @@
         
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
+    </node>
+
+    <node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
     </node>
 
     <!-- air_despatcher node -->
