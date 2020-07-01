@@ -96,7 +96,7 @@ class SMSrx():
         if "Timeout\n" in sendstatus:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
-            rospyp.logerr("Connection to router lost!")
+            rospy.logerr("Connection to router lost!")
     
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''

@@ -124,8 +124,14 @@ class MyPlugin(Plugin):
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
         self.rate = rospy.Rate(2)
 
-        context.add_widget(self._widget)
+    #     QShortcut(QKeySequence(self.tr("Ctrl+O", "File|Open")),
+    #                  self.disarming)
 
+
+    #     context.add_widget(self._widget)
+
+    # def disarming(self):
+    #     print("DISARMING")
     # Create layout for Summary scroll window
     def create_tab_windows(self):
         self.summary_scroll = QScrollArea()
