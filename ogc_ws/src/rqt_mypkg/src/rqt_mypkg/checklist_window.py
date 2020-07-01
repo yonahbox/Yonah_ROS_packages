@@ -32,7 +32,8 @@ class ChecklistWindow(QWidget):
         self.resize(500, 700)
         self.move(200,100)
         self.aircraft_id = aircraft_id
-        
+        self.checklist_state = 0
+
         # Relative path for the default BPO and BTO checklist
         BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')
         BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BTO_checklist.csv')
@@ -183,6 +184,7 @@ class ChecklistWindow(QWidget):
         if self.BPO_header.checkState(0) != 2 or self.BTO_header.checkState(0) != 2: # User clicks ok without checking all
             self.dialog_window("Some items in the checklist are still unchecked", "Do you still want to continue?", True)
         else:
+            self.checklist_state = 1
             self.close()
 
     # Declare what will happen when cancel button is clicked
@@ -212,8 +214,8 @@ class ChecklistWindow(QWidget):
     # Determines what happens after dialog_window pops up from ok_button
     def message_action(self, i):
         if i.text() == '&Yes':
+            self.checklist_state = 1
             self.close()
-            # __main__.my_module.MyPlugin.status_text_display(__main__.my_module.MyPlugin, 'Checklist has been uploaded')
         else:
             self.message.close()
 
@@ -221,6 +223,7 @@ class ChecklistWindow(QWidget):
     def message_action_uncheck(self, i):
         self.response = i.text()
         if self.response == '&Yes':
+            self.checklist_state = 1
             self.BTO_header.setCheckState(0, Qt.Unchecked)
             self.BPO_header.setCheckState(0, Qt.Unchecked)
             self.close()

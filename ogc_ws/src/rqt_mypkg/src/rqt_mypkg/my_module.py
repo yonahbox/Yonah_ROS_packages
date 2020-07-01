@@ -44,7 +44,7 @@ from .popup_window import *
 from .aircraft_info import *
 
 class MyPlugin(Plugin):
-    def __init__(self, context):
+    def __init__(self, context = "None"):
         super(MyPlugin, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName("main_window")
@@ -73,6 +73,7 @@ class MyPlugin(Plugin):
         self.active_aircrafts = 10
         self.aircrafts_info = {}
         self.checklist_info = {}
+        self.arm_status = {}
         for i in range (self.active_aircrafts + 1):
             self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
@@ -100,9 +101,6 @@ class MyPlugin(Plugin):
         # Add both layouts into the main layout
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
-
-        # Keep track whether the checklist window is opened
-        self.checklist_opened = 0
 
         # Connect each button to a function
         self.CommandWindow.combo_box.currentIndexChanged.connect(self.combo_box_change)
@@ -199,7 +197,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display)
+        status.mode_signal.connect(self.mode_status_display_sitl)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")
@@ -314,6 +312,7 @@ class MyPlugin(Plugin):
             text_to_display = "DISARMED"
         else:
             text_to_display = "ARMED"
+        self.arm_status['AC' + str(id)] = text_to_display
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
     
@@ -340,23 +339,16 @@ class MyPlugin(Plugin):
         self.destination_id = i + 1
 
     def arm_button (self):
-        if self.checklist_opened == 0:
-            self.PopupMessages.confirmation_window("Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
-        self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
-        data = "arm"
-        statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
-        self.SummaryWindow.statustext.appendPlainText(statustext_message)
-        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
-        self.create_link_message(self.destination_id, data)
-        rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
-    
+        if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
+            self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
+        else:
+            self.PopupMessages.arm_window(self.destination_id, ["ARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to ARM?")
+        if self.arm_status.get('AC' + str(self.destination_id)) == "DISARMED":
+            self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
+            rospy.logdebug("[AIRCRAFT ARM LIST] %s", self.aircrafts_info)
+
     def disarm_button (self):
-        data = "disarm"
-        statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
-        self.SummaryWindow.statustext.appendPlainText(statustext_message)
-        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
-        self.create_link_message(self.destination_id, data)
-        rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
+        self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go_button(self):
         data = "mode 10"

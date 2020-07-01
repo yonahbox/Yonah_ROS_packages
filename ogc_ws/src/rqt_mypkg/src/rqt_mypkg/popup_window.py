@@ -18,7 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
-
+import threading
+from despatcher.msg import LinkMessage
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import Qt
 from despatcher.msg import LinkMessage
@@ -43,22 +44,46 @@ class PopupMessages(QWidget):
         else:
             self.input_text = []
     
-    def confirmation_window(self, title, message, text = "Do you still want to continue?"):
+    def arm_window(self, id, message_type, title, message, text = "Do you still want to continue?"):
+        self.destination_id = id
         self.message = QMessageBox()
         self.has_message_opened = 1
-        self.message.setIcon(QMessageBox.Warning)
+        if message_type[1] == "Warning":
+            self.message.setIcon(QMessageBox.Warning)
+        elif message_type[1] == "Information":
+            self.message.setIcon(QMessageBox.Information)
         self.message.setText(message)
         self.message.setInformativeText(text)
         self.message.setWindowTitle(title)
         self.message.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         self.message.show()
-        self.message.buttonClicked.connect(self.message_action)
+        if message_type[0] == "ARM":
+            self.message.buttonClicked.connect(self.arm_message)
+        elif message_type[0] == "DISARM":
+            self.message.buttonClicked.connect(self.disarm_message)
+        
+
+    def create_link_message(self, destination_id, data):
+        message = LinkMessage()
+        message.id = destination_id
+        message.data = data
+        self.command_publisher.publish(message)
 
     # Determines what happens after dialog_window pops up from ok_button
-    def message_action(self, i):
+    def arm_message(self, i):
         if i.text() == '&Yes':
-            self.response = 'yes'
-            # __main__.my_module.MyPlugin.status_text_display(__main__.my_module.MyPlugin, 'Checklist has been uploaded')
+            data = "arm"
+            statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
+            self.create_link_message(self.destination_id, data)
+            rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
         else:
-            self.response = 'no'
+            self.message.close()
+
+    def disarm_message(self, i):
+        if i.text() == '&Yes':
+            data = "disarm"
+            statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
+            self.create_link_message(self.destination_id, data)
+            rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
+        else:
             self.message.close()
