@@ -1,0 +1,39 @@
+<!-- 
+Copyright (C) 2020 Rumesh Sudhaharan
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+
+
+<launch>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_air"/>
+	<arg name="log_output" default="screen"/>
+
+
+	<arg name="identifiers_file"  default="$(env HOME)/identifiers.json" />
+	<arg name="ground_ids" default="[1, 2]" />
+	<arg name="self_id" default="1" />
+	<arg name="is_air" default="True" />
+
+	<!-- test node -->
+	<node pkg="identifiers" type="test_node" name="test_node" respawn="true" respawn_delay="3" output="$(arg log_output)"></node>
+
+	<!-- identifiers service -->
+	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="identifiers_file" value="$(arg identifiers_file)" />
+		<param name="is_air" value="$(arg is_air)" />
+		<param name="self_id" value="$(arg self_id)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+	</node>
+</launch>
