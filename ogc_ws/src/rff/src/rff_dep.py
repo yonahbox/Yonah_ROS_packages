@@ -4,6 +4,7 @@ import time
 import rospy
 import RuTOS
 import threading
+import Adafruit_BBIO.GPIO as GPIO
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointPush
@@ -83,8 +84,16 @@ class Button:
 	def blink(self):
 		while True:
 			RuTOS.blink_button(self.ssh)
+			buzzer_pin = "P8_11"
+			GPIO.setup(buzzer_pin, GPIO.OUT)
+			for i in range(300):
+				GPIO.output(buzzer_pin, GPIO.HIGH)
+				time.sleep(0.0003)
+				GPIO.output(buzzer_pin, GPIO.LOW)
+				time.sleep(0.0003)
 			time.sleep(0.5)
 			if self.stopwarn:
+				GPIO.cleanup()
 				break
 
 	def press(self):
