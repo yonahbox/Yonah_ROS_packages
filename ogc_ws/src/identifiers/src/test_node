@@ -17,7 +17,7 @@
 
 import rospy
 
-from identifiers.srv import GetDetails
+from identifiers.srv import GetDetails, GetSelfDetails, CheckSender
 
 if __name__ == '__main__':
 	rospy.init_node('identifiers_test_node', anonymous=False, disable_signals=True)
@@ -26,28 +26,33 @@ if __name__ == '__main__':
 	rospy.wait_for_service("identifiers/get/imei")
 	rospy.wait_for_service("identifiers/get/serial")
 
+	rospy.wait_for_service("identifiers/self/imei")
+	rospy.wait_for_service("identifiers/self/serial")
+
+	rospy.wait_for_service("identifiers/check/proper")
+	rospy.wait_for_service("identifiers/check/lazy")
+
 	try:
 		get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
 		get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
 		get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
 
-		number_test = get_number(1)
-		rospy.loginfo(number_test.data)
+		get_self_imei = rospy.ServiceProxy("identifiers/self/imei", GetSelfDetails)
+		get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
 
-		imei_test = get_imei(1)
-		rospy.loginfo(imei_test.data)
+		check_message = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+		check_message_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
-		serial_test = get_serial(1)
-		rospy.loginfo(serial_test.data)
+		self_imei_test = get_self_imei()
+		print(f"SELF IMEI: {self_imei_test.data}")
 
-		number_test_2 = get_number(2)
-		rospy.loginfo(number_test_2.data)
+		self_serial_test = get_self_serial()
+		print(f"SELF SERIAL: {self_serial_test.data}")
 
-		imei_test_2 = get_imei(2)
-		rospy.loginfo(imei_test_2.data)
+		check_message_test = check_message(link=2, details="123456")
+		check_message_lazy_test = check_message_lazy(details="r 1 2")
 
-		serial_test_2 = get_serial(2)
-		rospy.loginfo(serial_test_2.data)
+		print(f"Proper: {check_message_test.result} | Lazy: {check_message_lazy_test.result}")
 
 	except rospy.ServiceException as e:
 		rospy.loginfo("Service call failed: " + e)

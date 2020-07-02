@@ -27,10 +27,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="is_air" default="True" />
 
 	<!-- test node -->
-	<node pkg="identifiers" type="test_node" name="test_node" respawn="true" respawn_delay="3" output="$(arg log_output)"></node>
+	<node pkg="identifiers" type="test_node" name="test_node" output="$(arg log_output)"></node>
 
 	<!-- identifiers service -->
-	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" output="$(arg log_output)" >
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
 		<param name="self_id" value="$(arg self_id)" />
