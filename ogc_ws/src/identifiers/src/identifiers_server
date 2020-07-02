@@ -21,6 +21,7 @@ from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
 from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
 from identifiers.srv import CheckSender, CheckSenderResponse
+from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -40,6 +41,10 @@ class ServiceHandler:
 
 	def get_self_serial(self, request):
 		return GetSelfDetailsResponse(self._ids.get_self_serial())
+
+	def get_sbd_details(self, request):
+		username, password, url = self._ids.get_sbd_credentials()
+		return GetSBDDetailsResponse(username=username, password=password, url=url)
 
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
@@ -63,6 +68,7 @@ if __name__ == '__main__':
 	
 	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
 	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
+	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)

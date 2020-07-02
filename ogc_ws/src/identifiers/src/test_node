@@ -17,7 +17,7 @@
 
 import rospy
 
-from identifiers.srv import GetDetails, GetSelfDetails, CheckSender
+from identifiers.srv import GetDetails, GetSelfDetails, CheckSender, GetSBDDetails
 
 if __name__ == '__main__':
 	rospy.init_node('identifiers_test_node', anonymous=False, disable_signals=True)
@@ -28,6 +28,7 @@ if __name__ == '__main__':
 
 	rospy.wait_for_service("identifiers/self/imei")
 	rospy.wait_for_service("identifiers/self/serial")
+	rospy.wait_for_service("identifiers/self/sbd")
 
 	rospy.wait_for_service("identifiers/check/proper")
 	rospy.wait_for_service("identifiers/check/lazy")
@@ -39,9 +40,13 @@ if __name__ == '__main__':
 
 		get_self_imei = rospy.ServiceProxy("identifiers/self/imei", GetSelfDetails)
 		get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
+		get_sbd_details = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
 
 		check_message = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
 		check_message_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
+
+		sbd_details = get_sbd_details()
+		print(f"username: {sbd_details.username} | password: {sbd_details.password} | url: {sbd_details.url}")
 
 		self_imei_test = get_self_imei()
 		print(f"SELF IMEI: {self_imei_test.data}")

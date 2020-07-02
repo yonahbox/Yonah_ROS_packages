@@ -58,6 +58,7 @@ add_service_files(
   FILES
   GetDetails.srv
   GetSelfDetails.srv
+  GetSBDDetails.srv
   CheckSender.srv
 )
 

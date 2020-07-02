@@ -26,7 +26,7 @@ from despatcher.msg import LinkMessage
 
 # Local
 # from identifiers import Identifiers
-from identifiers.srv import GetSelfDetails, GetDetails
+from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
@@ -44,7 +44,7 @@ class satcomms(rockBlockProtocol):
         
         rospy.wait_for_service("identifiers/self/serial")
         rospy.wait_for_service("identifiers/self/imei")
-        rospy.wait_for_service("identifiers/check/pro")
+        rospy.wait_for_service("identifiers/check/lazy")
 
         self._init_variables()
     
@@ -54,6 +54,7 @@ class satcomms(rockBlockProtocol):
         # Identifiers
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
         self._get_serial = rospy.ServiceProxy("Identifiers/get/serial", GetDetails)
+        self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
         self_serial = self._get_self_serial()
         # Rockblock Comms
@@ -97,8 +98,9 @@ class satcomms(rockBlockProtocol):
                 mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
-
-        self._pub_to_despatcher.publish(data)
+        check_result = self._check_lazy(details=data)
+        if check_result.result:
+            self._pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
         rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
