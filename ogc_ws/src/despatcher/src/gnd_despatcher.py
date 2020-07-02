@@ -42,7 +42,7 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
 
         # Link switching
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = 1 # 0 = Tele, 1 = SMS, 2 = SBD
 
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...

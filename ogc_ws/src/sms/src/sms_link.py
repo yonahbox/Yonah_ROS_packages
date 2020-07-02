@@ -118,6 +118,7 @@ class SMSrx():
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
+            rospy.loginfo("Received sms from " + sender)
             # Ensure sender is whitelisted before extracting message
             is_valid_sender = self._identifiers_valid_sender(1, sender)
             if is_valid_sender.result:

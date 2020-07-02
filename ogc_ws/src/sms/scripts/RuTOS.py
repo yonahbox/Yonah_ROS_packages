@@ -35,7 +35,7 @@ def start_client(ip, user):
 def send_msg(ssh, GCS_no, msg):
     '''Send msg to the specified GCS number'''
     try:
-        _, stdout, _ = ssh.exec_command("gsmctl -S -s '%s %s'"%(GCS_no, msg), timeout=2)
+        _, stdout, _ = ssh.exec_command("gsmctl -S -s '%s %s'"%(GCS_no, msg), timeout=5)
         sendstatus = stdout.readlines()
     except:
         sendstatus = "Connection lost"
@@ -44,7 +44,7 @@ def send_msg(ssh, GCS_no, msg):
 def extract_msg(ssh, count):
     '''Extract an incoming message in the router's nth entry and return it as a raw string'''
     try:
-        _, stdout, _ = ssh.exec_command("gsmctl -S -r %d"%(count), timeout=2)
+        _, stdout, _ = ssh.exec_command("gsmctl -S -r %d"%(count), timeout=5)
         msglist = stdout.readlines()
     except:
         msglist = "Connection lost"

@@ -37,10 +37,10 @@ class RegularPayloadException(Exception):
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements'
 # Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18 19
-# struct_cmd:      s B B B  h   B B B B  b H    b   H    B  B  B  B  H  B  I
+# struct_cmd:      s B B B  h   B B B B  b h    b   h    B  B  B  B  H  b  I
 # Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0  10 1591089280
 
-struct_cmd = "> s B B B h B B B B b H b H B B B B H B I" 
+struct_cmd = "> s B B B h B B B B b h b h B B B B H b I" 
 
 no_of_entries = len(struct_cmd.split()[1:])
 
@@ -196,6 +196,9 @@ class air_payload():
         '''Obtain information on which waypoint has been reached'''
         self.entries["wp"] = data.current_seq
         self.entries["wp_total"] = len(data.waypoints) - 1
+        if self.entries["wp_total"] <= 0:
+            self.entries["wp_total"] = 0
+            print("ERROR: Waypoint Total is less than 0")
 
     def get_VTOL_mode(self, data):
         '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''
