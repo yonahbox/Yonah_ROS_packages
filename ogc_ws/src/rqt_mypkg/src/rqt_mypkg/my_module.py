@@ -50,6 +50,7 @@ class MyPlugin(Plugin):
         self.setObjectName("main_window")
         self._widget = QWidget()
         context.add_widget(self._widget)
+        self._widget.setMinimumSize(1300, 780)
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "resource", "second_window.ui")
         
@@ -110,6 +111,7 @@ class MyPlugin(Plugin):
         self.CommandWindow.mission_load_button.pressed.connect(self.mission_load_button)
         self.CommandWindow.checklist_button.pressed.connect(self.checklist_button)
         self.CommandWindow.change_mode_button.pressed.connect(self.change_mode_button)
+        self.CommandWindow.edit_identifiers_button.pressed.connect(self.edit_identifiers_button)
         
         # Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
@@ -386,9 +388,31 @@ class MyPlugin(Plugin):
 
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
+<<<<<<< Updated upstream
     def checklist_button(self):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
+=======
+    def edit_identifiers_button(self):
+        self.dialog = QDialog()
+        self.dialog.setWindowTitle("Edit Identifiers")
+        layout = QVBoxLayout(self.dialog)
+        add = QPushButton("Add New Identifiers")
+        edit = QPushButton("Edit Existing Identifiers")
+        add.setMinimumHeight(40)
+        edit.setMinimumHeight(40)
+        add.pressed.connect(self.add_identifiers)
+        edit.pressed.connect(self.edit_identifiers)
+        layout.addWidget(add)
+        layout.addWidget(edit)
+        self.dialog.show()
+
+    def add_identifiers(self):
+        pass
+    def edit_identifiers(self):
+        pass
+    
+>>>>>>> Stashed changes
     def change_mode_button(self):
         self.dialog = QDialog()
         self.dialog.setWindowTitle("Change Mode")
