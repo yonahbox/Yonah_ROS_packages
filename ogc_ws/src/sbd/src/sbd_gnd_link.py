@@ -66,7 +66,7 @@ class satcommsgnd(satcomms):
         self._mt_cred['username'] = sbd_details.username
         self._mt_cred['password'] = sbd_details.password
         self._server_url = sbd_details.url
-        
+
         # Three least significant bytes of own serial, used for binary unpack of regular payload
         self._serial_0 = (self._own_serial >> 16) & 0xFF
         self._serial_1 = (self._own_serial >> 8) & 0xFF
@@ -113,10 +113,11 @@ class satcommsgnd(satcomms):
         self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
 
         imei = self._get_imei(data.id)
-        self._mt_cred['imei'] = imei.data
-        if not self._mt_cred:
+        if imei is None:
             rospy.logwarn("Invalid recipient")
             return
+        self._mt_cred['imei'] = imei.data
+            
         reply = requests.post(url, data=self._mt_cred)
         rospy.loginfo(reply.text)
 

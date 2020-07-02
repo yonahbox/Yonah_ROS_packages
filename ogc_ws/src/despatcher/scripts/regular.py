@@ -193,12 +193,11 @@ class air_payload():
         self.entries["lon2"] = int(10000*(data.longitude - self.entries["lon1"]))
 
     def get_wp_reached(self, data):
-        '''Obtain information on which waypoint has been reached'''
+        '''Obtain information on the current target waypoint'''
         self.entries["wp"] = data.current_seq
         self.entries["wp_total"] = len(data.waypoints) - 1
         if self.entries["wp_total"] <= 0:
             self.entries["wp_total"] = 0
-            print("ERROR: Waypoint Total is less than 0")
 
     def get_VTOL_mode(self, data):
         '''Check whether any of the quad outputs are active, to determine if we are in VTOL mode'''

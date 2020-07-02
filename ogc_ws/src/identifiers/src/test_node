@@ -49,7 +49,7 @@ if __name__ == '__main__':
 		print(f"username: {sbd_details.username} | password: {sbd_details.password} | url: {sbd_details.url}")
 
 		self_imei_test = get_self_imei()
-		print(f"SELF IMEI: {self_imei_test.data}")
+		print(f"SELF IMEI: {get_self_imei().data}")
 
 		self_serial_test = get_self_serial()
 		print(f"SELF SERIAL: {self_serial_test.data}")

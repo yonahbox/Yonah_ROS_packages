@@ -56,10 +56,9 @@ class satcomms(rockBlockProtocol):
         self._get_serial = rospy.ServiceProxy("Identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
-        self_serial = self._get_self_serial()
         # Rockblock Comms
         self._buffer = mo_msg_buffer()
-        self._own_serial = int(self_serial.data) # Our own rockblock serial
+        self._own_serial = int(self._get_self_serial().data) # Our own rockblock serial
         self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
@@ -141,9 +140,8 @@ class satcomms(rockBlockProtocol):
         self._count = self._count + 1
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
-        client_serial_resp = self._get_serial(self._buffer.target_id)
-        client_serial = client_serial_resp.data
-        if not client_serial:
+        client_serial = self._get_serial(self._buffer.target_id).data
+        if client_serial is None:
             rospy.logwarn("Invalid recipient")
             return
         # If buffer starts with "r ", it is a regular payload
