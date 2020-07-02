@@ -12,7 +12,7 @@
     <arg name="portID" default="/dev/ttyUSB0"/>
 
     <!-- Identifiers -->
-    <arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
     <arg name="air_ids" default="[1]" />
     <arg name="self_id" default="1" />
     <arg name="is_air" default="False" />
@@ -22,6 +22,10 @@
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
+    </node>
+
+    <!-- identifiers service -->
+    <node pkg="identifiers" type="identifiers_server" name="identifiers_server" output="$(arg log_output)" >
         <param name="identifiers_file" value="$(arg identifiers_file)" />
         <param name="is_air" value="$(arg is_air)" />
         <param name="self_id" value="$(arg self_id)" />

@@ -20,5 +20,5 @@ float32 lon
 float32 throttle
 bool vtol
 uint8 wp
-uint16 wp_total
+int16 wp_total
 uint8 vibe
