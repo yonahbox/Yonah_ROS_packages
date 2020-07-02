@@ -15,6 +15,9 @@
     <arg name="self_id" default="5" />
     <arg name="is_air" default="False" />
 
+    <!-- despatcher arguments -->
+    <arg name="link_select" default="0" />
+
 
     <!-- sms_link node -->
     <node pkg="sms" type="sms_link.py" name="sms_link"
@@ -34,6 +37,7 @@
     <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="self_id" value="$(arg self_id)" />
+        <param name="link_select" value="$(arg link_select)" />
     </node>
 
     <!-- ground test node -->

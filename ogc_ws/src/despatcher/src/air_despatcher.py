@@ -62,7 +62,7 @@ class airdespatcher():
         self._regular_payload_flag = True # Whether we should send regular payload to Ground Control
         self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
-        self.link_select = 0 # 0 = Tele, 1 = SMS, 2 = SBD
+        self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
 
         # Air Identifiers (attached to outgoing msgs)

@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="ground_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
+	<arg name="link_select" default="0" />
 
 	<!--Various regular payload intervals in seconds-->
     <arg name="interval_1" default="10"/>
@@ -48,5 +49,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="self_id" value="$(arg self_id)" />
+		<param name="link_select" value="$(arg link_select)" />
 	</node>
 </launch>
