@@ -19,5 +19,5 @@ float32 lat
 float32 lon
 float32 throttle
 bool vtol
-uint8 wp
+int8 wp
 uint8 vibe
