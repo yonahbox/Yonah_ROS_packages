@@ -26,7 +26,7 @@ from despatcher.msg import LinkMessage
 
 # Local
 # from identifiers import Identifiers
-from identifiers.srv import GetSelfDetails
+from identifiers.srv import GetSelfDetails, GetDetails
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
