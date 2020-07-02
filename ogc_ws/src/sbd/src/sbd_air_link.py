@@ -52,8 +52,8 @@ class satcomms(rockBlockProtocol):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
 
         # Identifiers
-        self._ids = Identifiers(identifiers_file, self._is_air, self._self_id, self._valid_ids)
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
+        self._get_serial = rospy.ServiceProxy("Identifiers/get/serial", GetDetails)
 
         self_serial = self._get_self_serial()
         # Rockblock Comms
@@ -139,7 +139,8 @@ class satcomms(rockBlockProtocol):
         self._count = self._count + 1
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
-        client_serial = self._ids.get_sbd_serial(self._buffer.target_id)
+        client_serial_resp = self._get_serial(self._buffer.target_id)
+        client_serial = client_serial_resp.data
         if not client_serial:
             rospy.logwarn("Invalid recipient")
             return
