@@ -48,8 +48,11 @@ class PopupMessages(QWidget):
         num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
         if ok:
             data = "disarm"
-            self.create_link_message(self.destination_id, data)
-            rospy.logdebug("[AC %d EMERGENCY DISARM] %s", num, statustext_message)
+            if num == 0:
+                print("\033[91mERROR: Invalid Aircraft ID, Please input a valid Aircraft ID")
+                return 0
+            self.create_link_message(num, data)
+            rospy.logdebug("[AC %d EMERGENCY DISARM]", num)
     
     def arm_window(self, id, message_type, title, message, text = "Do you still want to continue?"):
         self.destination_id = id

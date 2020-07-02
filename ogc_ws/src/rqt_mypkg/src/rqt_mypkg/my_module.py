@@ -128,7 +128,7 @@ class MyPlugin(Plugin):
 
     def shortcuts(self):
         disarming = QShortcut(self._widget)
-        disarming.setKey(Qt.CTRL + Qt.Key_J)
+        disarming.setKey(Qt.CTRL + Qt.Key_D)
         disarming.activated.connect(self.disarming)
 
         shutdown = QShortcut(self._widget)
