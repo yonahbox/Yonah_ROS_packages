@@ -50,7 +50,7 @@ class CommandWindow(QWidget):
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
-        self.edit_identifiers_button = QPushButton('Edit Identifiers')
+        self.change_identifiers_button = QPushButton('Edit Identifiers')
         self.mission_load_button = QPushButton('Load Mission')
         self.change_mode_button = QPushButton('Change Mode')
 
@@ -61,18 +61,18 @@ class CommandWindow(QWidget):
         self.arm_button.setMinimumHeight(top_row)
         self.disarm_button.setMinimumHeight(top_row)
         self.go_button.setMinimumHeight(top_row)
-        self.edit_identifiers_button.setMinimumHeight(bottom_row)
+        self.change_identifiers_button.setMinimumHeight(bottom_row)
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
-       
+
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
-        self.second_row.addWidget(self.edit_identifiers_button)
+        self.second_row.addWidget(self.change_identifiers_button)
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.change_mode_button)
 
