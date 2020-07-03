@@ -43,7 +43,7 @@ class satcomms(rockBlockProtocol):
         rospy.init_node('sbd_link', anonymous=False)
         
         rospy.wait_for_service("identifiers/self/serial")
-        rospy.wait_for_service("identifiers/self/imei")
+        rospy.wait_for_service("identifiers/get/serial")
         rospy.wait_for_service("identifiers/check/lazy")
 
         self._init_variables()
@@ -53,7 +53,7 @@ class satcomms(rockBlockProtocol):
 
         # Identifiers
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
-        self._get_serial = rospy.ServiceProxy("Identifiers/get/serial", GetDetails)
+        self._get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
         # Rockblock Comms

@@ -28,6 +28,7 @@
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
+        <param name="thr_server" value="$(arg thr_server)" />
     </node>
 
     <!-- identifiers service -->
