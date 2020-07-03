@@ -25,6 +25,7 @@ import rosservice
 import rostopic
 import regular
 
+from functools import partial
 from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
@@ -33,7 +34,7 @@ from despatcher.msg import LinkMessage
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QAbstractListModel, QObject, pyqtSignal
-from python_qt_binding.QtGui import QIcon, QImage, QPainter
+from python_qt_binding.QtGui import QIcon, QImage, QPainter, QKeySequence, QIntValidator
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtSvg import QSvgGenerator
 from .checklist_window import ChecklistWindow
@@ -49,7 +50,8 @@ class MyPlugin(Plugin):
         # Give QObjects reasonable names
         self.setObjectName("main_window")
         self._widget = QWidget()
-        
+        context.add_widget(self._widget)
+        self._widget.setMinimumSize(1300, 780)
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "resource", "second_window.ui")
         
@@ -67,23 +69,27 @@ class MyPlugin(Plugin):
         if context.serial_number():
             self._widget.setWindowTitle(self._widget.windowTitle() + (" (%d)" % context.serial_number()))
         
-        # Get the number of active aircrafts here
+        # Declare constants
         self.time = 0
         self.destination_id = 1
-        self.active_aircrafts = 5
+        self.active_aircrafts = 10
         self.aircrafts_info = {}
+        self.checklist_info = {}
+        self.arm_status = {}
         for i in range (self.active_aircrafts + 1):
-            self.aircrafts_info["AC" + str(i)] = Aircraft1(i)
+            self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
+            self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
 
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
-                          "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"]
-
+                          "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
+        self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
+                          "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"] 
         # Declare variables for each imported class
-        self.ChecklistWindow = ChecklistWindow()
+        self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.active_aircrafts)
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
         self.CommandWindow = CommandWindow(self.active_aircrafts)
-        self.PopupMessages = PopupMessages()
+
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
         self.scroll.setMinimumHeight(700)
@@ -91,15 +97,14 @@ class MyPlugin(Plugin):
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.WaypointWindow)
         self._widget.verticalLayout.addWidget(self.scroll)
+
         # Create the tab windows for the aircraft-specific information
         self.create_tab_windows()
+        self.tab.currentChanged.connect(self.tab_change)
 
         # Add both layouts into the main layout
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
-
-        # Keep track whether the checklist window is opened
-        self.checklist_opened = 0
 
         # Connect each button to a function
         self.CommandWindow.combo_box.currentIndexChanged.connect(self.combo_box_change)
@@ -107,9 +112,11 @@ class MyPlugin(Plugin):
         self.CommandWindow.disarm_button.pressed.connect(self.disarm_button)
         self.CommandWindow.go_button.pressed.connect(self.go_button)
         self.CommandWindow.mission_load_button.pressed.connect(self.mission_load_button)
-        self.CommandWindow.checklist_button.pressed.connect(self.ChecklistWindow.show)
+        self.CommandWindow.checklist_button.pressed.connect(self.checklist_button)
         self.CommandWindow.change_mode_button.pressed.connect(self.change_mode_button)
-        
+        self.CommandWindow.change_identifiers_button.pressed.connect(self.change_identifiers_button)
+        self.CommandWindow.ping_button.pressed.connect(self.ping_button)
+
         # Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
@@ -121,11 +128,22 @@ class MyPlugin(Plugin):
 
         # Publisher List
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
-        # self.mission_publisher = rospy.Publisher("load_mission", String, queue_size = 5)
         self.rate = rospy.Rate(2)
 
-        context.add_widget(self._widget)
+        self.shortcuts()
 
+    def shortcuts(self):
+        disarming = QShortcut(self._widget)
+        disarming.setKey(Qt.CTRL + Qt.Key_D)
+        disarming.activated.connect(self.disarming)
+
+        shutdown = QShortcut(self._widget)
+        shutdown.setKey(Qt.ALT + Qt.Key_F4)
+        shutdown.activated.connect(self.shutdown_plugin)
+
+    def disarming(self):
+        self.PopupMessages.emergency_disarm()
+    
     # Create layout for Summary scroll window
     def create_tab_windows(self):
         self.summary_scroll = QScrollArea()
@@ -146,6 +164,12 @@ class MyPlugin(Plugin):
         self.tab.setMinimumHeight(500)
         self._widget.verticalLayout.addStretch(1)
         self._widget.verticalLayout.addWidget(self.scroll)
+    
+    def tab_change(self, i):
+        if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
+            i = 1
+        self.CommandWindow.combo_box.setCurrentIndex(i - 1)
+
 
     ################################
     # Create Signal Slot functions #
@@ -156,33 +180,34 @@ class MyPlugin(Plugin):
         status.ondemand_signal.emit(str(data), "1")
 
     def regular_payload(self, data):
+        aircraft_id = data.vehicle_no
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
-        status.airspeed_signal.emit(data.airspeed, "1")
+        status.airspeed_signal.emit(data.airspeed, aircraft_id)
         status.alt_signal.connect(self.altitude_display)
-        status.alt_signal.emit(data.alt, "1")
+        status.alt_signal.emit(data.alt, aircraft_id)
         status.arm_signal.connect(self.arm_status_display) 
-        status.arm_signal.emit(data.armed, "1")
+        status.arm_signal.emit(data.armed, aircraft_id)
         status.batt_signal.connect(self.quad_batt_display)
-        status.batt_signal.emit(data.batt, "1")
+        status.batt_signal.emit(data.batt, aircraft_id)
         status.fuel_signal.connect(self.fuel_display)
-        status.fuel_signal.emit(data.fuel, "1")
+        status.fuel_signal.emit(data.fuel, aircraft_id)
         status.groundspeed_signal.connect(self.groundspeed_display)
-        status.groundspeed_signal.emit(data.groundspeed, "1")
+        status.groundspeed_signal.emit(data.groundspeed, aircraft_id)
         status.gps_signal.connect(self.gps_display)
-        status.gps_signal.emit(data.lat, data.lon, "1")
+        status.gps_signal.emit(data.lat, data.lon, aircraft_id)
         status.mode_signal.connect(self.mode_status_display) 
-        status.mode_signal.emit(data.mode, "1")
+        status.mode_signal.emit(data.mode, aircraft_id)
         status.throttle_signal.connect(self.throttle_display)
-        status.throttle_signal.emit(data.throttle, "1")
+        status.throttle_signal.emit(data.throttle, aircraft_id)
         status.vibe_signal.connect(self.vibe_display)
-        status.vibe_signal.emit(data.vibe, "1")
+        status.vibe_signal.emit(data.vibe, aircraft_id)
         status.vtol_signal.connect(self.vtol_display)
-        status.vtol_signal.emit(data.vtol, "1")
+        status.vtol_signal.emit(data.vtol, aircraft_id)
         status.wp_signal.connect(self.waypoint_display)
-        status.wp_signal.emit(data.wp, "1")
+        status.wp_signal.emit(data.wp, aircraft_id)
         status.time_signal.connect(self.time_display)
-        status.time_signal.emit(data.header.stamp.secs, "1")
+        status.time_signal.emit(data.header.stamp.secs, aircraft_id)
         
     def status_text(self, data):
         status = Communicate()
@@ -191,7 +216,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display)
+        status.mode_signal.connect(self.mode_status_display_sitl)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")
@@ -267,9 +292,7 @@ class MyPlugin(Plugin):
 
     def mode_status_display(self, mode_status, id):
         # Rewrite the mode list with blanks to convert int
-        self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
-                          "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","MANUAL","QLAND"] 
-        mode = self.mode_list[mode_status] # Convert the integer to a mode
+        mode = self.decoder[mode_status] # Convert the integer to a mode
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
         rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), mode_status))
@@ -307,6 +330,7 @@ class MyPlugin(Plugin):
             text_to_display = "DISARMED"
         else:
             text_to_display = "ARMED"
+        self.arm_status['AC' + str(id)] = text_to_display
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
     
@@ -333,23 +357,16 @@ class MyPlugin(Plugin):
         self.destination_id = i + 1
 
     def arm_button (self):
-        if self.checklist_opened == 0:
-            self.PopupMessages.confirmation_window("Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
-        self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
-        data = "arm"
-        statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
-        self.SummaryWindow.statustext.appendPlainText(statustext_message)
-        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
-        self.create_link_message(self.destination_id, data)
-        rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
-    
+        if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
+            self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
+        else:
+            self.PopupMessages.arm_window(self.destination_id, ["ARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to ARM?")
+        if self.arm_status.get('AC' + str(self.destination_id)) == "DISARMED":
+            self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
+            rospy.logdebug("[AIRCRAFT ARM LIST] %s", self.aircrafts_info)
+
     def disarm_button (self):
-        data = "disarm"
-        statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
-        self.SummaryWindow.statustext.appendPlainText(statustext_message)
-        self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
-        self.create_link_message(self.destination_id, data)
-        rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
+        self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go_button(self):
         data = "mode 10"
@@ -375,9 +392,161 @@ class MyPlugin(Plugin):
 
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
+    def ping_button(self):
+        data = 'ping'
+        self.create_link_message(self.destination_id, data)
+
+    def checklist_button(self):
+        self.checklist_info.get("AC" + str(self.destination_id)).show()
+
+    def change_identifiers_button(self):
+        self.change_identifiers_dialog = QDialog()
+        self.change_identifiers_dialog.setWindowTitle("Edit Identifiers")
+        layout = QVBoxLayout(self.change_identifiers_dialog)
+        add_identifiers_button = QPushButton("Add New Identifiers")
+        edit_identifiers_button = QPushButton("Edit Existing Identifiers")
+        add_identifiers_button.setMinimumHeight(40)
+        edit_identifiers_button.setMinimumHeight(40)
+        add_identifiers_button.pressed.connect(self.add_identifiers)
+        edit_identifiers_button.pressed.connect(self.edit_identifiers)
+        layout.addWidget(add_identifiers_button)
+        layout.addWidget(edit_identifiers_button)
+        self.change_identifiers_dialog.show()
+
+    def add_identifiers(self):
+        self.identifiers_dialog = QDialog()
+        self.identifiers_dialog.setWindowTitle("Add New Identifiers")
+        title = QLabel("Add New Identifiers")
+        title.setFont(QFont("Ubuntu", 13, QFont.Bold))
+        title.setContentsMargins(0, 0, 0, 10)
+
+        identifiers_layout = QFormLayout()
+        identifiers_layout.addRow(title)
+    
+        name = QLabel("Label")
+        name_lineedit = QLineEdit()
+        identifiers_layout.addRow(name, name_lineedit)
+
+        phone = QLabel("Phone number")
+        phone_lineedit = QLineEdit()
+        phone_lineedit.setValidator(QIntValidator())
+        phone_lineedit.setMaxLength(10)
+        identifiers_layout.addRow(phone, phone_lineedit)
+
+        imei = QLabel("IMEI number")
+        imei_lineedit = QLineEdit()
+        imei_lineedit.setValidator(QIntValidator())
+        identifiers_layout.addRow(imei, imei_lineedit)
+
+        serial = QLabel("Serial number")
+        serial_lineedit = QLineEdit()
+        serial_lineedit.setValidator(QIntValidator())
+        identifiers_layout.addRow(serial, serial_lineedit)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            centerButtons=True,)
+        buttons.accepted.connect(self.identifiers_accept)
+        buttons.rejected.connect(self.identifiers_dialog.close)
+
+        identifiers_layout.addWidget(buttons)
+        self.identifiers_dialog.setLayout(identifiers_layout)
+        self.identifiers_dialog.show()
+
+    def identifiers_accept(self):
+        ### Do something after Rumesh's identifiers is settled
+        self.identifiers_dialog.close()
+        self.change_identifiers_dialog.close()
+
+    def edit_identifiers(self):
+        self.edit_identifiers_dialog = QDialog()
+        self.edit_identifiers_dialog.setWindowTitle("Edit Identifiers")
+
+        layout = QVBoxLayout(self.edit_identifiers_dialog)
+        ground_button = QPushButton("Ground Identifier")
+        ground_button.setMinimumHeight(40)
+        ground_button.pressed.connect(partial(self.ground_air_identifiers, "Ground"))
+
+        air_button = QPushButton("Air Identifier")
+        air_button.setMinimumHeight(40)
+        air_button.pressed.connect(partial(self.ground_air_identifiers, "Air"))
+
+        back_button = QPushButton("Cancel")
+        back_button.setMaximumSize(80, 30)
+        back_button.pressed.connect(self.edit_identifiers_dialog.close)
+
+        layout.addWidget(ground_button)
+        layout.addWidget(air_button)
+        layout.addWidget(back_button)
+        self.edit_identifiers_dialog.show()
+    
+    def ground_air_identifiers(self, mode):
+        self.change_identifiers_dialog.close()
+        self.edit_ground_air_dialog = QDialog()
+        self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(mode))
+
+        title = QLabel("Add New Identifiers")
+        title.setFont(QFont("Ubuntu", 13, QFont.Bold))
+        title.setContentsMargins(0, 0, 0, 10)
+
+        label = QLabel("Select Aircraft label to edit")
+        combo_box = QComboBox()
+        # Somehow get the current label inside it
+        for i in range (1, self.active_aircrafts + 1):
+            combo_box.addItem(str(i))
+        combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
+
+        name = QLabel("Label")
+        name_lineedit = QLineEdit()
+
+        phone = QLabel("Phone number")
+        phone_lineedit = QLineEdit()
+        phone_lineedit.setValidator(QIntValidator())
+        phone_lineedit.setMaxLength(10)
+
+        imei = QLabel("IMEI number")
+        imei_lineedit = QLineEdit()
+        imei_lineedit.setValidator(QIntValidator())
+
+        serial = QLabel("Serial number")
+        serial_lineedit = QLineEdit()
+        serial_lineedit.setValidator(QIntValidator())
+
+        box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            centerButtons=True,)
+
+        if mode == "Ground":
+            box.accepted.connect(self.edit_ground_accept)
+        else:
+            box.accepted.connect(self.edit_air_accept)
+        box.rejected.connect(self.edit_ground_air_dialog.close)
+
+        lay = QFormLayout(self.edit_ground_air_dialog)
+        lay.addRow(title)
+        lay.addRow(label, combo_box)
+        lay.addRow(name, name_lineedit)
+        lay.addRow(phone, phone_lineedit)
+        lay.addRow(imei, imei_lineedit)
+        lay.addRow(serial, serial_lineedit)
+
+        lay.addWidget(box)
+        self.edit_ground_air_dialog.show()
+
+    def edit_ground_accept(self):
+        self.edit_ground_air_dialog.close()
+        
+
+    def edit_air_accept(self):
+        self.edit_ground_air_dialog.close()
+        
+    
+    def edit_identifiers_combo_box(self, i):
+        self.edit_identifiers_id = i + 1
+
     def change_mode_button(self):
-        self.dialog = QDialog()
-        self.dialog.setWindowTitle("Change Mode")
+        self.change_mode_dialog = QDialog()
+        self.change_mode_dialog.setWindowTitle("Change Mode")
         self.label = QLabel("Select MODE for Aircraft " + str(self.destination_id))
         self.combo_box = QComboBox()
         for i in self.mode_list:
@@ -388,32 +557,31 @@ class MyPlugin(Plugin):
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
         box.accepted.connect(self.dropdown_accept)
-        box.rejected.connect(self.dropdown_reject)
-        lay = QVBoxLayout(self.dialog)
+        box.rejected.connect(self.change_mode_dialog.close)
+        lay = QVBoxLayout(self.change_mode_dialog)
         lay.addWidget(self.label)
         lay.addWidget(self.combo_box)
         lay.addWidget(box)
-        self.dialog.show()
+        self.change_mode_dialog.show()
 
     def mode_combo_box(self, i):
         self.mode_change = self.mode_list[i]
 
     def dropdown_accept(self):
-        data = self.mode_change
-        statustext_message = "Aircraft {} mode has been set to {}".format(self.destination_id, data)
+        data = "wp " + str(self.decoder.index(self.mode_change))
+        statustext_message = "Aircraft {} mode has been set to {}".format(self.destination_id, self.mode_change)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.aircrafts_info.get("AC" + str(self.destination_id)).statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
-        self.dialog.close()
+        self.change_mode_dialog.close()
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
-
-    def dropdown_reject(self):
-        self.dialog.close()
 
     # Close all windows
     # TODO close all ROS connections as well (unsubscribe from the channels)
     def shutdown_plugin(self):
-        self.ChecklistWindow.shutdown()
+        # Shutdown all the checklist windows
+        for i in range (self.active_aircrafts):
+            self.checklist_info.get("AC" + str(i)).shutdown()
         self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
 
