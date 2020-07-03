@@ -54,7 +54,7 @@ class satcommsgnd(satcomms):
         } # Credentials required to post MT data to Rock 7 server
 
         rospy.wait_for_service("identifiers/get/imei")
-        rospy.wait_for_service("identifiers/get/sbd_details")
+        rospy.wait_for_service("identifiers/self/sbd")
         rospy.wait_for_service("identifiers/check/proper")
 
         self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
