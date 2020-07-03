@@ -109,17 +109,14 @@ class Td():
 			return None
 
 	def add_contacts(self, number_list):
-		for number in number_list:
-			print(number)
-			self.send({
-				"@type": "addContact",
-				"share_phone_number": True,
-				"contact": {
-					"@type": "contact",
-					"first_name": "yonah_test2",
-					"phone_number": number
-				}
-			})			
+		self.send({
+			"@type": "importContacts",
+			"contacts": [{
+				"@type": "contact",
+				"first_name": "Td "+number,
+				"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
+			} for number in number_list]
+		})		
 
 	# Send request to telegram
 	def send(self, query):
@@ -217,10 +214,6 @@ class Td():
 		self.send({
 			"@type": "getContacts",
 		})
-		# self.send({
-		# 	'@type': 'getChats',
-		# 	'limit': 10
-		# })
 
 	# Get specific information about a chat using its chat id
 	def _get_chat_info(self, chat_id):
@@ -263,7 +256,7 @@ class Td():
 					})
 
 			elif recv_type == "users":
-				# print(result)
+				print(result)
 				for user_id in result["user_ids"]:
 					self.send({
 						"@type": "getUser",
@@ -275,32 +268,6 @@ class Td():
 				for chat in self.chat_list:
 					if chat.phone_number == result["phone_number"]:
 						chat.set_chat_id(result["id"])
-
-
-			# this gives a list of chats
-			# elif recv_type == 'updateChatOrder':
-			# 	# checks if the chat has already been handled
-			# 	if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
-			# 		self._get_chat_info(result['chat_id'])
-
-			# # This gives specific information about a chat
-			# elif recv_type == 'chat':
-			# 	# If it is a private chat, get information about the user
-			# 	if result['type']['@type'] == 'chatTypePrivate':
-			# 		self.send({
-			# 			'@type': 'getUser',
-			# 			'user_id': result['type']['user_id']
-			# 		})
-
-			# # This gives specific information about a user
-			# elif recv_type == 'user':
-			# 	print(result)
-			# 	for chat in self.chat_list:
-			# 		# Checks if the user is a whitelisted number
-			# 		if chat.phone_number == result["phone_number"]:
-			# 			# get relevant information about user
-			# 			chat.set_chat_id(result["id"])
-			# 			self.command_user_ids.append(result["id"])
 
 			# This gives specific information about a message
 			# needed to keep track of what messages have been received
