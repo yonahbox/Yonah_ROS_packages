@@ -64,6 +64,7 @@ class Identifiers:
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 
+		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
 				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"])
@@ -91,17 +92,17 @@ class Identifiers:
 	def get_number(self, id_n):
 		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
-		return device.number if device else 0
+		return device.number if device else None
 
 	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
-		return device.rb_serial if device else ()
+		return device.rb_serial if device else None
 	
 	def get_sbd_imei(self, id_n):
 		device = self.get_device(id_n)
 		# returns the correct value only if the requested id was included in the initial whitelist
-		return device.imei if device else ()
+		return device.imei if device else None
 
 	def get_sbd_credentials(self):
 		return self.rock7_un, self.rock7_pw, self.aws_url
@@ -124,7 +125,7 @@ class Identifiers:
 
 	def is_valid_sender(self, link, details):
 		if link == 0:
-			return str(details) in self.whitelist_nums
+			return details in self.whitelist_nums
 		elif link == 1:
 			return details[1:] in self.whitelist_nums
 		elif link == 2:

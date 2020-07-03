@@ -34,6 +34,7 @@ from despatcher.msg import LinkMessage
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
+from identifiers.srv import GetDetails, CheckSender, GetSBDDetails
 
 class satcommsgnd(satcomms):
 
@@ -52,8 +53,19 @@ class satcommsgnd(satcomms):
             'data': 'qwerty'
         } # Credentials required to post MT data to Rock 7 server
 
+        rospy.wait_for_service("identifiers/get/imei")
+        rospy.wait_for_service("identifiers/get/sbd_details")
+        rospy.wait_for_service("identifiers/check/proper")
+
+        self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
+        self._is_valid_sender = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+        get_sbd_credentials = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
+
         self._init_variables()
-        self._mt_cred['username'], self._mt_cred['password'], self._server_url = self._ids.get_sbd_credentials()
+        sbd_details = get_sbd_credentials()
+        self._mt_cred['username'] = sbd_details.username
+        self._mt_cred['password'] = sbd_details.password
+        self._server_url = sbd_details.url
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
         self._serial_0 = (self._own_serial >> 16) & 0xFF
@@ -99,10 +111,13 @@ class satcommsgnd(satcomms):
         # Message to Rock 7 needs to be hex encoded
         encoded_msg = data.data.encode()
         self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
-        self._mt_cred['imei'] = self._ids.get_sbd_imei(data.id)
-        if not self._mt_cred:
+
+        imei = self._get_imei(data.id)
+        if imei is None:
             rospy.logwarn("Invalid recipient")
             return
+        self._mt_cred['imei'] = imei.data
+            
         reply = requests.post(url, data=self._mt_cred)
         rospy.loginfo(reply.text)
 
@@ -126,7 +141,7 @@ class satcommsgnd(satcomms):
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
             if self._server_is_new_msg(reply['transmit_time']): 
-                if self._ids.is_valid_sender(2, reply['serial']): # ensure rb serial is valid
+                if self._is_valid_sender(link=2, details=reply['serial']): # ensure rb serial is valid
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
                 else:
                     rospy.logwarn("Received unknown msg from Rockblock " + str(reply['serial']))

@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import rospy
+
+from identifiers.srv import GetDetails, GetSelfDetails, CheckSender, GetSBDDetails
+
+if __name__ == '__main__':
+	rospy.init_node('identifiers_test_node', anonymous=False, disable_signals=True)
+
+	rospy.wait_for_service("identifiers/get/number")
+	rospy.wait_for_service("identifiers/get/imei")
+	rospy.wait_for_service("identifiers/get/serial")
+
+	rospy.wait_for_service("identifiers/self/imei")
+	rospy.wait_for_service("identifiers/self/serial")
+	rospy.wait_for_service("identifiers/self/sbd")
+
+	rospy.wait_for_service("identifiers/check/proper")
+	rospy.wait_for_service("identifiers/check/lazy")
+
+	try:
+		get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
+		get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
+		get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
+
+		get_self_imei = rospy.ServiceProxy("identifiers/self/imei", GetSelfDetails)
+		get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
+		get_sbd_details = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
+
+		check_message = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+		check_message_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
+
+		sbd_details = get_sbd_details()
+		print(f"username: {sbd_details.username} | password: {sbd_details.password} | url: {sbd_details.url}")
+
+		self_imei_test = get_self_imei()
+		print(f"SELF IMEI: {get_self_imei().data}")
+
+		self_serial_test = get_self_serial()
+		print(f"SELF SERIAL: {self_serial_test.data}")
+
+		check_message_test = check_message(link=2, details="123456")
+		check_message_lazy_test = check_message_lazy(details="r 1 2")
+
+		print(f"Proper: {check_message_test.result} | Lazy: {check_message_lazy_test.result}")
+
+	except rospy.ServiceException as e:
+		rospy.loginfo("Service call failed: " + e)
+

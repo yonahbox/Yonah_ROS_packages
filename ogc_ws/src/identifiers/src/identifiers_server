@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import rospy
+
+from identifiers import Identifiers
+from identifiers.srv import GetDetails, GetDetailsResponse
+from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
+from identifiers.srv import CheckSender, CheckSenderResponse
+from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
+
+class ServiceHandler:
+	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
+		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
+
+	def get_phone_number(self, request):
+		return GetDetailsResponse(self._ids.get_number(request.id))
+
+	def get_imei(self, request):
+		return GetDetailsResponse(self._ids.get_sbd_imei(request.id))
+
+	def get_serial(self, request):
+		return GetDetailsResponse(self._ids.get_sbd_serial(request.id))
+
+	def get_self_imei(self, request):
+		return GetSelfDetailsResponse(self._ids.get_self_imei())
+
+	def get_self_serial(self, request):
+		return GetSelfDetailsResponse(self._ids.get_self_serial())
+
+	def get_sbd_details(self, request):
+		username, password, url = self._ids.get_sbd_credentials()
+		return GetSBDDetailsResponse(username=username, password=password, url=url)
+
+	def check_valid_message(self, request):
+		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
+
+	def check_valid_message_lazy(self, request):
+		return CheckSenderResponse(self._ids.is_valid_message_lazy(request.details))
+
+
+if __name__ == '__main__':
+	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
+	identifiers_file = rospy.get_param("~identifiers_file")
+	is_air = rospy.get_param("~is_air")
+	self_id = rospy.get_param("~self_id")
+	valid_ids = rospy.get_param("~valid_ids")
+
+	handler = ServiceHandler(identifiers_file, is_air, self_id, valid_ids)
+
+	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
+	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
+	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
+	
+	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
+	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
+	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
+
+	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
+	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
+
+	rospy.spin()

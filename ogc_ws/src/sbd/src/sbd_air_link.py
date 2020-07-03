@@ -25,7 +25,8 @@ from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 
 # Local
-from identifiers import Identifiers
+# from identifiers import Identifiers
+from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
@@ -40,21 +41,24 @@ class satcomms(rockBlockProtocol):
 
     def __init__(self):
         rospy.init_node('sbd_link', anonymous=False)
+        
+        rospy.wait_for_service("identifiers/self/serial")
+        rospy.wait_for_service("identifiers/self/imei")
+        rospy.wait_for_service("identifiers/check/lazy")
+
         self._init_variables()
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
 
         # Identifiers
-        identifiers_file = rospy.get_param("~identifiers_file")
-        self._valid_ids = rospy.get_param("~valid_ids")
-        self._is_air = rospy.get_param("~is_air")
-        self._self_id = rospy.get_param("~self_id")
-        self._ids = Identifiers(identifiers_file, self._is_air, self._self_id, self._valid_ids)
+        self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
+        self._get_serial = rospy.ServiceProxy("Identifiers/get/serial", GetDetails)
+        self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
         # Rockblock Comms
         self._buffer = mo_msg_buffer()
-        self._own_serial = int(self._ids.get_self_serial()) # Our own rockblock serial
+        self._own_serial = int(self._get_self_serial().data) # Our own rockblock serial
         self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
@@ -93,7 +97,9 @@ class satcomms(rockBlockProtocol):
                 mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
-        self._pub_to_despatcher.publish(data)
+        check_result = self._check_lazy(details=data)
+        if check_result.result:
+            self._pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
         rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
@@ -134,8 +140,8 @@ class satcomms(rockBlockProtocol):
         self._count = self._count + 1
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
-        client_serial = self._ids.get_sbd_serial(self._buffer.target_id)
-        if not client_serial:
+        client_serial = self._get_serial(self._buffer.target_id).data
+        if client_serial is None:
             rospy.logwarn("Invalid recipient")
             return
         # If buffer starts with "r ", it is a regular payload
