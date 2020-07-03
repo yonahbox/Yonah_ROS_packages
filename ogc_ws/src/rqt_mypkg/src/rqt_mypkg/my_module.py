@@ -25,6 +25,7 @@ import rosservice
 import rostopic
 import regular
 
+from functools import partial
 from std_msgs.msg import String 
 from mavros_msgs.msg import StatusText, State, VFR_HUD, WaypointReached, WaypointList
 from sensor_msgs.msg import NavSatFix
@@ -414,7 +415,7 @@ class MyPlugin(Plugin):
 
         identifiers_layout = QFormLayout()
         identifiers_layout.addRow(title)
-
+    
         name = QLabel("Label")
         name_lineedit = QLineEdit()
         identifiers_layout.addRow(name, name_lineedit)
@@ -457,21 +458,79 @@ class MyPlugin(Plugin):
         layout = QVBoxLayout(self.edit_identifiers_dialog)
         ground_button = QPushButton("Ground Identifier")
         ground_button.setMinimumHeight(40)
-        ground_button.pressed.connect(self.edit_ground_identifiers)
+        ground_button.pressed.connect(partial(self.ground_air_identifiers, "Ground"))
 
         air_button = QPushButton("Air Identifier")
         air_button.setMinimumHeight(40)
-        air_button.pressed.connect(self.edit_air_identifiers)
-        
+        air_button.pressed.connect(partial(self.ground_air_identifiers, "Air"))
+
+        back_button = QPushButton("Cancel")
+        back_button.setMaximumSize(80, 30)
+        back_button.pressed.connect(self.edit_identifiers_dialog.close)
+
         layout.addWidget(ground_button)
         layout.addWidget(air_button)
-        
+        layout.addWidget(back_button)
         self.edit_identifiers_dialog.show()
     
-    def edit_ground_identifiers(self):
+    def ground_air_identifiers(self, mode):
+        self.change_identifiers_dialog.close()
+        self.edit_ground_air_dialog = QDialog()
+        self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(mode))
+
+        title = QLabel("Add New Identifiers")
+        title.setFont(QFont("Ubuntu", 13, QFont.Bold))
+        title.setContentsMargins(0, 0, 0, 10)
+
+        label = QLabel("Select Aircraft label to edit")
+        combo_box = QComboBox()
+        # Somehow get the current label inside it
+        for i in range (1, self.active_aircrafts + 1):
+            combo_box.addItem(str(i))
+        combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
+
+        name = QLabel("Label")
+        name_lineedit = QLineEdit()
+
+        phone = QLabel("Phone number")
+        phone_lineedit = QLineEdit()
+        phone_lineedit.setValidator(QIntValidator())
+        phone_lineedit.setMaxLength(10)
+
+        imei = QLabel("IMEI number")
+        imei_lineedit = QLineEdit()
+        imei_lineedit.setValidator(QIntValidator())
+
+        serial = QLabel("Serial number")
+        serial_lineedit = QLineEdit()
+        serial_lineedit.setValidator(QIntValidator())
+
+        box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            centerButtons=True,)
+        box.accepted.connect(self.edit_ground_accept)
+        box.rejected.connect(self.edit_ground_air_dialog.close)
+
+        lay = QFormLayout(self.edit_ground_air_dialog)
+        lay.addRow(title)
+        lay.addRow(label, combo_box)
+        lay.addRow(name, name_lineedit)
+        lay.addRow(phone, phone_lineedit)
+        lay.addRow(imei, imei_lineedit)
+        lay.addRow(serial, serial_lineedit)
+
+        lay.addWidget(box)
+        self.edit_ground_air_dialog.show()
+
+    def edit_ground_accept(self):
         pass
-    def edit_air_identifiers(self):
+
+    def edit_air_accept(self):
         pass
+    
+    
+    def edit_identifiers_combo_box(self, i):
+        self.edit_identifiers_id = i + 1
 
     def change_mode_button(self):
         self.change_mode_dialog = QDialog()

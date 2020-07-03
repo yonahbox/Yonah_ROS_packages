@@ -71,13 +71,6 @@ class PopupMessages(QWidget):
             self.message.buttonClicked.connect(self.arm_message)
         elif message_type[0] == "DISARM":
             self.message.buttonClicked.connect(self.disarm_message)
-        
-
-    def create_link_message(self, destination_id, data):
-        message = LinkMessage()
-        message.id = destination_id
-        message.data = data
-        self.command_publisher.publish(message)
 
     # Determines what happens after dialog_window pops up from ok_button
     def arm_message(self, i):
