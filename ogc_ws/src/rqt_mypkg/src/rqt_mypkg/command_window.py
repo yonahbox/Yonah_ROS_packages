@@ -53,6 +53,7 @@ class CommandWindow(QWidget):
         self.change_identifiers_button = QPushButton('Edit Identifiers')
         self.mission_load_button = QPushButton('Load Mission')
         self.change_mode_button = QPushButton('Change Mode')
+        self.ping_button = QPushButton('Ping')
 
         # Set UI properties of the buttons and layout
         top_row = 60 # Minimum height for the top row buttons
@@ -65,6 +66,7 @@ class CommandWindow(QWidget):
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
+        self.ping_button.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
@@ -75,6 +77,7 @@ class CommandWindow(QWidget):
         self.second_row.addWidget(self.change_identifiers_button)
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.change_mode_button)
+        self.second_row.addWidget(self.ping_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
         self.main_layout.addLayout(self.first_row)

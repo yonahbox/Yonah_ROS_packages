@@ -115,7 +115,8 @@ class MyPlugin(Plugin):
         self.CommandWindow.checklist_button.pressed.connect(self.checklist_button)
         self.CommandWindow.change_mode_button.pressed.connect(self.change_mode_button)
         self.CommandWindow.change_identifiers_button.pressed.connect(self.change_identifiers_button)
-        
+        self.CommandWindow.ping_button.pressed.connect(self.ping_button)
+
         # Subscriber lists
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
@@ -390,6 +391,10 @@ class MyPlugin(Plugin):
             rospy.logdebug("[AC %d Mission Load Button] %s", self.destination_id, statustext_message)
 
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
+
+    def ping_button(self):
+        data = 'ping'
+        self.create_link_message(self.destination_id, data)
 
     def checklist_button(self):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
