@@ -73,9 +73,7 @@ class Td():
 		})
 
 		# Search the recently contacted chats for whitelisted numbers
-		self.get_chats()
-
-		
+		self.get_contacts()
 
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
@@ -108,14 +106,29 @@ class Td():
 		else:
 			return None
 
+	# Get the 10 most recent chats	
+	def get_contacts(self):
+		self.send({
+			"@type": "getContacts",
+		})
+
+	# Get specific information about a chat using its chat id
+	def _get_chat_info(self, chat_id):
+		self.send({
+			'@type': 'getChat',
+			'chat_id': chat_id
+		})
+
+	# add new contacts to the telegram account
+	# expects a list of strings containing the numbers of the form 6512345678
 	def add_contacts(self, number_list):
 		self.send({
 			"@type": "importContacts",
 			"contacts": [{
 				"@type": "contact",
-				"first_name": "Td "+number,
+				"first_name": "Td " + number,
 				"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
-			} for number in number_list]
+			} for number in number_list]		# List of objects created using list comprehension
 		})		
 
 	# Send request to telegram
@@ -208,20 +221,6 @@ class Td():
 				}
 			})
 
-	# Get the 10 most recent chats	
-	def get_chats(self):
-		print("GETTING CONTACTS")
-		self.send({
-			"@type": "getContacts",
-		})
-
-	# Get specific information about a chat using its chat id
-	def _get_chat_info(self, chat_id):
-		self.send({
-			'@type': 'getChat',
-			'chat_id': chat_id
-		})
-
 	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
@@ -255,6 +254,7 @@ class Td():
 						'key': 'my_key' #need to change this
 					})
 
+			# This gives a list of user ids that are saved as contacts (in our usage)
 			elif recv_type == "users":
 				print(result)
 				for user_id in result["user_ids"]:
@@ -263,11 +263,12 @@ class Td():
 						"user_id": user_id
 					})
 
+			# gives more specific information about a user. Used to check against phone number
 			elif recv_type == "user":
 				# print(result)
 				for chat in self.chat_list:
 					if chat.phone_number == result["phone_number"]:
-						chat.set_chat_id(result["id"])
+						chat.set_valid(result["id"])
 
 			# This gives specific information about a message
 			# needed to keep track of what messages have been received
@@ -345,7 +346,7 @@ class Chat():
 		if index:
 			self.unread_messages[index] = new_id
 	
-	def set_chat_id(self, chat_id):
+	def set_valid(self, chat_id):
 		self.chat_id = chat_id
 		self.basic_complete = True
 
