@@ -179,33 +179,34 @@ class MyPlugin(Plugin):
         status.ondemand_signal.emit(str(data), "1")
 
     def regular_payload(self, data):
+        aircraft_id = data.vehicle_no
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
-        status.airspeed_signal.emit(data.airspeed, "1")
+        status.airspeed_signal.emit(data.airspeed, aircraft_id)
         status.alt_signal.connect(self.altitude_display)
-        status.alt_signal.emit(data.alt, "1")
+        status.alt_signal.emit(data.alt, aircraft_id)
         status.arm_signal.connect(self.arm_status_display) 
-        status.arm_signal.emit(data.armed, "1")
+        status.arm_signal.emit(data.armed, aircraft_id)
         status.batt_signal.connect(self.quad_batt_display)
-        status.batt_signal.emit(data.batt, "1")
+        status.batt_signal.emit(data.batt, aircraft_id)
         status.fuel_signal.connect(self.fuel_display)
-        status.fuel_signal.emit(data.fuel, "1")
+        status.fuel_signal.emit(data.fuel, aircraft_id)
         status.groundspeed_signal.connect(self.groundspeed_display)
-        status.groundspeed_signal.emit(data.groundspeed, "1")
+        status.groundspeed_signal.emit(data.groundspeed, aircraft_id)
         status.gps_signal.connect(self.gps_display)
-        status.gps_signal.emit(data.lat, data.lon, "1")
+        status.gps_signal.emit(data.lat, data.lon, aircraft_id)
         status.mode_signal.connect(self.mode_status_display) 
-        status.mode_signal.emit(data.mode, "1")
+        status.mode_signal.emit(data.mode, aircraft_id)
         status.throttle_signal.connect(self.throttle_display)
-        status.throttle_signal.emit(data.throttle, "1")
+        status.throttle_signal.emit(data.throttle, aircraft_id)
         status.vibe_signal.connect(self.vibe_display)
-        status.vibe_signal.emit(data.vibe, "1")
+        status.vibe_signal.emit(data.vibe, aircraft_id)
         status.vtol_signal.connect(self.vtol_display)
-        status.vtol_signal.emit(data.vtol, "1")
+        status.vtol_signal.emit(data.vtol, aircraft_id)
         status.wp_signal.connect(self.waypoint_display)
-        status.wp_signal.emit(data.wp, "1")
+        status.wp_signal.emit(data.wp, aircraft_id)
         status.time_signal.connect(self.time_display)
-        status.time_signal.emit(data.header.stamp.secs, "1")
+        status.time_signal.emit(data.header.stamp.secs, aircraft_id)
         
     def status_text(self, data):
         status = Communicate()
@@ -508,7 +509,11 @@ class MyPlugin(Plugin):
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
-        box.accepted.connect(self.edit_ground_accept)
+
+        if mode == "Ground":
+            box.accepted.connect(self.edit_ground_accept)
+        else:
+            box.accepted.connect(self.edit_air_accept)
         box.rejected.connect(self.edit_ground_air_dialog.close)
 
         lay = QFormLayout(self.edit_ground_air_dialog)
@@ -523,11 +528,12 @@ class MyPlugin(Plugin):
         self.edit_ground_air_dialog.show()
 
     def edit_ground_accept(self):
-        pass
+        self.edit_ground_air_dialog.close()
+        
 
     def edit_air_accept(self):
-        pass
-    
+        self.edit_ground_air_dialog.close()
+        
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1
