@@ -246,6 +246,7 @@ class MyPlugin(Plugin):
         rospy.logdebug_throttle(30, "[AC {} THROTTLE display] {}".format(int(id), data))
 
     def gps_display(self, lat, lon, id):
+        data = [lat, lon]
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftGPS" + id).setPlainText(str(lat) +", " + str(lon))
         rospy.logdebug_throttle(30, "[AC {} GPS display] {}".format(int(id), data))
 

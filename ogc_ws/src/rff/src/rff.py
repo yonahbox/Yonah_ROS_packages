@@ -12,46 +12,9 @@ from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.msg import WaypointList
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import State
+from waypoint import WP
 
 missionlist = []
-waypoints = []
-
-class WP(object):
-
-	# Creates a csv dialect to read the waypoint file properly
-	class CSVDialect(csv.Dialect):
-		delimiter = '\t'
-		doublequote = False
-		skipinitialspace = True
-		lineterminator = '\r\n'
-		quoting = csv.QUOTE_NONE
-
-	def read(self, wpfile):
-		f = open(wpfile, "r")
-		# There are header lines which identify waypoint files
-		pastheaderline = False
-		for data in csv.reader(f, self.CSVDialect):
-			if not pastheaderline:
-				qgc, wpl, ver = data[0].split(' ', 3)
-				ver = int(ver)
-				if qgc == 'QGC' and wpl == 'WPL' and (ver == 110 or ver ==120):
-					pastheaderline = True
-
-			else:
-				# Convert waypoints into Waypoint format
-				waypoints.append(Waypoint(
-					is_current = bool(int(data[1])),
-					frame = int(data[2]),
-					command = int(data[3]),
-					param1 = float(data[4]),
-					param2 = float(data[5]),
-					param3 = float(data[6]),
-					param4 = float(data[7]),
-					x_lat = float(data[8]),
-					y_long = float(data[9]),
-					z_alt = float(data[10]),
-					autocontinue = bool(int(data[11]))
-				))
 
 class RFF:
 
@@ -59,7 +22,7 @@ class RFF:
 		# Check arm status of aircraft
 		rospy.Subscriber('/mavros/state', State, self.checkDisarm)
 		# Path to missionlist.txt which contains all missions in a flight in order
-		path = str(waypointsfolder + "missionlist.txt")
+		path = str(waypointsfolder + "mission_list.txt")
 		f = open(path, "r")
 		for line in f:
 			# Ignores # comments
@@ -76,8 +39,8 @@ class RFF:
 	def main(self):
 		rospy.loginfo("Loading waypoints.")
 		rospy.wait_for_service('mavros/mission/push', timeout=10)
-		wp = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-		while not wp(0, waypoints).success:
+		wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+		while not wppush(0, waypoints).success:
 			rospy.logerr("Failed to load waypoints. Trying again.")
 			time.sleep(3)
 		rospy.loginfo("Waypoints loaded.")
@@ -109,10 +72,10 @@ class Button:
 
 	def __init__(self):
 		self._username = rospy.get_param("~router_username","root") # Hostname of onboard router
-        	self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
+		self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
 		self.Button_State = False
 		self.stopwarn = False
-		self.ssh = RuTOS.start_client(self.ip, self.user)
+		self.ssh = RuTOS.start_client(self._ip, self._username)
 		rospy.loginfo("Monitoring button")
 		RuTOS.button_on(self.ssh)
 
@@ -161,7 +124,7 @@ if __name__ == "__main__":
 		for i in range(len(missionlist)):
 			wpfile = str(waypointsfolder + missionlist[i])
 			wpread = WP()
-			wpread.read(wpfile)
+			waypoints = wpread.read(wpfile)
 			# Do nothing if aircraft is armed
 			while rff.armStatus:
 				time.sleep(5)
