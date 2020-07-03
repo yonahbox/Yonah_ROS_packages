@@ -59,7 +59,7 @@ class satcomms(rockBlockProtocol):
         # Rockblock Comms
         self._buffer = mo_msg_buffer()
         self._own_serial = int(self._get_self_serial().data) # Our own rockblock serial
-        self._thr_server = True # True = Comm through web server; False = Comm through gnd Rockblock
+        self._thr_server = rospy.get_param("~thr_server", "1") # 1 = Comm through web server; 0 = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
         self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
