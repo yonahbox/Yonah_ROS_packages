@@ -165,7 +165,7 @@ class MyPlugin(Plugin):
         status.ondemand_signal.emit(str(data), "1")
 
     def regular_payload(self, data):
-        aircraft_id = data.vehicle_no
+        aircraft_id = str(data.vehicle_no)
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)
@@ -201,7 +201,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display_sitl)
+        status.mode_signal.connect(self.mode_status_display)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")
@@ -252,18 +252,21 @@ class MyPlugin(Plugin):
         self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(data) + " out of " + str(10))
 
     def time_display(self, AC_time, id):
-        self.time = AC_time # sets the UI time to the data time
-        time_in_seconds = AC_time - self.aircrafts_info.get("AC" + id).initial_time
-        minutes = time_in_seconds // 60
-        hours = time_in_seconds // 3600
-        seconds = time_in_seconds - (minutes * 60) - (hours * 3600)
-        if seconds < 10:
-            seconds = "0" + str(seconds)
-        if minutes < 10:
-            minutes = "0" + str(minutes)
-        if hours < 10:
-            hours = "0" + str(hours)
-        self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftFlying Time" + id).setPlainText(str(hours) + ":" + str(minutes) + ":" + str(seconds))
+        if self.text_to_display == "DISARMED":
+            self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftFlying Time" + id).setPlainText("00:00:00")
+        else:
+            self.time = AC_time # sets the UI time to the data time
+            self.time_in_seconds = AC_time - self.aircrafts_info.get("AC" + id).initial_time
+            minutes = self.time_in_seconds // 60
+            hours = self.time_in_seconds // 3600
+            seconds = self.time_in_seconds - (minutes * 60) - (hours * 3600)
+            if seconds < 10:
+                seconds = "0" + str(seconds)
+            if minutes < 10:
+                minutes = "0" + str(minutes)
+            if hours < 10:
+                hours = "0" + str(hours)
+            self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftFlying Time" + id).setPlainText(str(hours) + ":" + str(minutes) + ":" + str(seconds))
 
     def fuel_display(self, data, id):
         data = str(data)
@@ -311,13 +314,16 @@ class MyPlugin(Plugin):
         rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
     def arm_status_display(self, arm_status, id):
+        print(self.CommandWindow.arm_status.get('AC' + str(id)))
         if arm_status == "False" or arm_status == 0:
-            text_to_display = "DISARMED"
+            self.text_to_display = "DISARMED"
         else:
-            text_to_display = "ARMED"
-        self.CommandWindow.arm_status['AC' + str(id)] = text_to_display
-        self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(text_to_display)        
+            if self.CommandWindow.arm_status.get('AC' + str(id)) == None or self.CommandWindow.arm_status.get('AC' + str(id)) == "DISARMED":
+                self.aircrafts_info.get("AC" + id).initial_time = self.time
+            self.text_to_display = "ARMED"
+        self.CommandWindow.arm_status['AC' + str(id)] = self.text_to_display
+        self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(self.text_to_display)        
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(self.text_to_display)        
     
     def status_text_display(self, status_text, id):
         self.SummaryWindow.statustext.appendPlainText(status_text)

@@ -345,7 +345,7 @@ class CommandWindow(QWidget):
         self.mode_change = self.mode_list[i]
 
     def dropdown_accept(self):
-        data = "wp " + str(self.decoder.index(self.mode_change))
+        data = "mode " + str(self.decoder.index(self.mode_change))
         statustext_message = "Aircraft {} mode has been set to {}".format(self.destination_id, self.mode_change)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
