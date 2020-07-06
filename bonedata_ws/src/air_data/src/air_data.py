@@ -1,17 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# Copyright (C) 2019 Seah Shao Xuan, Lau Yan Han, and Yonah (yonahbox@gmail.com)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 File Name: air_data.py
-
-Date Modified: 30/07/2019
-
 Required Scripts: air_ssh_connection.sh, air_netcat_init.sh
-
 Launched by ROS under air_data.launch, which performs the initialisation of a SSH connection from the companion computer to a web server.
-
 Includes SSH connection, NETCAT initialisation and periodic tests of connection with the web server.
-
-Pending development: interaction with the SMS Link for information exchange.
 """
 
 #Imports critical python modules
@@ -80,23 +88,23 @@ class SSH:
 		try:
 			self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.client.connect(('localhost', 4000))
-			self.client.send("AIR")
+			self.client.send("AIR".encode())
 			#Receives a status message from the web server
 			self.from_server = self.client.recv(4096)
 			self.client.close()
 			
-			if ("NETCAT" in self.from_server):
+			if ("NETCAT".encode() in self.from_server):
 				self.ground_netcat = True
 			else:
 				self.ground_netcat = False
 
-			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
+			if ("AIR".encode() in self.from_server) and ("GROUND".encode() in self.from_server):	
 				rospy.loginfo("Air-Server-Ground Established")
 				print ("\r")	
 				self.air_link = True
 				self.ground_link = True
 				return True	
-			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
+			elif ("AIR".encode() in self.from_server) and not ("GROUND".encode() in self.from_server):
 				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
 				print("\r")
 				self.air_link = True
@@ -122,7 +130,7 @@ class SSH:
 		
 		#Kills any existing NETCAT processes prior to opening a new one, to prevent the hogging of critical ports
 		self.netcat_list = subprocess.Popen(['pidof', 'netcat'], stdout=PIPE).stdout.read()
-		self.arg = 'kill -9 ' + self.netcat_list
+		self.arg = 'kill -9 ' + self.netcat_list.decode()
 		subprocess.Popen([self.arg], shell=True, stdout=PIPE, stderr=PIPE)
 		rospy.loginfo("NETCAT Reset")
 		print("\r")
@@ -163,6 +171,8 @@ if __name__ == "__main__":
 			if (ssh.netcat_link == False) and (ssh.ground_netcat == True):
 				ssh.netcat_init()
 
+			# Notify the SMS Tech node about its status
+			# @TODO: Receive info about SMS Tech Node's status
 			if (ssh.air_link == True) and (ssh.ground_link == True):
 				ros.publish("SVC")
 			elif (ssh.air_link == True) and (ssh.ground_link == False):
