@@ -117,6 +117,34 @@ class Identifiers:
 	def get_self_imei(self):
 		return self.self_device.imei
 
+	def add_new_device(self, label, is_air, number, imei, rb_serial):
+		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+		if len(edit_list) > 9:
+			return False
+
+		selected_id = -1
+		for i in range(1,10):
+			if i not in [obj["id"] for obj in edit_list]:
+				selected_id = i
+				break
+
+		if selected_id == -1:
+			return False
+
+		edit_list.append({
+			"label": label,
+			"id": selected_id,
+			"number": number,
+			"imei": imei,
+			"rb_serial": rb_serial
+		})
+
+		with open(self.json_file, "w") as f:
+			json.dump(self.json_obj, f)
+
+		self._parse_file()
+		return True
+
 	# Does a lazy check to see if the received message is from a valid sender
 	# Trusts that the sender of the message was correctly identified in the message headers
 	# Can be fooled by imitating the message headers
