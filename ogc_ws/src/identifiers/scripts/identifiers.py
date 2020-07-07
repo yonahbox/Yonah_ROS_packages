@@ -145,7 +145,7 @@ class Identifiers:
 		self._parse_file()
 		return True
 
-	def edit_device(self, id_n, is_air, label=None, number=None, imei=None, rb_serial=None):
+	def edit_device(self, id_n, is_air, label="", number="", imei="", rb_serial=""):
 		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 
 		selected_device = None
@@ -157,22 +157,13 @@ class Identifiers:
 		if selected_device is None:
 			return False
 
-		print(device)
-
-		print(f"label: {label} | type: {label is None}")
-		print(f"number: {number} | type: {number is None}")
-		print(f"imei: {imei} | type: {imei is None}")
-		print(f"rb_serial: {rb_serial} | type: {rb_serial is None}")
-
-		device["label"] = label if label is not None else device["label"]
-		device["number"] = number if number is not None else device["number"]
-		device["imei"] = imei if imei is not None else device["imei"]
-		device["rb_serial"] = rb_serial if rb_serial is not None else device["rb_serial"]
+		device["label"] = label if label != "" else device["label"]
+		device["number"] = number if number != "" else device["number"]
+		device["imei"] = imei if imei != ""else device["imei"]
+		device["rb_serial"] = rb_serial if rb_serial != "" else device["rb_serial"]
 
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
-
-		print(device)
 
 		self._parse_file()
 		return True

@@ -23,6 +23,7 @@ from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
 from identifiers.srv import CheckSender, CheckSenderResponse
 from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
 from identifiers.srv import AddNewDevice, AddNewDeviceResponse
+from identifiers.srv import EditDevice, EditDeviceResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -48,11 +49,19 @@ class ServiceHandler:
 		return GetSBDDetailsResponse(username=username, password=password, url=url)
 
 	def add_new_device(self, request):
-		result = self._ids.add_new_device(request.label, request.is_air, request.number, request.imei, request.rb_serial)
+		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		if not result:
 			rospy.logwarn("Failed to add information to identifiers file")
 
 		return AddNewDeviceResponse(result)
+
+	def edit_device(self, request):
+		label = request.label if request.label != '' else None
+		result = self._ids.edit_device(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		if not result:
+			rospy.logwarn("Failed to edit device in identifiers_file")
+
+		return EditDeviceResponse(result)
 
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
@@ -79,6 +88,7 @@ if __name__ == '__main__':
 	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
 
 	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
+	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)

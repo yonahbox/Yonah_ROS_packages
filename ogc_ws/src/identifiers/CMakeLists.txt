@@ -61,6 +61,7 @@ add_service_files(
   GetSBDDetails.srv
   CheckSender.srv
   AddNewDevice.srv
+  EditDevice.srv
 )
 
 ## Generate actions in the 'action' folder

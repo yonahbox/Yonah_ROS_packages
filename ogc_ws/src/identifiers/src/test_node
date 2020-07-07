@@ -17,7 +17,9 @@
 
 import rospy
 
-from identifiers.srv import GetDetails, GetSelfDetails, CheckSender, GetSBDDetails, AddNewDevice, AddNewDeviceRequest
+from identifiers.srv import GetDetails, GetSelfDetails, CheckSender, GetSBDDetails
+from identifiers.srv import AddNewDevice, AddNewDeviceRequest
+from identifiers.srv import EditDevice, EditDeviceRequest
 
 if __name__ == '__main__':
 	rospy.init_node('identifiers_test_node', anonymous=False, disable_signals=True)
@@ -27,6 +29,7 @@ if __name__ == '__main__':
 	rospy.wait_for_service("identifiers/get/serial")
 
 	rospy.wait_for_service("identifiers/add/device")
+	rospy.wait_for_service("identifiers/edit/device")
 
 	rospy.wait_for_service("identifiers/self/imei")
 	rospy.wait_for_service("identifiers/self/serial")
@@ -41,6 +44,7 @@ if __name__ == '__main__':
 		get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
 
 		add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
+		edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
 
 		get_self_imei = rospy.ServiceProxy("identifiers/self/imei", GetSelfDetails)
 		get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
@@ -49,15 +53,23 @@ if __name__ == '__main__':
 		check_message = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
 		check_message_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
-		new_device = AddNewDeviceRequest()
-		new_device.label = "ros_test_dev"
-		new_device.is_air = False
-		new_device.number = "653456787654"
-		new_device.imei = '4567898764345678987654567'
-		new_device.rb_serial = "12345"
+		# new_device = AddNewDeviceRequest()
+		# new_device.label = "ros_test_dev"
+		# new_device.is_air = False
+		# new_device.number = "653456787654"
+		# new_device.imei = '4567898764345678987654567'
+		# new_device.rb_serial = "12345"
 
-		add_result = add_new_device(new_device)
-		rospy.logwarn(add_result.success)
+		# add_result = add_new_device(new_device)
+		# rospy.logwarn(add_result.success)
+
+		edit_dev = EditDeviceRequest()
+		edit_dev.label = "ROS test"
+		edit_dev.id = 6
+		edit_dev.is_air = False
+
+		edit_result = edit_device(edit_dev)
+		rospy.logwarn(edit_result.success)
 
 	except rospy.ServiceException as e:
 		rospy.loginfo("Service call failed: " + e)
