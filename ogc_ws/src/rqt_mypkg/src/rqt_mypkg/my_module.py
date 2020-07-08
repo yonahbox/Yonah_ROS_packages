@@ -88,7 +88,7 @@ class MyPlugin(Plugin):
 
         # Create layout for Waypoint scroll window
         self.scroll = QScrollArea()
-        self.scroll.setMinimumHeight(700)
+        self.scroll.setMinimumHeight(800)
         self.scroll.setMinimumWidth(600)
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.WaypointWindow)

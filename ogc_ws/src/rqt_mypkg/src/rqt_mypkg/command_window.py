@@ -33,6 +33,7 @@ from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import *
 from .aircraft_info import *
+from regular import air_payload
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 # Self-note: Consider changing the structure of the code to not over-populate the init
@@ -42,6 +43,7 @@ class CommandWindow(QWidget):
         self.setWindowTitle("Command Window")
         
         self.destination_id = 1
+        self.send_custom_ping = 0
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
@@ -52,6 +54,9 @@ class CommandWindow(QWidget):
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
+        self.air = air_payload()
+        self.custom_ping_list = self.air.entries.keys()
+        self.custom_ping_list.sort()
         self.create_layout()
         
         self.PopupMessages = PopupMessages()
@@ -59,6 +64,8 @@ class CommandWindow(QWidget):
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
 
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
+        self.custom_ping_combobox.currentIndexChanged.connect(self.custom_ping_change)
+
         self.arm_button.pressed.connect(self.arm)
         self.disarm_button.pressed.connect(self.disarm)
         self.go_button.pressed.connect(self.go)
@@ -67,6 +74,7 @@ class CommandWindow(QWidget):
         self.change_mode_button.pressed.connect(self.change_mode)
         self.change_identifiers_button.pressed.connect(self.change_identifiers)
         self.ping_button.pressed.connect(self.ping)
+        self.custom_ping_button.pressed.connect(self.custom_ping)
 
         # Publisher command
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
@@ -76,14 +84,19 @@ class CommandWindow(QWidget):
         self.main_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
+        self.third_row = QHBoxLayout()
+        self.ping_row = QFormLayout()
         # Set main_layout as the layout that occupies the entire widget
         self.setLayout(self.main_layout) 
 
         # Create the widgets
         self.combo_box = QComboBox()
+        self.custom_ping_combobox = QComboBox()
         # Use a for loop to add items inside the drop down menu
         for i in range(1, self.active_aircrafts + 1): 
             self.combo_box.addItem('Aircraft ' + str(i))
+        for i in (self.custom_ping_list):
+            self.custom_ping_combobox.addItem(i)
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -92,6 +105,8 @@ class CommandWindow(QWidget):
         self.mission_load_button = QPushButton('Load Mission')
         self.change_mode_button = QPushButton('Change Mode')
         self.ping_button = QPushButton('Ping')
+        self.custom_ping_button = QPushButton('Custom Ping Button')
+        self.ros_reader = QPushButton('ROS log')
 
         # Set UI properties of the buttons and layout
         top_row = 60 # Minimum height for the top row buttons
@@ -105,6 +120,9 @@ class CommandWindow(QWidget):
         self.checklist_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
         self.ping_button.setMinimumHeight(bottom_row)
+        self.custom_ping_button.setMinimumHeight(bottom_row)
+        self.custom_ping_combobox.setMinimumHeight(bottom_row)
+        self.ros_reader.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
@@ -116,10 +134,15 @@ class CommandWindow(QWidget):
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.change_mode_button)
         self.second_row.addWidget(self.ping_button)
+        
+        self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
         self.main_layout.addLayout(self.first_row)
         self.main_layout.addLayout(self.second_row)
+        self.third_row.addLayout(self.ping_row)
+        self.third_row.addWidget(self.ros_reader)
+        self.main_layout.addLayout(self.third_row)
 
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
@@ -127,11 +150,15 @@ class CommandWindow(QWidget):
         message.data = data
         self.command_publisher.publish(message)
 
-    def ping(self):
-        print('asd')
-    
     def combo_box_change(self, i):
         self.destination_id = i + 1
+
+    def custom_ping_change(self, i):
+        self.send_custom_ping = i
+
+    def custom_ping(self):
+        data = "ping " + str(self.custom_ping_list[self.send_custom_ping])
+        self.create_link_message(self.destination_id, data)
 
     def arm (self):
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
@@ -146,7 +173,6 @@ class CommandWindow(QWidget):
 
     def disarm (self):
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
-        print('disarm')
 
     def go(self):
         data = "mode 10"
@@ -353,4 +379,3 @@ class CommandWindow(QWidget):
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
     def shutdown(self):
         self.close()
-    
