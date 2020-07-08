@@ -96,8 +96,8 @@ def convert_mode_to_int (mode):
         'QSTABILIZE': 17,
         'QHOVER': 18,
         'QLOITER': 19,
-        'MANUAL': 20,
-        'QLAND': 21
+        'QLAND': 20,
+        'QRTL': 21
     }
     if mode_dictionary.get(mode) == None:
         return 0

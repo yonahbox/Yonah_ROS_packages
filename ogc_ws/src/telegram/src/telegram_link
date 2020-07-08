@@ -109,7 +109,7 @@ if __name__ == '__main__':
 		rate = rospy.Rate(1)
 		while not td.setup_complete():
 			rospy.loginfo("NOT COMPLETE YET")
-			td.get_chats()
+			td.get_contacts()
 			# td.receive()
 			rate.sleep()
 

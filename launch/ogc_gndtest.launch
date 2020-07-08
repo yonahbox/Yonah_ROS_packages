@@ -25,9 +25,6 @@
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<param name="identifiers_file" value="$(arg identifiers_file)" />
-		<param name="is_air" value="$(arg is_air)" />
-		<param name="self_id" value="$(arg self_id" />
 		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
@@ -36,10 +33,6 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="router_username" value="$(arg router_username)" />
 		<param name="router_ip" value="$(arg router_ip)" />
-		<param name="identifiers_file" value="$(arg identifiers_file)" />
-		<param name="is_air" value="$(arg is_air)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 	
 	<!-- sbd link node -->
@@ -47,10 +40,13 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
-        <param name="identifiers_file" value="$(arg identifiers_file)" />
-        <param name="is_air" value="$(arg is_air)" />
-        <param name="self_id" value="$(arg self_id)" />
-        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	</node>
+
+	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="identifiers_file" value="$(arg identifiers_file)" />
+		<param name="is_air" value="$(arg is_air)" />
+		<param name="self_id" value="$(arg self_id)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
 	<!-- gnd despatcher node -->

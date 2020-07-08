@@ -66,14 +66,14 @@ class Td():
 		for id_n,num in self.whitelist_info.items():
 			self.chat_list.append(Chat(id_n, num))
 
-		# Search the recently contacted chats for whitelisted numbers
-		self.get_chats()
-
 		# Reduce verbosity to reduce cluttering the log
 		self._execute({
 			'@type': 'setLogVerbosityLevel',
 			'new_verbosity_level': 1
 		})
+
+		# Search the recently contacted chats for whitelisted numbers
+		self.get_contacts()
 
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
@@ -105,6 +105,31 @@ class Td():
 			return chat.phone_number
 		else:
 			return None
+
+	# Get the 10 most recent chats	
+	def get_contacts(self):
+		self.send({
+			"@type": "getContacts",
+		})
+
+	# Get specific information about a chat using its chat id
+	def _get_chat_info(self, chat_id):
+		self.send({
+			'@type': 'getChat',
+			'chat_id': chat_id
+		})
+
+	# add new contacts to the telegram account
+	# expects a list of strings containing the numbers of the form 6512345678
+	def add_contacts(self, number_list):
+		self.send({
+			"@type": "importContacts",
+			"contacts": [{
+				"@type": "contact",
+				"first_name": "Td " + number,
+				"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
+			} for number in number_list]		# List of objects created using list comprehension
+		})		
 
 	# Send request to telegram
 	def send(self, query):
@@ -196,20 +221,6 @@ class Td():
 				}
 			})
 
-	# Get the 10 most recent chats	
-	def get_chats(self):
-		self.send({
-			'@type': 'getChats',
-			'limit': 10
-		})
-
-	# Get specific information about a chat using its chat id
-	def _get_chat_info(self, chat_id):
-		self.send({
-			'@type': 'getChat',
-			'chat_id': chat_id
-		})
-
 	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
@@ -243,29 +254,21 @@ class Td():
 						'key': 'my_key' #need to change this
 					})
 
-			# this gives a list of chats
-			elif recv_type == 'updateChatOrder':
-				# checks if the chat has already been handled
-				if result['chat_id'] not in [chat.chat_id for chat in self.chat_list]:
-					self._get_chat_info(result['chat_id'])
-
-			# This gives specific information about a chat
-			elif recv_type == 'chat':
-				# If it is a private chat, get information about the user
-				if result['type']['@type'] == 'chatTypePrivate':
+			# This gives a list of user ids that are saved as contacts (in our usage)
+			elif recv_type == "users":
+				print(result)
+				for user_id in result["user_ids"]:
 					self.send({
-						'@type': 'getUser',
-						'user_id': result['type']['user_id']
+						"@type": "getUser",
+						"user_id": user_id
 					})
 
-			# This gives specific information about a user
-			elif recv_type == 'user':
+			# gives more specific information about a user. Used to check against phone number
+			elif recv_type == "user":
+				# print(result)
 				for chat in self.chat_list:
-					# Checks if the user is a whitelisted number
 					if chat.phone_number == result["phone_number"]:
-						# get relevant information about user
-						chat.set_chat_id(result["id"])
-						self.command_user_ids.append(result["id"])
+						chat.set_valid(result["id"])
 
 			# This gives specific information about a message
 			# needed to keep track of what messages have been received
@@ -343,7 +346,7 @@ class Chat():
 		if index:
 			self.unread_messages[index] = new_id
 	
-	def set_chat_id(self, chat_id):
+	def set_valid(self, chat_id):
 		self.chat_id = chat_id
 		self.basic_complete = True
 
