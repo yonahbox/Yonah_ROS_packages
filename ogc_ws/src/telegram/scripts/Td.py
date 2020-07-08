@@ -256,7 +256,6 @@ class Td():
 
 			# This gives a list of user ids that are saved as contacts (in our usage)
 			elif recv_type == "users":
-				print(result)
 				for user_id in result["user_ids"]:
 					self.send({
 						"@type": "getUser",
