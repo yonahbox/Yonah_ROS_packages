@@ -206,20 +206,36 @@ class CommandWindow(QWidget):
         self.change_identifiers_dialog = QDialog()
         self.change_identifiers_dialog.setWindowTitle("Edit Identifiers")
         layout = QVBoxLayout(self.change_identifiers_dialog)
-        add_identifiers_button = QPushButton("Add New Identifiers")
-        edit_identifiers_button = QPushButton("Edit Existing Identifiers")
-        add_identifiers_button.setMinimumHeight(40)
-        edit_identifiers_button.setMinimumHeight(40)
-        add_identifiers_button.pressed.connect(self.add_identifiers)
-        edit_identifiers_button.pressed.connect(self.edit_identifiers)
-        layout.addWidget(add_identifiers_button)
-        layout.addWidget(edit_identifiers_button)
+
+        add_ground = QPushButton("Add New Ground Identifiers")
+        add_air = QPushButton("Add New Air Identifiers")
+        edit_ground = QPushButton("Edit Existing Ground Identifiers")
+        edit_air = QPushButton("Edit Existing Air Identifiers")
+
+        add_ground.setMinimumHeight(40)
+        add_air.setMinimumHeight(40)
+        edit_ground.setMinimumHeight(40)
+        edit_air.setMinimumHeight(40)
+
+        add_ground.pressed.connect(partial(self.add_identifiers, "Ground"))
+        add_air.pressed.connect(partial(self.add_identifiers, "Air"))
+        edit_ground.pressed.connect(partial(self.edit_identifiers, "Ground"))
+        edit_air.pressed.connect(partial(self.edit_identifiers, "Air"))
+
+        layout.addWidget(add_ground)
+        layout.addWidget(add_air)
+        layout.addWidget(edit_ground)
+        layout.addWidget(edit_air)
+
         self.change_identifiers_dialog.show()
 
-    def add_identifiers(self):
+    def add_identifiers(self, side):
+        self.change_identifiers_dialog.close()
+
         self.identifiers_dialog = QDialog()
-        self.identifiers_dialog.setWindowTitle("Add New Identifiers")
-        title = QLabel("Add New Identifiers")
+        self.identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
+
+        title = QLabel("Add New {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
         title.setContentsMargins(0, 0, 0, 10)
 
@@ -249,46 +265,24 @@ class CommandWindow(QWidget):
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
-        buttons.accepted.connect(self.identifiers_accept)
+        buttons.accepted.connect(partial(self.add_identifiers_accept, side))
         buttons.rejected.connect(self.identifiers_dialog.close)
 
         identifiers_layout.addWidget(buttons)
         self.identifiers_dialog.setLayout(identifiers_layout)
         self.identifiers_dialog.show()
 
-    def identifiers_accept(self):
+    def add_identifiers_accept(self, side):
         ### Do something after Rumesh's identifiers is settled
         self.identifiers_dialog.close()
         self.change_identifiers_dialog.close()
 
-    def edit_identifiers(self):
-        self.edit_identifiers_dialog = QDialog()
-        self.edit_identifiers_dialog.setWindowTitle("Edit Identifiers")
-
-        layout = QVBoxLayout(self.edit_identifiers_dialog)
-        ground_button = QPushButton("Ground Identifier")
-        ground_button.setMinimumHeight(40)
-        ground_button.pressed.connect(partial(self.ground_air_identifiers, "Ground"))
-
-        air_button = QPushButton("Air Identifier")
-        air_button.setMinimumHeight(40)
-        air_button.pressed.connect(partial(self.ground_air_identifiers, "Air"))
-
-        back_button = QPushButton("Cancel")
-        back_button.setMaximumSize(80, 30)
-        back_button.pressed.connect(self.edit_identifiers_dialog.close)
-
-        layout.addWidget(ground_button)
-        layout.addWidget(air_button)
-        layout.addWidget(back_button)
-        self.edit_identifiers_dialog.show()
-    
-    def ground_air_identifiers(self, mode):
+    def edit_identifiers(self, side):
         self.change_identifiers_dialog.close()
         self.edit_ground_air_dialog = QDialog()
-        self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(mode))
+        self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
 
-        title = QLabel("Add New Identifiers")
+        title = QLabel("Edit Existing {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
         title.setContentsMargins(0, 0, 0, 10)
 
@@ -319,10 +313,7 @@ class CommandWindow(QWidget):
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
 
-        if mode == "Ground":
-            box.accepted.connect(self.edit_ground_accept)
-        else:
-            box.accepted.connect(self.edit_air_accept)
+        box.accepted.connect(partial(self.add_identifiers_accept, side))
         box.rejected.connect(self.edit_ground_air_dialog.close)
 
         lay = QFormLayout(self.edit_ground_air_dialog)
@@ -336,13 +327,8 @@ class CommandWindow(QWidget):
         lay.addWidget(box)
         self.edit_ground_air_dialog.show()
 
-    def edit_ground_accept(self):
+    def edit_identifiers_accept(self, side):
         self.edit_ground_air_dialog.close()
-        
-
-    def edit_air_accept(self):
-        self.edit_ground_air_dialog.close()
-        
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1
