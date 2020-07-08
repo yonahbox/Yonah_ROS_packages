@@ -30,17 +30,18 @@ from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
-class mo_msg_buffer():
-    '''Buffer to hold MO msg before a mailbox check takes place'''
+class local_mo_buffer():
+    '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
         self.data = "" # actual msg
+        self.msgtype = "r" # Msg type of the message that is already in the buffer
         self.write_time = rospy.get_rostime().secs # Time which msg is written to buffer
         self.target_id = 1 # ID of the client which we are sending to
 
 class satcomms(rockBlockProtocol):
 
     def __init__(self):
-        rospy.init_node('sbd_link', anonymous=False)
+        rospy.init_node('sbd_air_link', anonymous=False)
         
         rospy.wait_for_service("identifiers/self/serial")
         rospy.wait_for_service("identifiers/get/serial")
@@ -57,7 +58,7 @@ class satcomms(rockBlockProtocol):
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
 
         # Rockblock Comms
-        self._buffer = mo_msg_buffer()
+        self._buffer = local_mo_buffer()
         self._own_serial = int(self._get_self_serial().data) # Our own rockblock serial
         self._thr_server = rospy.get_param("~thr_server", "1") # 1 = Comm through web server; 0 = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
@@ -67,6 +68,17 @@ class satcomms(rockBlockProtocol):
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
             rospy.signal_shutdown("rockBlock error")
+        
+        # Msg Type Prioritization. Higher number means higher priority
+        self._msg_priority = {
+            "r": 0,
+            "a": 1,
+            "m": 2,
+            "s": 3,
+            "i": 4,
+            "w": 5,
+            "e": 6
+        }
 
     ################################
     # pyrockBlock callback functions
@@ -123,10 +135,17 @@ class satcomms(rockBlockProtocol):
     
     def sbd_get_mo_msg(self, data):
         '''
-        Get MO msg from to_sbd topic and put it in MO buffer
+        Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
+        incoming_msgtype = data.data.split()[0]
+        # Reject incoming msg if existing msg in the local buffer is already of a higher priority
+        if (incoming_msgtype < self._buffer.msgtype):
+            rospy.logdebug("Reject incoming msg " + data.data)
+            rospy.loginfo("Existing msg in SBD local MO buffer is of higher priority: " + self._buffer.data)
+            return
         self._buffer.data = data.data
+        self._buffer.msgtype = incoming_msgtype
         self._buffer.write_time = rospy.get_rostime().secs
         self._buffer.target_id = data.id
     
@@ -136,7 +155,7 @@ class satcomms(rockBlockProtocol):
         This checks for incoming Mobile-Terminated (MT) msgs,
         and sends outgoing Mobile-Originated (MO) msgs if there are any in the buffer
         '''
-        # If no MO msg, buffer will be empty
+        # If no MO msg, local MO buffer will be empty
         self._count = self._count + 1
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
@@ -153,9 +172,10 @@ class satcomms(rockBlockProtocol):
         except rockBlockException:
             # Restart the node if error occurs
             rospy.signal_shutdown("rockBlock error")
-        # Clear buffer if no new MO msgs were received after sending the previous MO msg
+        # Clear buffer and reset priority to lowest, if no new MO msgs were received after sending the previous one
         if self._buffer.write_time < mailchk_time:
             self._buffer.data = ""
+            self._buffer.msgtype = "r"
 
     ############################
     # "Main" function
