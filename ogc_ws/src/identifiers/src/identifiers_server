@@ -24,6 +24,7 @@ from identifiers.srv import CheckSender, CheckSenderResponse
 from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
 from identifiers.srv import AddNewDevice, AddNewDeviceResponse
 from identifiers.srv import EditDevice, EditDeviceResponse
+from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):

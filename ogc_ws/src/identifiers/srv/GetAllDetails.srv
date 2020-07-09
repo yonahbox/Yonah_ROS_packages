@@ -1,0 +1,7 @@
+uint8 id
+bool is_air
+---
+string label
+string number
+string imei
+string rb_serial
