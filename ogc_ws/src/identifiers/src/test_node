@@ -18,6 +18,7 @@
 import rospy
 
 from identifiers.srv import GetDetails, GetSelfDetails, CheckSender, GetSBDDetails
+from identifiers.srv import GetAllDetails, GetAllDetailsRequest
 from identifiers.srv import AddNewDevice, AddNewDeviceRequest
 from identifiers.srv import EditDevice, EditDeviceRequest
 
@@ -27,6 +28,7 @@ if __name__ == '__main__':
 	rospy.wait_for_service("identifiers/get/number")
 	rospy.wait_for_service("identifiers/get/imei")
 	rospy.wait_for_service("identifiers/get/serial")
+	rospy.wait_for_service("identifiers/get/all")
 
 	rospy.wait_for_service("identifiers/add/device")
 	rospy.wait_for_service("identifiers/edit/device")
@@ -42,6 +44,7 @@ if __name__ == '__main__':
 		get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
 		get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
 		get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
+		get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
 
 		add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
 		edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
@@ -63,13 +66,20 @@ if __name__ == '__main__':
 		# add_result = add_new_device(new_device)
 		# rospy.logwarn(add_result.success)
 
-		edit_dev = EditDeviceRequest()
-		edit_dev.label = "ROS test"
-		edit_dev.id = 6
-		edit_dev.is_air = False
+		# edit_dev = EditDeviceRequest()
+		# edit_dev.label = "ROS test"
+		# edit_dev.id = 6
+		# edit_dev.is_air = False
 
-		edit_result = edit_device(edit_dev)
-		rospy.logwarn(edit_result.success)
+		# edit_result = edit_device(edit_dev)
+		# rospy.logwarn(edit_result.success)
+
+		cur_dev = GetAllDetailsRequest()
+		cur_dev.id = 1
+		cur_dev.is_air = False
+
+		device = get_device(cur_dev)
+		rospy.logwarn(device)
 
 	except rospy.ServiceException as e:
 		rospy.loginfo("Service call failed: " + e)

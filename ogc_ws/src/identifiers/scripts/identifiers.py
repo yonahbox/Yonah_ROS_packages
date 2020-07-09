@@ -88,6 +88,14 @@ class Identifiers:
 			if device.id == id_n:
 				return device
 
+	def get_device_details(self, id_n, is_air):
+		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+		for dev in device_list:
+			if dev["id"] == id_n:
+				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"])
+
+		return None
+
 	# return phone number associated with id if it is whitelisted
 	def get_number(self, id_n):
 		device = self.get_device(id_n)

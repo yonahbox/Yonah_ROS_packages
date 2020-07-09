@@ -39,6 +39,13 @@ class ServiceHandler:
 	def get_serial(self, request):
 		return GetDetailsResponse(self._ids.get_sbd_serial(request.id))
 
+	def get_device_details(self, request):
+		device = self._ids.get_device_details(request.id, request.is_air)
+		if device is not None:
+			return GetAllDetailsResponse(label=device.label, number=device.number, imei=device.imei, rb_serial=device.rb_serial)
+		else:
+			return None
+
 	def get_self_imei(self, request):
 		return GetSelfDetailsResponse(self._ids.get_self_imei())
 
@@ -84,6 +91,8 @@ if __name__ == '__main__':
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	
+	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
+
 	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
 	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
 	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
