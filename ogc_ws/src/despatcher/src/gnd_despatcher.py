@@ -28,6 +28,7 @@ from despatcher.msg import LinkMessage
 
 # Local
 import regular
+import g2a
 
 class gnddespatcher():
 
@@ -57,8 +58,7 @@ class gnddespatcher():
     
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp"]
-        if data.data.split()[0] not in whitelisted_prefixes:
+        if data.data.split()[0] not in g2a.recognised_commands:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             msg = LinkMessage()
