@@ -22,6 +22,7 @@ from identifiers.srv import GetDetails
 
 import sys
 import os
+from pathlib import Path
 from threading import Thread
 import json
 
@@ -58,7 +59,8 @@ def tdlib_recv():
 					local_path = event['file']['local']['path']
 
 					# Currenly only supports sending waypoint files
-					final_path = "/home/ubuntu/Waypoints" + os.path.basename(local_path)
+					home_dir = Path.home()
+					final_path = home_dir + "/Waypoints/" + os.path.basename(local_path)
 					
 					# Move the file
 					os.rename(local_path, final_path)
