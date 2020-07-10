@@ -24,16 +24,21 @@ import __main__
 import rospy
 from functools import partial
 
-from despatcher.msg import LinkMessage
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 from python_qt_binding.QtGui import QFont, QIntValidator
+
+from regular import air_payload
+from despatcher.msg import LinkMessage
+from identifiers.srv import AddNewDevice, AddNewDeviceRequest
+from identifiers.srv import EditDevice, EditDeviceRequest
+from identifiers.srv import GetAllDetails, GetAllDetailsRequest
+from identifiers.srv import GetDetails, GetSelfDetails
 from .checklist_window import ChecklistWindow
 from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import *
 from .aircraft_info import *
-from regular import air_payload
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
 # Self-note: Consider changing the structure of the code to not over-populate the init
@@ -49,16 +54,20 @@ class CommandWindow(QWidget):
         self.arm_status = {}
         for i in range (self.active_aircrafts + 1):
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
-            
+        
+        # Define the mode list as well as the decoder
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
+        
+        # Get the headers for the payload
         self.air = air_payload()
         self.custom_ping_list = self.air.entries.keys()
         self.custom_ping_list.sort()
+
         self.create_layout()
-        
+
         self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.active_aircrafts)
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
@@ -76,8 +85,24 @@ class CommandWindow(QWidget):
         self.ping_button.pressed.connect(self.ping)
         self.custom_ping_button.pressed.connect(self.custom_ping)
 
-        # Publisher command
+        # Publisher Command
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
+        # Service Command
+        try:
+            rospy.wait_for_service("identifiers/get/number", timeout= 5)
+            rospy.wait_for_service("identifiers/get/imei", timeout= 5)
+            rospy.wait_for_service("identifiers/get/serial", timeout= 5)
+            rospy.wait_for_service("identifiers/get/all", timeout= 5)
+            rospy.wait_for_service("identifiers/add/device", timeout= 5)
+            rospy.wait_for_service("identifiers/edit/device", timeout= 5)
+
+        except rospy.ROSException:
+            rospy.logerr("Identifiers node is not initialised")
+        # rospy.wait_for_service("identifiers/self/imei")
+        # rospy.wait_for_service("identifiers/self/serial")
+
+        self.add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
+        self.edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
 
     def create_layout(self):
         # Create the layout
@@ -97,6 +122,7 @@ class CommandWindow(QWidget):
             self.combo_box.addItem('Aircraft ' + str(i))
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
+
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -111,10 +137,12 @@ class CommandWindow(QWidget):
         # Set UI properties of the buttons and layout
         top_row = 60 # Minimum height for the top row buttons
         bottom_row = 40 # Minimum height for the bottom row buttons
+
         self.first_row.setContentsMargins(0,20,0,15)
         self.arm_button.setMinimumHeight(top_row)
         self.disarm_button.setMinimumHeight(top_row)
         self.go_button.setMinimumHeight(top_row)
+
         self.change_identifiers_button.setMinimumHeight(bottom_row)
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
@@ -171,7 +199,7 @@ class CommandWindow(QWidget):
             # rospy.logdebug("[AIRCRAFT ARM LIST] %s", self.aircrafts_info)
             # print('time start')
 
-    def disarm (self):
+    def disarm(self):
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go(self):
@@ -245,22 +273,26 @@ class CommandWindow(QWidget):
         name = QLabel("Label")
         name_lineedit = QLineEdit()
         identifiers_layout.addRow(name, name_lineedit)
+        name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
 
         phone = QLabel("Phone number")
         phone_lineedit = QLineEdit()
-        phone_lineedit.setValidator(QIntValidator())
+        # phone_lineedit.setValidator(QIntValidator())
         phone_lineedit.setMaxLength(10)
         identifiers_layout.addRow(phone, phone_lineedit)
+        phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
 
         imei = QLabel("IMEI number")
         imei_lineedit = QLineEdit()
-        imei_lineedit.setValidator(QIntValidator())
+        # imei_lineedit.setValidator(QIntValidator())
         identifiers_layout.addRow(imei, imei_lineedit)
+        imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
 
         serial = QLabel("Serial number")
         serial_lineedit = QLineEdit()
-        serial_lineedit.setValidator(QIntValidator())
+        # serial_lineedit.setValidator(QIntValidator())
         identifiers_layout.addRow(serial, serial_lineedit)
+        serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -272,8 +304,32 @@ class CommandWindow(QWidget):
         self.add_ground_air_dialog.setLayout(identifiers_layout)
         self.add_ground_air_dialog.show()
 
+    def add_identifiers_submit(self, subfields, text):
+        if subfields == "label":
+            self.add_label = text
+            print(self.add_label)
+        elif subfields == "phone":
+            self.add_phone = text
+            print(self.add_phone)
+        elif subfields == "imei":
+            self.add_imei = text
+            print(self.add_imei)
+        elif subfields == "serial":
+            self.add_serial = text
+            print(self.add_serial)
+
     def add_identifiers_accept(self, side):
-        ### Do something after Rumesh's identifiers is settled
+        new_identifier = AddNewDeviceRequest()
+        new_identifier.label = self.add_label
+        new_identifier.number = self.add_phone
+        new_identifier.imei = self.add_imei
+        new_identifier.rb_serial = self.add_serial
+        if side == "Air":
+            new_identifier.is_air = True
+        else:
+            new_identifier.is_air = False
+        add_identifier = self.add_new_device(new_identifier)
+        rospy.loginfo(add_identifier.success)
         self.add_ground_air_dialog.close()
         self.change_identifiers_dialog.close()
 
@@ -290,25 +346,28 @@ class CommandWindow(QWidget):
         combo_box = QComboBox()
         # Somehow get the current label inside it
         for i in range (1, self.active_aircrafts + 1):
-            combo_box.addItem(str(i))
+            combo_box.addItem("Aircraft " + str(i))
         combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         name = QLabel("Label")
         name_lineedit = QLineEdit()
-
+        name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
+        
         phone = QLabel("Phone number")
         phone_lineedit = QLineEdit()
-        phone_lineedit.setValidator(QIntValidator())
-        phone_lineedit.setMaxLength(10)
+        # phone_lineedit.setValidator(QIntValidator())
+        phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
 
         imei = QLabel("IMEI number")
         imei_lineedit = QLineEdit()
-        imei_lineedit.setValidator(QIntValidator())
+        # imei_lineedit.setValidator(QIntValidator())
+        imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
 
         serial = QLabel("Serial number")
         serial_lineedit = QLineEdit()
-        serial_lineedit.setValidator(QIntValidator())
-
+        # serial_lineedit.setValidator(QIntValidator())
+        serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
+        
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
@@ -334,7 +393,21 @@ class CommandWindow(QWidget):
             self.add_ground_air_dialog.close()
         self.change_identifiers_dialog.show()
 
+    def edit_identifiers_submit(self, subfields, text):
+        if subfields == "label":
+            self.edit_label = text
+        elif subfields == "phone":
+            self.edit_phone = text
+        elif subfields == "imei":
+            self.edit_imei = text
+        elif subfields == "serial":
+            self.edit_serial = text
+
     def edit_identifiers_accept(self, side):
+        if side == "Air":
+            print("side air edit")
+        else:
+            print("side gnd edit")
         self.edit_ground_air_dialog.close()
     
     def edit_identifiers_combo_box(self, i):
