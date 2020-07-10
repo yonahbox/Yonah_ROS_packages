@@ -232,8 +232,8 @@ class CommandWindow(QWidget):
     def add_identifiers(self, side):
         self.change_identifiers_dialog.close()
 
-        self.identifiers_dialog = QDialog()
-        self.identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
+        self.add_ground_air_dialog = QDialog()
+        self.add_ground_air_dialog.setWindowTitle("Add {} Identifier".format(side))
 
         title = QLabel("Add New {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -266,15 +266,15 @@ class CommandWindow(QWidget):
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
         buttons.accepted.connect(partial(self.add_identifiers_accept, side))
-        buttons.rejected.connect(self.identifiers_dialog.close)
+        buttons.rejected.connect(partial(self.close_identifiers, "Add"))
 
         identifiers_layout.addWidget(buttons)
-        self.identifiers_dialog.setLayout(identifiers_layout)
-        self.identifiers_dialog.show()
+        self.add_ground_air_dialog.setLayout(identifiers_layout)
+        self.add_ground_air_dialog.show()
 
     def add_identifiers_accept(self, side):
         ### Do something after Rumesh's identifiers is settled
-        self.identifiers_dialog.close()
+        self.add_ground_air_dialog.close()
         self.change_identifiers_dialog.close()
 
     def edit_identifiers(self, side):
@@ -313,8 +313,8 @@ class CommandWindow(QWidget):
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
 
-        box.accepted.connect(partial(self.add_identifiers_accept, side))
-        box.rejected.connect(self.edit_ground_air_dialog.close)
+        box.accepted.connect(partial(self.edit_identifiers_accept, side))
+        box.rejected.connect(partial(self.close_identifiers, "Edit"))
 
         lay = QFormLayout(self.edit_ground_air_dialog)
         lay.addRow(title)
@@ -326,6 +326,13 @@ class CommandWindow(QWidget):
 
         lay.addWidget(box)
         self.edit_ground_air_dialog.show()
+
+    def close_identifiers(self, side):
+        if side == "Edit":
+            self.edit_ground_air_dialog.close()
+        else:
+            self.add_ground_air_dialog.close()
+        self.change_identifiers_dialog.show()
 
     def edit_identifiers_accept(self, side):
         self.edit_ground_air_dialog.close()

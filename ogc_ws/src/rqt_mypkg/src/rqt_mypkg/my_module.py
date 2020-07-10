@@ -201,7 +201,7 @@ class MyPlugin(Plugin):
     
     def mode_status(self, data):
         status = Communicate()
-        status.mode_signal.connect(self.mode_status_display)
+        status.mode_signal.connect(self.mode_status_display_sitl)
         status.mode_signal.emit(data.mode, "1")
         status.arm_signal.connect(self.arm_status_display)
         status.arm_signal.emit(data.armed, "1")
@@ -314,7 +314,6 @@ class MyPlugin(Plugin):
         rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
     def arm_status_display(self, arm_status, id):
-        print(self.CommandWindow.arm_status.get('AC' + str(id)))
         if arm_status == "False" or arm_status == 0:
             self.text_to_display = "DISARMED"
         else:
