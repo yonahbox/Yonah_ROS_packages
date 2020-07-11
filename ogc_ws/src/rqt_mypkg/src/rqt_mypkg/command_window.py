@@ -49,6 +49,7 @@ class CommandWindow(QWidget):
         
         self.destination_id = 1
         self.edit_identifiers_id = 1
+        self.identifiers_error = 0
         self.send_custom_ping = 0
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
@@ -97,8 +98,19 @@ class CommandWindow(QWidget):
             rospy.wait_for_service("identifiers/add/device", timeout= 5)
             rospy.wait_for_service("identifiers/edit/device", timeout= 5)
         except rospy.ROSException:
+            self.warning = QMessageBox()
+            self.warning.setIcon(QMessageBox.Warning)
+            self.warning.setText("Identifiers Node failed to start")
+            self.warning.setInformativeText("Edit and Add Identifiers function will be unavailable")
+            self.warning.setWindowTitle("Error Message")
+            self.warning.setStandardButtons(QMessageBox.Ok)
+            self.warning.buttonClicked.connect(self.warning.close)
+            self.warning.show()
+            self.identifiers_error = 1
             rospy.logerr("Identifiers node is not initialised")
-
+            
+        except rospy.ROSInterruptException:
+            rospy.logerr("Identifiers node is not initialised")
         self.add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
         self.edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
         self.get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
@@ -129,7 +141,7 @@ class CommandWindow(QWidget):
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
-        self.change_identifiers_button = QPushButton('Edit Identifiers')
+        self.change_identifiers_button = QPushButton('Change Identifiers')
         self.mission_load_button = QPushButton('Load Mission')
         self.change_mode_button = QPushButton('Change Mode')
         self.ping_button = QPushButton('Ping')
@@ -190,7 +202,7 @@ class CommandWindow(QWidget):
         data = "ping " + str(self.custom_ping_list[self.send_custom_ping])
         self.create_link_message(self.destination_id, data)
 
-    def arm (self):
+    def arm(self):
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
@@ -233,6 +245,10 @@ class CommandWindow(QWidget):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
     def change_identifiers(self):
+        if self.identifiers_error == 1:
+            rospy.logerr("Attempt to open change identifiers window without initialising identifiers node")
+            self.warning.show()
+            return 0
         self.change_identifiers_dialog = QDialog()
         self.change_identifiers_dialog.setWindowTitle("Edit Identifiers")
         layout = QVBoxLayout(self.change_identifiers_dialog)
@@ -333,13 +349,8 @@ class CommandWindow(QWidget):
         self.change_identifiers_dialog.close()
 
     def edit_identifiers(self, side):
-        print("opening second time")
         self.side = side
-        # self.change_identifiers_dialog.close()
-        current_identifier = GetAllDetailsRequest()
-        current_identifier.id = self.edit_identifiers_id
-        current_identifier.is_air = True if side == "Air" else False
-        device = self.get_device(current_identifier)
+        self.change_identifiers_dialog.close()
 
         self.edit_ground_air_dialog = QDialog()
         self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
@@ -349,38 +360,38 @@ class CommandWindow(QWidget):
         title.setContentsMargins(0, 0, 0, 10)
 
         label = QLabel("Select Aircraft label to edit")
-        combo_box = QComboBox()
+        self.edit_combo_box = QComboBox()
         # Somehow get the current label inside it
         if side == "Air":
             for i in range (1, self.active_aircrafts + 1):
-                combo_box.addItem("Aircraft " + str(i))
+                self.edit_combo_box.addItem("Aircraft " + str(i))
         else:
             for i in range (1, self.active_aircrafts + 1):
-                combo_box.addItem("GCS " + str(i))
-        combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
+                self.edit_combo_box.addItem("GCS " + str(i))
+        self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         name = QLabel("Label")
-        name_lineedit = QLineEdit()
-        name_lineedit.setText(device.label)
-        name_lineedit.textChanged.connect(partial(self.edit_identifiers_submit, "label"))
+        self.name_lineedit = QLineEdit()
+        # self.name_lineedit.setText(new_edit_device.label)
+        self.name_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "label"))
         
         phone = QLabel("Phone number")
-        phone_lineedit = QLineEdit()
-        phone_lineedit.setText(device.number)
-        # phone_lineedit.setValidator(QIntValidator())
-        phone_lineedit.textChanged.connect(partial(self.edit_identifiers_submit, "phone"))
+        self.phone_lineedit = QLineEdit()
+        # self.phone_lineedit.setText(new_edit_device.number)
+        # self.phone_lineedit.setValidator(QIntValidator())
+        self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
 
         imei = QLabel("IMEI number")
-        imei_lineedit = QLineEdit()
-        imei_lineedit.setText(device.imei)
+        self.imei_lineedit = QLineEdit()
+        # self.imei_lineedit.setText(new_edit_device.imei)
         # imei_lineedit.setValidator(QIntValidator())
-        imei_lineedit.textChanged.connect(partial(self.edit_identifiers_submit, "imei"))
+        self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
 
         serial = QLabel("Serial number")
-        serial_lineedit = QLineEdit()
-        serial_lineedit.setText(device.rb_serial)
+        self.serial_lineedit = QLineEdit()
+        # self.serial_lineedit.setText(new_edit_device.rb_serial)
         # serial_lineedit.setValidator(QIntValidator())
-        serial_lineedit.textChanged.connect(partial(self.edit_identifiers_submit, "serial"))
+        self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
         
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -391,14 +402,14 @@ class CommandWindow(QWidget):
 
         lay = QFormLayout(self.edit_ground_air_dialog)
         lay.addRow(title)
-        lay.addRow(label, combo_box)
-        lay.addRow(name, name_lineedit)
-        lay.addRow(phone, phone_lineedit)
-        lay.addRow(imei, imei_lineedit)
-        lay.addRow(serial, serial_lineedit)
+        lay.addRow(label, self.edit_combo_box)
+        lay.addRow(name, self.name_lineedit)
+        lay.addRow(phone, self.phone_lineedit)
+        lay.addRow(imei, self.imei_lineedit)
+        lay.addRow(serial, self.serial_lineedit)
 
+        self.changed()
         lay.addWidget(box)
-        rospy.loginfo("opening third time")
         self.edit_ground_air_dialog.show()
 
     def close_identifiers(self, side):
@@ -408,7 +419,7 @@ class CommandWindow(QWidget):
             self.add_ground_air_dialog.close()
         self.change_identifiers_dialog.show()
 
-    def edit_identifiers_submit(self, subfields, text):
+    def edit_identifiers_text(self, subfields, text):
         if subfields == "label":
             self.edit_label = text
         elif subfields == "phone":
@@ -430,6 +441,7 @@ class CommandWindow(QWidget):
         else:
             edit_identifiers.is_air = False
         edit_result = self.edit_device(edit_identifiers)
+        rospy.loginfo(edit_result.success)
         self.edit_ground_air_dialog.close()
     
     def edit_identifiers_combo_box(self, i):
@@ -437,9 +449,32 @@ class CommandWindow(QWidget):
         self.changed()
 
     def changed(self):
-        print("ok")
-        # self.edit_identifiers("Air")
-        print("not ok")
+        current_identifier = GetAllDetailsRequest()
+        current_identifier.id = self.edit_identifiers_id
+        current_identifier.is_air = True if self.side == "Air" else False
+        try:
+            new_edit_device = self.get_device(current_identifier)
+            self.name_lineedit.setText(str(new_edit_device.label))
+            self.edit_label = new_edit_device.label
+
+            self.phone_lineedit.setText(str(new_edit_device.number))
+            self.edit_phone = new_edit_device.number
+
+            self.imei_lineedit.setText(str(new_edit_device.imei))
+            self.edit_imei = new_edit_device.imei
+
+            self.serial_lineedit.setText(str(new_edit_device.rb_serial))
+            self.edit_serial = new_edit_device.rb_serial
+        except rospy.ServiceException as e:
+            self.edit_combo_box.setCurrentIndex(0)
+            self.warning = QMessageBox()
+            self.warning.setIcon(QMessageBox.Warning)
+            self.warning.setText("The ID you have selected is invalid")
+            self.warning.setInformativeText("Please select another ID")
+            self.warning.setWindowTitle("Error Message")
+            self.warning.setStandardButtons(QMessageBox.Ok)
+            self.warning.buttonClicked.connect(self.warning.close)
+            self.warning.show()
 
     def change_mode(self):
         self.change_mode_dialog = QDialog()
