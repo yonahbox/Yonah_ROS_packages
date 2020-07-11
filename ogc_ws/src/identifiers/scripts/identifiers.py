@@ -16,6 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import rospy
+
+from telegram.msg import ContactInfo
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
@@ -42,6 +45,8 @@ class Identifiers:
 		self.rock7_un = ""			# username for rockblock
 		self.rock7_pw = ""			# password for rockblock
 		self.aws_url = ""			# url to AWS instance
+
+		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10)
 
 		# parse the identifiers file
 		self._parse_file()
@@ -156,7 +161,18 @@ class Identifiers:
 			json.dump(self.json_obj, f)
 
 		self._parse_file()
+
+		contact = ContactInfo()
+		contact.label = label
+		contact.number = number
+		self.telegram_add_contact.publish(contact)
 		return True
+
+	def tdlib_recv(self):
+		while True:
+			event = self.td.receive()
+			if event:
+				print(event)
 
 	def edit_device(self, id_n, is_air, label="", number="", imei="", rb_serial=""):
 		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]

@@ -19,6 +19,7 @@ import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails
+from telegram.msg import ContactInfo
 
 import sys
 import os
@@ -31,6 +32,9 @@ from Td import Td, Chat
 def tdlib_topic_cb(msg, td):
 	td.send_message(msg.id, msg.data)
 
+def tdlib_add_contact_cb(contact, td):
+	td.add_contact(contact.number, contact.label)
+
 # Function to receive all messages from telegram
 # runs in a seperate thread
 def tdlib_recv():
@@ -41,6 +45,7 @@ def tdlib_recv():
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
+			print(event)
 			# log details if there is an error
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
@@ -103,7 +108,7 @@ if __name__ == '__main__':
 		recv_thread.start()
 
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, td)
-
+		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
 		# Checks if the Td class has finished initializing
 		# This involves ensuring that it is able to send messages to all devices in valid_ids
 		rate = rospy.Rate(1)

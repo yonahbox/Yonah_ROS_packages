@@ -18,8 +18,6 @@
 from ctypes import *
 import json
 
-from identifiers import Identifiers
-
 class Td():
 	def __init__(self, tdlib_dir, whitelist_info):
 		# Creates interface for libtdjson. This is a C library so it requires some initial setup
@@ -129,7 +127,17 @@ class Td():
 				"first_name": "Td " + number,
 				"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
 			} for number in number_list]		# List of objects created using list comprehension
-		})		
+		})
+
+	def add_contact(self, number, label):
+		self.send({
+			"@type": "importContacts",
+			"contacts": [{
+				"@type": "contact",
+				"first_name": label,
+				"phone_number": "00"+number
+			}]
+		})
 
 	# Send request to telegram
 	def send(self, query):
