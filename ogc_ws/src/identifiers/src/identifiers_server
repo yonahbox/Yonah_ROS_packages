@@ -64,7 +64,6 @@ class ServiceHandler:
 		return AddNewDeviceResponse(result)
 
 	def edit_device(self, request):
-		label = request.label if request.label != '' else None
 		result = self._ids.edit_device(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		if not result:
 			rospy.logwarn("Failed to edit device in identifiers_file")

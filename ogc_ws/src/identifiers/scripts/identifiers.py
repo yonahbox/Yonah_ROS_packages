@@ -161,14 +161,15 @@ class Identifiers:
 		for device in edit_list:
 			if device["id"] == id_n:
 				selected_device = device
+				break
 
 		if selected_device is None:
 			return False
 
-		device["label"] = label if label != "" else device["label"]
-		device["number"] = number if number != "" else device["number"]
-		device["imei"] = imei if imei != ""else device["imei"]
-		device["rb_serial"] = rb_serial if rb_serial != "" else device["rb_serial"]
+		selected_device["label"] = label if label != "" else selected_device["label"]
+		selected_device["number"] = number if number != "" else selected_device["number"]
+		selected_device["imei"] = imei if imei != ""else selected_device["imei"]
+		selected_device["rb_serial"] = rb_serial if rb_serial != "" else selected_device["rb_serial"]
 
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)

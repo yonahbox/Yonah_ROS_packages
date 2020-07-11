@@ -66,16 +66,16 @@ if __name__ == '__main__':
 		# add_result = add_new_device(new_device)
 		# rospy.logwarn(add_result.success)
 
-		# edit_dev = EditDeviceRequest()
-		# edit_dev.label = "ROS test"
-		# edit_dev.id = 6
-		# edit_dev.is_air = False
+		edit_dev = EditDeviceRequest()
+		edit_dev.label = "gndtest"
+		edit_dev.id = 2
+		edit_dev.is_air = False
 
-		# edit_result = edit_device(edit_dev)
-		# rospy.logwarn(edit_result.success)
+		edit_result = edit_device(edit_dev)
+		rospy.logwarn(edit_result.success)
 
 		cur_dev = GetAllDetailsRequest()
-		cur_dev.id = 1
+		cur_dev.id = 2
 		cur_dev.is_air = False
 
 		device = get_device(cur_dev)
