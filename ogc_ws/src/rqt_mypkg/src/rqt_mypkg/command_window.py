@@ -432,6 +432,7 @@ class CommandWindow(QWidget):
     def edit_identifiers_accept(self, side):
         edit_identifiers = EditDeviceRequest()
         edit_identifiers.id = self.edit_identifiers_id
+        rospy.loginfo("ID that is sent: " + str(edit_identifiers.id))
         edit_identifiers.label = self.edit_label
         edit_identifiers.number = self.edit_phone
         edit_identifiers.imei = self.edit_imei
@@ -441,7 +442,7 @@ class CommandWindow(QWidget):
         else:
             edit_identifiers.is_air = False
         edit_result = self.edit_device(edit_identifiers)
-        rospy.loginfo(edit_result.success)
+        rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_ground_air_dialog.close()
     
     def edit_identifiers_combo_box(self, i):
@@ -451,6 +452,7 @@ class CommandWindow(QWidget):
     def changed(self):
         current_identifier = GetAllDetailsRequest()
         current_identifier.id = self.edit_identifiers_id
+        rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
         current_identifier.is_air = True if self.side == "Air" else False
         try:
             new_edit_device = self.get_device(current_identifier)
@@ -465,6 +467,7 @@ class CommandWindow(QWidget):
 
             self.serial_lineedit.setText(str(new_edit_device.rb_serial))
             self.edit_serial = new_edit_device.rb_serial
+        
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
             self.warning = QMessageBox()
