@@ -355,6 +355,8 @@ class CommandWindow(QWidget):
         self.change_identifiers_dialog.close()
 
         ids_response = self.get_ids()
+        self.air_ids = ids_response.air_ids
+        self.ground_ids = ids_response.ground_ids
         rospy.loginfo(ids_response.air_ids)
         self.edit_ground_air_dialog = QDialog()
         self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
@@ -365,12 +367,13 @@ class CommandWindow(QWidget):
 
         label = QLabel("Select Aircraft label to edit")
         self.edit_combo_box = QComboBox()
+        self.edit_identifiers_id = 1
         # Somehow get the current label inside it
         if side == "Air":
-            for i in ids_response.air_ids:
+            for i in self.air_ids:
                 self.edit_combo_box.addItem("Aircraft " + str(i))
         else:
-            for i in ids_response.ground_ids:
+            for i in self.ground_ids:
                 self.edit_combo_box.addItem("GCS " + str(i))
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
@@ -381,19 +384,16 @@ class CommandWindow(QWidget):
         
         phone = QLabel("Phone number")
         self.phone_lineedit = QLineEdit()
-        # self.phone_lineedit.setText(new_edit_device.number)
         # self.phone_lineedit.setValidator(QIntValidator())
         self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
 
         imei = QLabel("IMEI number")
         self.imei_lineedit = QLineEdit()
-        # self.imei_lineedit.setText(new_edit_device.imei)
         # imei_lineedit.setValidator(QIntValidator())
         self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
 
         serial = QLabel("Serial number")
         self.serial_lineedit = QLineEdit()
-        # self.serial_lineedit.setText(new_edit_device.rb_serial)
         # serial_lineedit.setValidator(QIntValidator())
         self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
         
