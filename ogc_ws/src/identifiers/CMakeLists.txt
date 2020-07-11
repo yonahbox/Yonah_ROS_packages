@@ -60,6 +60,7 @@ add_service_files(
   GetAllDetails.srv
   GetSelfDetails.srv
   GetSBDDetails.srv
+  GetIds.srv
   CheckSender.srv
   AddNewDevice.srv
   EditDevice.srv

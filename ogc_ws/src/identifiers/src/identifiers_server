@@ -25,6 +25,7 @@ from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
 from identifiers.srv import AddNewDevice, AddNewDeviceResponse
 from identifiers.srv import EditDevice, EditDeviceResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
+from identifiers.srv import GetIds, GetIdsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -70,6 +71,14 @@ class ServiceHandler:
 
 		return EditDeviceResponse(result)
 
+	def get_ids(self, request):
+		air_ids, ground_ids = self._ids.get_active_ids()
+
+		response = GetIdsResponse()
+		response.air_ids = air_ids
+		response.ground_ids = ground_ids
+		return response
+
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
@@ -89,6 +98,7 @@ if __name__ == '__main__':
 	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
+	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 

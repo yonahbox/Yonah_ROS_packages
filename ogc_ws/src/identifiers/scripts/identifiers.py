@@ -125,6 +125,11 @@ class Identifiers:
 	def get_self_imei(self):
 		return self.self_device.imei
 
+	def get_active_ids(self):
+		air_ids = [dev["id"] for dev in self.json_obj["air"]]
+		ground_ids = [dev["id"] for dev in self.json_obj["ground"]]
+		return (air_ids, ground_ids)
+
 	def add_new_device(self, is_air, label, number, imei, rb_serial):
 		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 		if len(edit_list) > 9:
