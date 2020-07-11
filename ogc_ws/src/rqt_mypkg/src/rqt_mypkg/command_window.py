@@ -30,7 +30,7 @@ from python_qt_binding.QtGui import QFont, QIntValidator
 
 from regular import air_payload
 from despatcher.msg import LinkMessage
-from identifiers.srv import AddNewDevice, AddNewDeviceRequest
+from identifiers.srv import AddNewDevice, AddNewDeviceRequest, GetIds
 from identifiers.srv import EditDevice, EditDeviceRequest
 from identifiers.srv import GetAllDetails, GetAllDetailsRequest
 from identifiers.srv import GetDetails, GetSelfDetails
@@ -95,8 +95,11 @@ class CommandWindow(QWidget):
             rospy.wait_for_service("identifiers/get/serial", timeout= 5)
             rospy.wait_for_service("identifiers/get/all", timeout= 5)
             rospy.wait_for_service("identifiers/get/number", timeout= 5)
+
             rospy.wait_for_service("identifiers/add/device", timeout= 5)
             rospy.wait_for_service("identifiers/edit/device", timeout= 5)
+            rospy.wait_for_service("identifiers/get/ids", timeout= 5)
+
         except rospy.ROSException:
             self.warning = QMessageBox()
             self.warning.setIcon(QMessageBox.Warning)
@@ -109,15 +112,14 @@ class CommandWindow(QWidget):
             self.identifiers_error = 1
             rospy.logerr("Identifiers node is not initialised")
             
-        except rospy.ROSInterruptException:
-            rospy.logerr("Identifiers node is not initialised")
         self.add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
         self.edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
         self.get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
         self.get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
         self.get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
         self.get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
-    
+        self.get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
+
     def create_layout(self):
         # Create the layout
         self.main_layout = QVBoxLayout()
@@ -352,6 +354,8 @@ class CommandWindow(QWidget):
         self.side = side
         self.change_identifiers_dialog.close()
 
+        ids_response = self.get_ids()
+        rospy.loginfo(ids_response.air_ids)
         self.edit_ground_air_dialog = QDialog()
         self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
 
@@ -363,10 +367,10 @@ class CommandWindow(QWidget):
         self.edit_combo_box = QComboBox()
         # Somehow get the current label inside it
         if side == "Air":
-            for i in range (1, self.active_aircrafts + 1):
+            for i in ids_response.air_ids:
                 self.edit_combo_box.addItem("Aircraft " + str(i))
         else:
-            for i in range (1, self.active_aircrafts + 1):
+            for i in ids_response.ground_ids:
                 self.edit_combo_box.addItem("GCS " + str(i))
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
