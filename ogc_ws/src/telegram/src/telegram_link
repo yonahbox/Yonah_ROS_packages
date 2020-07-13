@@ -26,27 +26,24 @@ import os
 from threading import Thread
 import json
 
-from Td import Td, Chat
+from Td import Td
 
 # callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, args):
 	td = args[0]
 	id_service = args[1]
 	tele_id = id_service(msg.id)
-	rospy.loginfo(type(tele_id.data))
-	if tele_id.data is not None:
+	if tele_id.data != "":
 		rospy.loginfo("sending message")
-		rospy.loginfo(tele_id.data)
-		try:
-			rospy.loginfo(int(tele_id.data))
-		except:
-			rospy.loginfo("something wrong happened")
-		td.send_message_direct(int(tele_id.data), msg.data)
+		td.send_message(int(tele_id.data), msg.data)
 	else:
-		rospy.logwarn("Unknown id")
+		rospy.logwarn("Telegram user id not available")
+
 
 def tdlib_add_contact_cb(contact, td):
+	rospy.loginfo(f"Received request to add contact {contact.label} {contact.number}")
 	td.add_contact(contact.number, contact.label)
+	td.get_contacts()
 
 # Function to receive all messages from telegram
 # runs in a seperate thread

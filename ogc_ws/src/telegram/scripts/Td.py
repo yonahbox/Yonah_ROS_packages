@@ -61,8 +61,8 @@ class Td():
 		self.command_user_ids = []				# List of user ids to easily check if sender is whitelisted
 
 		# Create a new isntance of the Chat class for each whitelisted device
-		for id_n,num in self.whitelist_info.items():
-			self.chat_list.append(Chat(id_n, num))
+		# for id_n,num in self.whitelist_info.items():
+			# self.chat_list.append(Chat(id_n, num))
 
 		# Reduce verbosity to reduce cluttering the log
 		self._execute({
@@ -71,7 +71,7 @@ class Td():
 		})
 
 		# Search the recently contacted chats for whitelisted numbers
-		self.get_contacts()
+		# self.get_contacts()
 
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
@@ -85,37 +85,37 @@ class Td():
 			return json.loads(result.decode('utf-8'))
 	
 	# Get chat id associated with a specific id number as defined in the identifiers file
-	def _get_chat_id(self, id_n):
-		for chat in self.chat_list:
-			if chat.whitelist_id == id_n:
-				return chat.chat_id
-		return False
+	# def _get_chat_id(self, id_n):
+	# 	for chat in self.chat_list:
+	# 		if chat.whitelist_id == id_n:
+	# 			return chat.chat_id
+	# 	return False
 
-	def _get_local_chat(self, chat_id):
-		for chat in self.chat_list:
-			if chat.chat_id == chat_id:
-				return chat
-		return False
+	# def _get_local_chat(self, chat_id):
+	# 	for chat in self.chat_list:
+	# 		if chat.chat_id == chat_id:
+	# 			return chat
+	# 	return False
 
-	def get_chat_number(self, chat_id):
-		chat = self._get_local_chat(chat_id)
-		if chat:
-			return chat.phone_number
-		else:
-			return None
+	# def get_chat_number(self, chat_id):
+	# 	chat = self._get_local_chat(chat_id)
+	# 	if chat:
+	# 		return chat.phone_number
+	# 	else:
+	# 		return None
 
-	# Get the 10 most recent chats	
+	# # Get the 10 most recent chats	
 	def get_contacts(self):
 		self.send({
 			"@type": "getContacts",
 		})
 
-	# Get specific information about a chat using its chat id
-	def _get_chat_info(self, chat_id):
-		self.send({
-			'@type': 'getChat',
-			'chat_id': chat_id
-		})
+	# # Get specific information about a chat using its chat id
+	# def _get_chat_info(self, chat_id):
+	# 	self.send({
+	# 		'@type': 'getChat',
+	# 		'chat_id': chat_id
+	# 	})
 
 	# add new contacts to the telegram account
 	# expects a list of strings containing the numbers of the form 6512345678
@@ -129,13 +129,16 @@ class Td():
 			} for number in number_list]		# List of objects created using list comprehension
 		})
 
+	# Add single contact to telegram account
+	# number should be a string of the form 6512345678
 	def add_contact(self, number, label):
+		print(f"Adding contact {label} {number}")
 		self.send({
 			"@type": "importContacts",
 			"contacts": [{
 				"@type": "contact",
 				"first_name": label,
-				"phone_number": "00"+number
+				"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
 			}]
 		})
 
@@ -145,26 +148,7 @@ class Td():
 		self._client_send(self.client, query)
 
 	# Wrapper to send text message to a specific id
-	def send_message(self, id_n, msg):
-		chat_id = self._get_chat_id(id_n)
-		if not chat_id:
-			print("invalid id specified")
-			return False
-
-		self.send({
-			'@type': 'sendMessage',
-			'chat_id': chat_id,
-			'input_message_content': {
-				'@type': 'inputMessageText',
-				'text': {
-					'@type': 'formattedText',
-					'text': msg,
-				}
-			},
-			'@extra': 'sent from Td.py'
-		})
-
-	def send_message_direct(self, telegram_id, msg):
+	def send_message(self, telegram_id, msg):
 		self.send({
 			'@type': 'sendMessage',
 			'chat_id': telegram_id,
@@ -184,64 +168,52 @@ class Td():
 			self.send_message(id_n, msg)
 
 	# Wrapper to send an image to a specific number
-	def send_image(self, id_n, path):
-		if not self.setup_complete():
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self._get_chat_id(chat_id),
-				'input_message_content': {
-					'@type': 'inputMessagePhoto',
-					'photo': {
-						'@type': 'inputFileLocal',
-						'path': path
-					}
+	def send_image(self, telegra,_id, path):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessagePhoto',
+				'photo': {
+					'@type': 'inputFileLocal',
+					'path': path
 				}
-			})
+			}
+		})
 
 	# Wrapper to send a video to a specific number
-	def send_video(self, id_n, path):
-		if not self.setup_complete():
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self._get_chat_id(chat_id),
-				'input_message_content': {
-					'@type': 'inputMessageVideo',
-					'video': {
-						'@type': 'inputFileLocal',
-						'path': path
-					}
+	def send_video(self, telegra,_id, path):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessageVideo',
+				'video': {
+					'@type': 'inputFileLocal',
+					'path': path
 				}
-			})
+			}
+		})
 
 	# Wrapper to send a gps location to a specific number
 	# 	coordinates is expected to be a tuple of (latitude, longitude)
-	def send_location(self, id_n, title, coordinates):
-		if not self.setup_complete():
-			self.get_chats()
-			return False
-		else:
-			self.send({
-				'@type': 'sendMessage',
-				'chat_id': self._get_chat_id(chat_id),
-				'input_message_content': {
-					'@type': 'inputMessageVenue',
-					'venue': {
-						'@type': 'venue',
-						'title': title,
-						'location': {
-							'@type': 'location',
-							'latitude': coordinates[0],
-							'longitude': coordinates[1]
-						}
+	def send_location(self, telegra,_id, title, coordinates):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessageVenue',
+				'venue': {
+					'@type': 'venue',
+					'title': title,
+					'location': {
+						'@type': 'location',
+						'latitude': coordinates[0],
+						'longitude': coordinates[1]
 					}
 				}
-			})
+			}
+		})
 
 	# receive information from telegram
 	def receive(self):
@@ -285,11 +257,11 @@ class Td():
 					})
 
 			# gives more specific information about a user. Used to check against phone number
-			elif recv_type == "user":
+			# elif recv_type == "user":
 				# print(result)
-				for chat in self.chat_list:
-					if chat.phone_number == result["phone_number"]:
-						chat.set_valid(result["id"])
+				# for chat in self.chat_list:
+					# if chat.phone_number == result["phone_number"]:
+						# chat.set_valid(result["id"])
 
 			# This gives specific information about a message
 			# needed to keep track of what messages have been received
@@ -331,57 +303,57 @@ class Td():
 	def setup_complete(self):
 		return all([chat.basic_complete for chat in self.chat_list])
 
-# Helper class to store details about the chats in telegram
-class Chat():
-	def __init__(self, whitelist_id, phone_number):
-		self.chat_id = 0
-		self.whitelist_id = whitelist_id	# as defined in the identifiers file
-		self.title = ""
-		self.phone_number = phone_number
-		self.unread_messages = []			# List of message ids sent to an instance of the class
+# # Helper class to store details about the chats in telegram
+# class Chat():
+# 	def __init__(self, whitelist_id, phone_number):
+# 		self.chat_id = 0
+# 		self.whitelist_id = whitelist_id	# as defined in the identifiers file
+# 		self.title = ""
+# 		self.phone_number = phone_number
+# 		self.unread_messages = []			# List of message ids sent to an instance of the class
 
-		# type of chat:
-		#	0: unknown
-		#	1: Private chat (PM)
-		#	2: Group
-		self.chat_type = 0
+# 		# type of chat:
+# 		#	0: unknown
+# 		#	1: Private chat (PM)
+# 		#	2: Group
+# 		self.chat_type = 0
 
-		# Only applicable for basic groups (chat type 2 above)
-		self.basic_group_id = 0
-		self.group_members = []
-		self.basic_complete = False
+# 		# Only applicable for basic groups (chat type 2 above)
+# 		self.basic_group_id = 0
+# 		self.group_members = []
+# 		self.basic_complete = False
 
-	# Add message id to list
-	def add_message(self, message_id):
-		self.unread_messages.append(message_id)
+# 	# Add message id to list
+# 	def add_message(self, message_id):
+# 		self.unread_messages.append(message_id)
 
-	# remove message id from list (mark as read)
-	def read_message(self, message_id):
-		index = self.unread_messages.index(message_id) if message_id in self.unread_messages else None
-		if index:
-			self.unread_messages = self.unread_messages[index+1:]
+# 	# remove message id from list (mark as read)
+# 	def read_message(self, message_id):
+# 		index = self.unread_messages.index(message_id) if message_id in self.unread_messages else None
+# 		if index:
+# 			self.unread_messages = self.unread_messages[index+1:]
 
-	# update message id when needed
-	def replace_message(self, old_id, new_id):
-		index = self.unread_messages.index(old_id) if old_id in self.unread_messages else None
-		if index:
-			self.unread_messages[index] = new_id
+# 	# update message id when needed
+# 	def replace_message(self, old_id, new_id):
+# 		index = self.unread_messages.index(old_id) if old_id in self.unread_messages else None
+# 		if index:
+# 			self.unread_messages[index] = new_id
 	
-	def set_valid(self, chat_id):
-		self.chat_id = chat_id
-		self.basic_complete = True
+# 	def set_valid(self, chat_id):
+# 		self.chat_id = chat_id
+# 		self.basic_complete = True
 
-	def set_chat_type(self, chat_type):
-		if chat_type == 'chatTypePrivate':
-			self.chat_type = 1
-		elif chat_type == 'chatTypeBasicGroup':
-			self.chat_type = 2
+# 	def set_chat_type(self, chat_type):
+# 		if chat_type == 'chatTypePrivate':
+# 			self.chat_type = 1
+# 		elif chat_type == 'chatTypeBasicGroup':
+# 			self.chat_type = 2
 			
-	def set_title(self, title):
-		self.title = title
+# 	def set_title(self, title):
+# 		self.title = title
 
-	def add_member(self, member):
-		self.group_members.append(member)
+# 	def add_member(self, member):
+# 		self.group_members.append(member)
 
-	def get_messages(self, n):
-		pass
+# 	def get_messages(self, n):
+# 		pass

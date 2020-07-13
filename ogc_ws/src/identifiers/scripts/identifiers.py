@@ -73,6 +73,9 @@ class Identifiers:
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 				if "telegram_id" in obj.keys():
 					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
+				else:
+					print("telegram id not found")
+					self.update_telegram_id(obj["id"])
 
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
@@ -119,8 +122,15 @@ class Identifiers:
 
 	def get_telegram_id(self, id_n):
 		device = self.get_device_new(id_n)
-		print(str(device["telegram_id"]))
-		return str(device["telegram_id"]) if device else None
+		if device is None:
+			return None
+
+		telegram_id = device.get("telegram_id",  None)
+		if telegram_id is None:
+			self.update_telegram_id(id_n)
+			return None
+
+		return str(telegram_id)
 
 	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)
@@ -209,7 +219,14 @@ class Identifiers:
 
 	def add_telegram_id(self, number, telegram_id):
 		obj_edited = False
-		for device in self.json_obj["air"] + self.json_obj["ground"]:
+		for device in self.json_obj["air"]:
+			if device["number"] == number:
+				if device.get("telegram_id", 0) != telegram_id:
+					device["telegram_id"] = telegram_id
+					obj_edited = True
+				break
+
+		for device in self.json_obj["ground"]:
 			if device["number"] == number:
 				if device.get("telegram_id", 0) != telegram_id:
 					device["telegram_id"] = telegram_id
@@ -224,6 +241,15 @@ class Identifiers:
 
 		self._parse_file()
 		return True
+
+	def update_telegram_id(self, id_n):
+		print("requesting telegram_id")
+		device = self.get_device_new(id_n)
+		contact = ContactInfo()
+		contact.label = device["label"]
+		contact.number = device["number"]
+		self.telegram_add_contact.publish(contact)
+
 
 	# Does a lazy check to see if the received message is from a valid sender
 	# Trusts that the sender of the message was correctly identified in the message headers
