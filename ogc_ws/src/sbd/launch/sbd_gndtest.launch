@@ -5,32 +5,38 @@
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
-    <!-- Credentials FIle. Eventually to be moved to despatcher node-->
-    <arg name="credentials" default="$(find sbd)/src/login.txt"/>
-
     <!-- Sleep interval between checks for MO msg -->
     <arg name="interval_3" default="5"/>
 
     <!-- Serial port that Rockblock is connected to-->
     <arg name="portID" default="/dev/ttyUSB0"/>
 
-    <!-- Rockblock serial no of ourselves and the client-->
-    <arg name="own_serial" default="12345"/>
-    <arg name="client_serial" default="12345"/>
+    <!-- Identifiers -->
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+    <arg name="air_ids" default="[1]" />
+    <arg name="self_id" default="1" />
+    <arg name="is_air" default="False" />
 
     <!-- sbd link node -->
     <node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="interval" value="$(arg interval_3)" />
-        <param name="credentials" value="$(arg credentials)" />
         <param name="portID" value="$(arg portID)" />
-        <param name="own_serial" value="$(arg own_serial)" />
-        <param name="client_serial" value="$(arg client_serial)" />
+    </node>
+
+    <!-- identifiers service -->
+    <node pkg="identifiers" type="identifiers_server" name="identifiers_server" output="$(arg log_output)" >
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
     </node>
 
     <!-- ground_despatcher node -->
     <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="self_id" value="$(arg self_id)" />
+        <!-- <rosparam param="air_ids" subst_value="True">$(arg air_ids)</rosparam> -->
     </node>
 
     <!-- ground test node -->

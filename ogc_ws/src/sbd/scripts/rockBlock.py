@@ -49,7 +49,6 @@ import regular
 class rockBlockProtocol(object):
     
     def rockBlockConnected(self):pass
-    def rockBlockDisconnected(self):pass
     
     #SIGNAL
     def rockBlockSignalUpdate(self,signal):pass
@@ -80,7 +79,7 @@ class rockBlock(object):
     
     IRIDIUM_EPOCH = 1399818235000 # May 11, 2014, at 14:23:55 (This will be 're-epoched' every couple of years!)
         
-    def __init__(self, portId, callback, own_serial, client_serial):
+    def __init__(self, portId, own_serial, callback):
         '''
         Initialize serial connection to Rockblock. If unable to connect to Rockblock, exception will be raised
         '''
@@ -90,15 +89,12 @@ class rockBlock(object):
         self.autoSession = True # When True, we'll automatically initiate additional sessions if more messages to download
 
         self.mo_msg = "" # MO msg
-        self.client_serial = client_serial # Client Rockblock serial no (to send to another Rockblock)
-        self.own_serial = own_serial # Own Rockblock serial no
         
         # Init steps related to packing and unpacking of binary regular payload
+        self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
         self.serial_0 = (own_serial >> 16) & 0xFF # Three bytes of own serial number (for MT msg)
         self.serial_1 = (own_serial >> 8) & 0xFF
         self.serial_2 = own_serial & 0xFF
-        self.rb_pre, self.rb_pre_len = self._packBinaryPrefix() # Pack the Rockblock binary prefix first
-        self.reg_len = regular.get_compressed_len() # Compressed length of regular payload
         
         try:
             self.s = serial.Serial(self.portId, 19200, timeout=5)
@@ -124,16 +120,7 @@ class rockBlock(object):
             if( self.s.readline().strip().decode() == "OK" ):                   
                 return True
         return False
-
-
-    def pingception(self):
-        '''Handy function to check the connection is still alive, else throw an Exception'''
-        self._ensureConnectionStatus()
-        self.s.timeout = 5
-        if(self.ping() == False):
-            raise rockBlockException("Unable to ping Rockblock")
-        self.s.timeout = 60
-            
+    
     
     def requestSignalStrength(self):
         '''Return the Iridium Signal Strength; if unsuccesful, return -1'''
@@ -150,7 +137,7 @@ class rockBlock(object):
         return -1   
      
     
-    def messageCheck(self, momsg, thr_server, mo_is_regular):
+    def messageCheck(self, momsg, client_serial, thr_server, mo_is_regular):
         '''
         Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty
         Arguments:
@@ -168,7 +155,7 @@ class rockBlock(object):
         have_queued_msg = False
         if momsg:
             self.mo_msg = momsg
-            if self._queueMessage(thr_server, mo_is_regular):
+            if self._queueMessage(client_serial, thr_server, mo_is_regular):
                 have_queued_msg = True # msg was successfully queued
         if( self._attemptConnection() and self._attemptSession(have_queued_msg) ):
             return True
@@ -195,105 +182,17 @@ class rockBlock(object):
                 return utc
             else:
                 return 0
-                      
-                            
-    def sendMessage(self, msg, thr_server, mo_is_regular):
-        '''Send an MO msg, and return True/False depending on whether attempt was successful'''
-        self._ensureConnectionStatus()
-
-        if(self.callback != None and callable(self.callback.rockBlockTxStarted) ):
-            self.callback.rockBlockTxStarted()
-
-        self.mo_msg = msg
-
-        if( self._queueMessage(thr_server, mo_is_regular) and self._attemptConnection()  ):
-            # Try a max of 3 unsuccessful times before giving up permanently
-            SESSION_DELAY = 1
-            SESSION_ATTEMPTS = 3
-            while(True):
-                SESSION_ATTEMPTS = SESSION_ATTEMPTS - 1
-                if(SESSION_ATTEMPTS == 0):
-                    break
-                if( self._attemptSession(True) ):
-                    return True
-                else:
-                    time.sleep(SESSION_DELAY)       
-        if(self.callback != None and callable(self.callback.rockBlockTxFailed) ):
-            self.callback.rockBlockTxFailed()
-        return False
     
     
-    def getSerialIdentifier(self):
-        '''Query Rockblock's IMEI number'''
-        self._ensureConnectionStatus()
-        command = "AT+GSN"
-        self.s.write((command + "\r").encode())
-        if(self.s.readline().strip().decode() == command):
-            response = self.s.readline().strip().decode()
-            self.s.readline().strip()  #BLANK
-            self.s.readline().strip() #OK
-            return response
-    
-
-    def setup(self):
-        '''
-        One-time initial setup function (Disables Flow Control)
-        This only needs to be called once, as is stored in non-volitile memory
-        Make sure you DISCONNECT RockBLOCK from power for a few minutes after this command has been issued...
-        '''
-        self._ensureConnectionStatus()
-        # Disable Flow Control
-        command = "AT&K0"
-        self.s.write((command + "\r").encode())
-        if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-            # Store Configuration into Profile0
-            command = "AT&W0"
-            self.s.write((command + "\r").encode())
-            if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                # Use Profile0 as default
-                command = "AT&Y0"
-                self.s.write((command + "\r").encode())
-                if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                    # Flush Memory
-                    command = "AT*F"
-                    self.s.write((command + "\r").encode())
-                    if(self.s.readline().strip().decode() == command and self.s.readline().strip().decode() == "OK"):
-                        # self.close()
-                        return True
-        return False        
-    
-
     def close(self):
         '''Close Rockblock serial connection'''
         if(self.s != None):
             self.s.close()
             self.s = None
     
-     
-    @staticmethod
-    def listPorts():
-        '''Handy function to list all available ports (to find out where Rockblock is connected'''
-        if sys.platform.startswith('win'):
-            ports = ['COM' + str(i + 1) for i in range(256)]
-        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-            ports = glob.glob('/dev/tty[A-Za-z]*')
-        elif sys.platform.startswith('darwin'):
-            ports = glob.glob('/dev/tty.*')
-        result = []
-        
-        for port in ports:
-            try:
-                s = serial.Serial(port)
-                s.close()
-                result.append(port)
-            except (OSError, serial.SerialException):
-                pass
-        
-        return result
     
-        
     #Private Methods - Don't call these directly!
-    def _packBinaryPrefix(self):
+    def _packBinaryPrefix(self, client_serial):
         '''
         Binary-compress the prefix required to send msg to another Rockblock
         Returns the compressed prefix and length of the compressed prefix
@@ -301,14 +200,14 @@ class rockBlock(object):
         pre_1 = (b'RB',)
         s1 = struct.Struct('2s')
         packed_1 = s1.pack(*pre_1)
-        pre_2 = (self.client_serial,)
+        pre_2 = (int(client_serial),)
         s2 = struct.Struct('> I')
         packed_2 = s2.pack(*pre_2)
         # Rock Seven insists that serial no is packed into 3 bytes, big endian. So remove one byte
         return packed_1 + packed_2[1:], s1.size + s2.size - 1
 
 
-    def _queueMessage(self, thr_server, mo_is_regular):
+    def _queueMessage(self, client_serial, thr_server, mo_is_regular):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
@@ -320,11 +219,10 @@ class rockBlock(object):
         # If communicating through gnd Rockblock, prepare client Rockblock prefix
         if not thr_server:
             if mo_is_regular:
-                # For regular payload: RB prefix already compressed for us during initialization
-                msg = self.rb_pre
-                msglen = self.rb_pre_len
+                # If it is a regular payload, compress the prefix
+                msg, msglen = self._packBinaryPrefix(client_serial)
             else:
-                msg = "RB00" + str(self.client_serial)
+                msg = "RB00" + str(client_serial)
         
         if mo_is_regular:
             # Pack regular payload
@@ -347,7 +245,7 @@ class rockBlock(object):
             if(self.s.readline().strip().decode() == "READY"):
                 # Calculate checksum. Checksum is least significant 2-bytes of the summation of the entire SBD
                 # message. The high order byte must be sent first. For example if the FA were to send the
-                # word “hello” encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
+                # word "hello" encoded in ASCII to the ISU the binary stream would be hex 68 65 6c 6c 6f 02 14.
                 # Updated checksum calculation formula from https://stackoverflow.com/questions/46813077/2-byte-checksum-in-python-for-iridium-sbd
                 # >> 8 to get higher order byte, see https://stackoverflow.com/questions/19153363/what-does-hibyte-value-8-meaning
                 # & 0xFF to get lower order byte, see https://oscarliang.com/what-s-the-use-of-and-0xff-in-programming-c-plus-p/
@@ -551,7 +449,7 @@ class rockBlock(object):
             return
 
         try:
-            if len(response) > 4 and response[0] == ord('R') and response[1] == ord('B')\
+            if len(response) >= 5 and response[0] == ord('R') and response[1] == ord('B')\
             and response[2] == self.serial_0 and response[3] == self.serial_1 and response[4] == self.serial_2:
                 # If prefix shows RB + serial in binary compressed form, this is A2G binary-compressed regular payload
                 # There should be 2nd check for msg prefix = 'r', but luckily for us, a RB + serial in binary compressed
@@ -569,7 +467,7 @@ class rockBlock(object):
                 # Anything else is A2G non-regular-payload, or G2A cmd; with no binary compression
                 # Encoded response is suffixed with \r\n and two pad bytes
                 content = response.strip()[:-2].decode()
-                if content.startswith("RB00" + str(self.own_serial)):
+                if len(content) > 9 and content.startswith("RB00"):
                     # Remove Rockblock to Rockblock prefix if needed
                     content = content[9:]
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 

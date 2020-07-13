@@ -24,42 +24,41 @@ import __main__
 
 from python_qt_binding import loadUi
 from PyQt5.QtWidgets import *
+from python_qt_binding.QtGui import QFont
 from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-from checklist_window import ChecklistWindow
 
 # File is still changing rapidly and dynamically, hence comments might not be accurate
 # @TODO change the variable names. As of now it is heavily referenced from the summary page
 # AircraftInfo is the parent widget for all the other aircrafts
 class AircraftInfo(QWidget):
-    def __init__(self, no_aircraft):
+    def __init__(self, aircraft_id):
         super(AircraftInfo, self).__init__()
         self.setWindowTitle("Summary Page")
         
         self.waypoint_plaintext_dict = {}
-        # create the layout
+        self.initial_time = 0
+        # Create the layout
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
-        
-        # create the widgets
+    
         summarised_fields = [
             'Mode', 
             'Status', 
             'Altitude', 
             'Airspeed',  
             'Groundspeed', 
-            'GPS Coordinate', 
+            'GPS', 
             'Throttle', 
             'VTOL Status', 
-            'Windspeed',
             'Target Waypoint',
             'Flying Time',
-            'Vibe status',
+            'Vibe Status',
             'Fuel Level',
             'Quad Battery']
 
-        self.active_aircrafts = no_aircraft
-        self.create_summary(self.active_aircrafts, summarised_fields)
+        self.aircraft_id = aircraft_id
+        self.create_summary(self.aircraft_id, summarised_fields)
         self.statustext_label = QLabel('Status Text')
         self.statustext_label.setContentsMargins(0, 30, 0, 0)
         self.statustext = QPlainTextEdit()
@@ -72,9 +71,11 @@ class AircraftInfo(QWidget):
         self.main_layout.addWidget(self.statustext)
 
     def create_summary(self, aircraft_no, summarised_fields):
+        self.styling()
         self.summary_details_layout = QVBoxLayout()
          # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
         self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
+        self.aircraft_label.setFont(self.h2)
         self.summary_details_layout.addWidget(self.aircraft_label)
         for i in summarised_fields:
             self.summary_fields_layout = QHBoxLayout()
@@ -90,6 +91,9 @@ class AircraftInfo(QWidget):
             self.summary_details_layout.addLayout(self.summary_fields_layout)
 
         self.summary_layout.addLayout(self.summary_details_layout)
+
+    def styling(self):
+        self.h2 = QFont("Ubuntu", 15, QFont.Bold) 
 
     def shutdown(self):
         self.close()

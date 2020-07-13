@@ -29,10 +29,12 @@ import struct
 # ROS/Third-Party
 import rospy
 from std_msgs.msg import String
+from despatcher.msg import LinkMessage
 
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
+from identifiers.srv import GetDetails, CheckSender, GetSBDDetails
 
 class satcommsgnd(satcomms):
 
@@ -44,23 +46,31 @@ class satcommsgnd(satcomms):
         rospy.init_node('sbd_gnd_link', anonymous=False)
         self._server_url = "" # Our web server url
         self._prev_time = datetime.datetime.utcnow() # Time of previous msg received. Rock 7 uses UTC time
-        self._mt_cred = dict() # Credentials required to post MT data to Rock 7 server
-        self._cred_file = rospy.get_param("~credentials") # Text file containing credentials
+        self._mt_cred = {
+            'imei': 0,
+            'username': 'qwer',
+            'password': 'qwert',
+            'data': 'qwerty'
+        } # Credentials required to post MT data to Rock 7 server
 
-        self._get_credentials()
+        rospy.wait_for_service("identifiers/get/imei")
+        rospy.wait_for_service("identifiers/get/sbd_details")
+        rospy.wait_for_service("identifiers/check/proper")
+
+        self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
+        self._is_valid_sender = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+        get_sbd_credentials = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
+
         self._init_variables()
-        self._serial_1 = (self._own_serial >> 16) & 0xFF
-        self._serial_2 = (self._own_serial >> 8) & 0xFF
-        self._serial_3 = self._own_serial & 0xFF
+        sbd_details = get_sbd_credentials()
+        self._mt_cred['username'] = sbd_details.username
+        self._mt_cred['password'] = sbd_details.password
+        self._server_url = sbd_details.url
 
-    def _get_credentials(self):
-        '''Obtain Rock 7's required credentials from login.txt file'''
-        # IMEI will be replaced with a list of IMEIs when we scale up to multiple aircraft
-        with open(self._cred_file, 'r') as fp:
-            self._server_url = fp.readline().replace('\n','') # Our web server url
-            self._mt_cred['imei'] = fp.readline().replace('\n','') # Client Rockblock IMEI
-            self._mt_cred['username'] = fp.readline().replace('\n','') # Our Rock 7 username
-            self._mt_cred['password'] = fp.readline().replace('\n','') # Our Rock 7 pw
+        # Three least significant bytes of own serial, used for binary unpack of regular payload
+        self._serial_0 = (self._own_serial >> 16) & 0xFF
+        self._serial_1 = (self._own_serial >> 8) & 0xFF
+        self._serial_2 = self._own_serial & 0xFF
     
     ############################
     # Server Message handlers.
@@ -78,8 +88,8 @@ class satcommsgnd(satcomms):
     def _server_decode_mo_msg(self, msg):
         '''Decode the hex-encoded msg from the server'''
         response = binascii.unhexlify(msg)
-        if len(response) > 4 and response[0] == ord('R')and response[1] == ord('B') and \
-        response[2] == self._serial_1 and response[3] == self._serial_2 and response[4] == self._serial_3:
+        if len(response) >= 5 and response[0] == ord('R')and response[1] == ord('B') and \
+        response[2] == self._serial_0 and response[3] == self._serial_1 and response[4] == self._serial_2:
             # Sometimes, msgs sent to another Rockblock also end up in the web server
             # Hence, strip Rockblock 2 Rockblock prefix if present
             response = response[5:]
@@ -88,10 +98,11 @@ class satcommsgnd(satcomms):
             return convert_to_str(struct.unpack(struct_cmd, response))
         else:
             # Everything else is non-regular-payload in ASCII form
-            if response.startswith(("RB00" + str(self._client_serial)).encode()):
-                # Strip Rockblock 2 Rockblock prefix if present
+            if len(response) > 9 and response.startswith(b'RB00'):
+                # Sometimes, msgs sent to another Rockblock also end up in the web server
+                # Hence, strip Rockblock 2 Rockblock prefix if present
                 response = response[9:]
-            # To-do: Catch decode exceptions (e.g. accidental or malicious errors)
+            # @TODO: Catch decode exceptions (e.g. accidental or malicious errors)
             return response.decode()
     
     def _server_send_msg(self, data):
@@ -100,23 +111,39 @@ class satcommsgnd(satcomms):
         # Message to Rock 7 needs to be hex encoded
         encoded_msg = data.data.encode()
         self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
+
+        imei = self._get_imei(data.id)
+        if imei is None:
+            rospy.logwarn("Invalid recipient")
+            return
+        self._mt_cred['imei'] = imei.data
+            
         reply = requests.post(url, data=self._mt_cred)
-        self._pub_to_despatcher.publish(reply.text)
+        rospy.loginfo(reply.text)
 
     def _server_recv_msg(self):
         '''Extract MO msg from our web server'''
-        values = {'pw':'testpw'} # We cannot use our account pw, because http is unencrypted...
+        # Strictly speaking, this measure isn't foolproof; it only makes it less convenient for malicious
+        # or accidential requests to our server. We cannot use our account pw, because http is unencrypted...
+        values = {'pw':'testpw'}
         # Send HTTP post request to Rock 7 server, incoming msg (if any) stored in reply
-        reply_str = requests.post(self._server_url, data=values).text
+        try:
+            reply_str = requests.post(self._server_url, data=values).text
+        except requests.exceptions.ConnectionError:
+            rospy.logerr("Web Server Timed Out")
+            return
+        if "404 Not Found" in reply_str:
+            rospy.logerr("Web Server 404 Not Found; is the URL correct?")
+            return
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
-            if reply['imei'] == self._mt_cred['imei']: # ensure imei is valid
-                if self._server_is_new_msg(reply['transmit_time']):
+            if self._server_is_new_msg(reply['transmit_time']): 
+                if self._is_valid_sender(link=2, details=reply['serial']): # ensure rb serial is valid
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
-            else:
-                rospy.logwarn("Received unknown msg from " + str(reply['imei']))
+                else:
+                    rospy.logwarn("Received unknown msg from Rockblock " + str(reply['serial']))
         except (ValueError):
-            rospy.logwarn("Invalid message received")
+            rospy.logwarn("Invalid message received from web server")
     
     ############################
     # Main msg handlers
@@ -141,7 +168,7 @@ class satcommsgnd(satcomms):
     ############################
     
     def client(self):
-        rospy.Subscriber("ogc/to_sbd", String, self.send_msg)
+        rospy.Subscriber("ogc/to_sbd", LinkMessage, self.send_msg)
         message_handler = rospy.Timer(rospy.Duration(self.interval), self.recv_msg)
         rospy.spin()
         message_handler.shutdown()

@@ -9,7 +9,7 @@ uint8 vehicle_no
 
 # Data
 uint8 airspeed
-uint16 alt
+int16 alt
 bool armed
 uint8 mode
 uint16 groundspeed
@@ -20,4 +20,5 @@ float32 lon
 float32 throttle
 bool vtol
 uint8 wp
+int16 wp_total
 uint8 vibe

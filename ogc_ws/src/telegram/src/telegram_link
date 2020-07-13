@@ -18,31 +18,86 @@
 import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
+from identifiers.srv import GetDetails
 
 import sys
 import os
+from pathlib import Path
 from threading import Thread
 import json
 
 from Td import Td, Chat
 
+# callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, td):
 	td.send_message(msg.id, msg.data)
 
+def tdlib_file_cb(msg, td):
+	rospy.loginfo("SENDING FILE")
+	rospy.loginfo(msg)
+	td.send_file(msg.id, msg.data)
+
+# Function to receive all messages from telegram
+# runs in a seperate thread
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
-	while True:
+	# Loop runs indefinitely, checking for any updates in telegram
+	boot_time = rospy.get_rostime().secs
+
+	while True: 
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
+			# log details if there is an error
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
-			if event['@type'] == 'updateNewMessage' and event['message']['sender_user_id'] in td.command_user_ids:
-				if event['message']['is_outgoing'] == True:
-					return
-				message = event['message']['content']['text']['text']
-				from_tele_pub.publish(message)
-				rospy.loginfo("Incoming message from command user: %s", message)
+
+			# For knowing status of downloading files
+			if event['@type'] == 'updateFile':
+				# Check if the file has finished downloading
+				if event['file']['local']['is_downloading_completed']:
+					local_path = event['file']['local']['path']
+
+					# Currenly only supports sending waypoint files
+					home_dir = Path.home()
+					final_path = home_dir + "/Waypoints/" + os.path.basename(local_path)
+					
+					# Move the file
+					os.rename(local_path, final_path)
+					from_tele_pub.publish(f"File {final_path} Downloaded")
+					# remote_id = event['file']['remote']['unique_id']
+					# rospy.loginfo(f"Download complete {downloading_files[remote_id]}")
+
+			# new message received 
+			if event['@type'] == 'updateNewMessage':
+				# ignore outgoing messages and messages sent before the node was started
+				if event['message']['is_outgoing'] or event["message"]["date"] < boot_time:
+					continue
+
+				#checks if the message received is from a whitelisted number
+				# td already has a "whitelist" when it is setup
+				if not td.get_chat_number(event["message"]["sender_user_id"]):
+					continue
+
+				# rospy.loginfo(json.dumps(event))
+
+				message_type = event['message']['content']['@type']
+				if message_type == 'messageText':
+					message = event['message']['content']['text']['text']
+					rospy.logwarn(message)
+					from_tele_pub.publish(message)
+
+					# Mark message as read
+					td.set_read(event["message"]["chat_id"], event["message"]["id"])
+
+					rospy.loginfo("Incoming message from command user: %s", message)
+				elif message_type == 'messageDocument':
+					file_id = event['message']['content']['document']['document']['id']
+					local_path = event['message']['content']['document']['document']['local']['path']
+
+					# download the file
+					if local_path != 1:
+						td.download_file(file_id)
 				
 				# For testing purposes
 				# if message.lower() == 'pic':
@@ -54,33 +109,45 @@ def tdlib_recv():
 
 if __name__ == '__main__':
 	try:
-		rospy.init_node('tele_ros', anonymous=False)
-		tdlib_dir = rospy.get_param("~tdlib_auth_dir")
-		identifiers_file = rospy.get_param("~identifiers_file")
-		valid_ids = rospy.get_param("~valid_ids")
-		is_air = rospy.get_param("~is_air")
-		self_id = rospy.get_param("~self_id")
+		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
+		tdlib_dir = rospy.get_param("~tdlib_auth_dir")			# Location of the telegram account, created by the tele_auth script
+		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
 
-		# rospy.loginfo(command_users)
-		td = Td(tdlib_dir, identifiers_file, is_air, valid_ids)
+		rospy.wait_for_service("identifiers/get/number")
 
+		identifiers_get_number = rospy.ServiceProxy("identifiers/get/number", GetDetails)
+
+		whitelist_info = {}
+		for id_n in valid_ids:
+			number = identifiers_get_number(id_n)
+			if number.data:
+				whitelist_info[id_n] = number.data
+
+
+		# Initialize Td class, handles all the telegram actions for the node
+		td = Td(tdlib_dir, whitelist_info)
+
+		# Creates a new thread for running the receive function
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True
 		recv_thread.start()
 
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, td)
+		rospy.Subscriber('ogc/to_telegram_file', LinkMessage, tdlib_file_cb, td)
 
-		rospy.logwarn(os.getcwd())
+		# Checks if the Td class has finished initializing
+		# This involves ensuring that it is able to send messages to all devices in valid_ids
 		rate = rospy.Rate(1)
 		while not td.setup_complete():
 			rospy.loginfo("NOT COMPLETE YET")
-			td.get_chats()
+			td.get_contacts()
+			# td.receive()
 			rate.sleep()
 
 		rospy.loginfo('setup complete')
 
 		# inform all valid nodes that the link is up
-		td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
+		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 
 		rospy.spin()
 
