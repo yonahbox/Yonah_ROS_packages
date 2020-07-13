@@ -2,6 +2,7 @@
 
 import time
 import rospy
+from pathlib import Path
 from despatcher.msg import LinkMessage
 from os import listdir
 
@@ -11,7 +12,8 @@ class mission_updater():
 		self.pub_to_despatcher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
 		
 	def update(self):
-		gndfolder = "/home/huachen/Yonah/missiontest/ground/"
+		home_dir = Path.home()
+		gndfolder = home_dir + "/Waypoints/"
 		gndfiles = listdir(gndfolder)
 		mission_msg = []
 		for i in gndfiles:
