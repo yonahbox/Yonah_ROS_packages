@@ -164,6 +164,20 @@ class Td():
 			'@extra': 'sent from Td.py'
 		})
 
+	def send_message_direct(self, telegram_id, msg):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessageText',
+				'text': {
+					'@type': 'formattedText',
+					'text': msg,
+				}
+			},
+			'@extra': 'sent from Td.py'
+		})
+
 	# Wrapper to send text messages to multiple numbers
 	def send_message_multi(self, ids, msg):
 		for id_n in ids:
@@ -279,22 +293,22 @@ class Td():
 
 			# This gives specific information about a message
 			# needed to keep track of what messages have been received
-			elif recv_type == "message":
-				if result.get('@extra') == "sent from Td.py" and result["is_outgoing"]:
-					chat = self._get_local_chat(result["chat_id"])
-					chat.add_message(result["id"])
+			# elif recv_type == "message":
+				# if result.get('@extra') == "sent from Td.py" and result["is_outgoing"]:
+					# chat = self._get_local_chat(result["chat_id"])
+					# chat.add_message(result["id"])
 
 			# message id changed when after it is sent
 			# this is used to update the message id when needed
-			elif recv_type == "updateMessageSendSucceeded":
-				chat = self._get_local_chat(result["message"]["chat_id"])
-				chat.replace_message(result["old_message_id"], result["message"]["id"])
+			# elif recv_type == "updateMessageSendSucceeded":
+				# chat = self._get_local_chat(result["message"]["chat_id"])
+				# chat.replace_message(result["old_message_id"], result["message"]["id"])
 
 			# This is for receiving the read receipts
-			elif recv_type == "updateChatReadOutbox":
-				chat = self._get_local_chat(result["chat_id"])
-				if chat:
-					chat.read_message(result["last_read_outbox_message_id"])
+			# elif recv_type == "updateChatReadOutbox":
+				# chat = self._get_local_chat(result["chat_id"])
+				# if chat:
+					# chat.read_message(result["last_read_outbox_message_id"])
 
 			return result
 
