@@ -25,8 +25,8 @@ import rospy
 from functools import partial
 
 from PyQt5.QtWidgets import *
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-from python_qt_binding.QtGui import QFont, QIntValidator
+from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QRegExp
+from python_qt_binding.QtGui import QFont, QIntValidator, QRegExpValidator, QValidator
 
 from regular import air_payload
 from despatcher.msg import LinkMessage
@@ -290,30 +290,56 @@ class CommandWindow(QWidget):
 
         identifiers_layout = QFormLayout()
         identifiers_layout.addRow(title)
-    
+        
+        self.validity = [0, 0, 0, 0]
         name = QLabel("Label")
-        name_lineedit = QLineEdit()
+        name_lineedit = QLineEdit(self)
+        name_lineedit.setMaxLength(15)
+        
+        rx = QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$"))
+        name_lineedit.setValidator(rx)
         identifiers_layout.addRow(name, name_lineedit)
         name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
+        name_lineedit.textChanged.emit(name_lineedit.text())
 
         phone = QLabel("Phone number")
         phone_lineedit = QLineEdit()
-        # phone_lineedit.setValidator(QIntValidator())
-        phone_lineedit.setMaxLength(10)
+        rx = QRegExpValidator(QRegExp("[0-9.-]{10,12}$"))
+        phone_lineedit.setValidator(rx)
         identifiers_layout.addRow(phone, phone_lineedit)
         phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
 
         imei = QLabel("IMEI number")
         imei_lineedit = QLineEdit()
-        # imei_lineedit.setValidator(QIntValidator())
+        imei_lineedit.setMaxLength(15)
+        rx = QRegExpValidator(QRegExp("[0-9]\\d{14}"))
+        imei_lineedit.setValidator(rx)
         identifiers_layout.addRow(imei, imei_lineedit)
         imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
 
         serial = QLabel("Serial number")
         serial_lineedit = QLineEdit()
-        # serial_lineedit.setValidator(QIntValidator())
+        rx = QRegExpValidator(QRegExp("[0-9]\\d{4}"))
+        serial_lineedit.setValidator(rx)
         identifiers_layout.addRow(serial, serial_lineedit)
         serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
+
+        # Additional Information upon hover of textboxes
+        label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
+        name.setToolTip(label_msg)
+        name_lineedit.setToolTip(label_msg)
+
+        phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
+        phone.setToolTip(phone_msg)
+        phone_lineedit.setToolTip(phone_msg)
+
+        imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
+        imei.setToolTip(imei_msg)
+        imei_lineedit.setToolTip(imei_msg)
+
+        serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
+        serial.setToolTip(serial_msg)
+        serial_lineedit.setToolTip(serial_msg)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -326,16 +352,54 @@ class CommandWindow(QWidget):
         self.add_ground_air_dialog.show()
 
     def add_identifiers_submit(self, subfields, text):
+        sender = self.sender()
+        validator = sender.validator()
+        state = validator.validate(text, 0)[0]
+        if state == QValidator.Acceptable:
+            color = '#c4df9b' # green
+        elif state == QValidator.Intermediate:
+            color = '#fff79a' # yellow
+        else:
+            color = '#f6989d' # red
+        sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
+
         if subfields == "label":
             self.add_label = text
+            if state == QValidator.Acceptable:
+                self.validity[0] = 1  
+            else: 
+                self.validity[0] = 2
         elif subfields == "phone":
             self.add_phone = text
+            if state == QValidator.Acceptable:
+                self.validity[1] = 1  
+            else: 
+                self.validity[1] = 2
         elif subfields == "imei":
             self.add_imei = text
+            if state == QValidator.Acceptable:
+                self.validity[2] = 1  
+            else: 
+                self.validity[2] = 2
         elif subfields == "serial":
             self.add_serial = text
+            if state == QValidator.Acceptable:
+                self.validity[3] = 1  
+            else: 
+                self.validity[3] = 2
 
     def add_identifiers_accept(self, side):
+        if sum(self.validity) != 4:
+            self.warning = QMessageBox()
+            self.warning.setIcon(QMessageBox.Warning)
+            self.warning.setText("Some input fields requirement have not been met.\n Please check your inputs again")
+            self.warning.setInformativeText("Hover mouse over input field for more information")
+            self.warning.setWindowTitle("Error Message")
+            self.warning.setStandardButtons(QMessageBox.Ok)
+            self.warning.buttonClicked.connect(self.warning.close)
+            self.warning.show()
+            return 0
+
         new_identifier = AddNewDeviceRequest()
         new_identifier.label = self.add_label
         new_identifier.number = self.add_phone

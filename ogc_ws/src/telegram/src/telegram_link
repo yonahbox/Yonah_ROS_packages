@@ -45,10 +45,11 @@ def tdlib_recv():
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
-			print(event)
+			# print(event)
 			# log details if there is an error
 			if event['@type'] == 'error':
-				rospy.logwarn(json.dumps(event))
+				pass
+				# rospy.logwarn(json.dumps(event))
 			# new message received 
 			if event['@type'] == 'updateNewMessage':
 				# ignore outgoing messages and messages sent before the node was started
@@ -113,7 +114,7 @@ if __name__ == '__main__':
 		# This involves ensuring that it is able to send messages to all devices in valid_ids
 		rate = rospy.Rate(1)
 		while not td.setup_complete():
-			rospy.loginfo("NOT COMPLETE YET")
+			# rospy.loginfo("NOT COMPLETE YET")
 			td.get_contacts()
 			# td.receive()
 			rate.sleep()
