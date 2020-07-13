@@ -357,7 +357,6 @@ class CommandWindow(QWidget):
         ids_response = self.get_ids()
         self.air_ids = ids_response.air_ids
         self.ground_ids = ids_response.ground_ids
-        rospy.loginfo(ids_response.air_ids)
         self.edit_ground_air_dialog = QDialog()
         self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
 
@@ -371,10 +370,10 @@ class CommandWindow(QWidget):
         # Somehow get the current label inside it
         if side == "Air":
             for i in self.air_ids:
-                self.edit_combo_box.addItem("Aircraft " + str(i))
+                self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
         else:
             for i in self.ground_ids:
-                self.edit_combo_box.addItem("GCS " + str(i))
+                self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         name = QLabel("Label")
