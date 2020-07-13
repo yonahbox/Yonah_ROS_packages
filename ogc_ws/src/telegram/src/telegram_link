@@ -64,7 +64,7 @@ def tdlib_recv():
 					
 					# Move the file
 					os.rename(local_path, final_path)
-					from_tele_pub.publish(f"File {final_path} Downloaded")
+					#from_tele_pub.publish(f"File {final_path} Downloaded")
 					# remote_id = event['file']['remote']['unique_id']
 					# rospy.loginfo(f"Download complete {downloading_files[remote_id]}")
 

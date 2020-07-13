@@ -41,6 +41,7 @@ class gnddespatcher():
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
+        self.file_to_telegram = rospy.Publisher('ogc/to_telegram_file', LinkMessage, queue_size = 5) # Link to Telegram node
 
         # Link switching
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
@@ -103,11 +104,17 @@ class gnddespatcher():
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if sender_msgtype == 's':
-                    print('statustext gnd')
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
+                elif sender_msgtype == 'm':
+                    # Check if it is mission update message
+                    mission_files = data.data.split()[3:-1]
+                    reqFile = LinkMessage()
+                    reqFile.id = 1
+                    for i in mission_files:
+                        reqFile.data = i
+                        self.file_to_telegram.publish(reqFile)
                 else:
-                    print('ondemand gnd')
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
