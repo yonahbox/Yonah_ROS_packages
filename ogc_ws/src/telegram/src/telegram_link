@@ -34,8 +34,9 @@ def tdlib_topic_cb(msg, td):
 
 def tdlib_file_cb(msg, td):
 	rospy.loginfo("SENDING FILE")
-	rospy.loginfo(msg)
-	td.send_file(msg.id, msg.data)
+	home_dir = str(Path.home())
+	file_path = home_dir + "/Waypoints/" + msg.data
+	td.send_file(msg.id, file_path)
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -59,7 +60,7 @@ def tdlib_recv():
 					local_path = event['file']['local']['path']
 
 					# Currenly only supports sending waypoint files
-					home_dir = Path.home()
+					home_dir = str(Path.home())
 					final_path = home_dir + "/Waypoints/" + os.path.basename(local_path)
 					
 					# Move the file

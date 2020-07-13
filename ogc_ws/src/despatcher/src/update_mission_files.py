@@ -12,7 +12,7 @@ class mission_updater():
 		self.pub_to_despatcher = rospy.Publisher('ogc/to_despatcher', LinkMessage, queue_size = 5)
 		
 	def update(self):
-		home_dir = Path.home()
+		home_dir = str(Path.home())
 		gndfolder = home_dir + "/Waypoints/"
 		gndfiles = listdir(gndfolder)
 		mission_msg = []
@@ -21,7 +21,7 @@ class mission_updater():
 			update_time = g.readlines()[-1].rstrip().split()[-1]
 			mission_msg.append(str(i) + " " + str(update_time))
 		hello = LinkMessage()
-		hello.id = 1
+		hello.id = 4
 		hello.data = "mission update " + " ".join(mission_msg)
 		time.sleep(1)
 		self.pub_to_despatcher.publish(hello)

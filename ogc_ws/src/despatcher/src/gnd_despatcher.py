@@ -95,6 +95,7 @@ class gnddespatcher():
             entries = data.data.split()
             sender_timestamp = int(entries[-1])
             sender_msgtype = str(entries[0])
+            sender_id = int(entries[2])
             if not self._is_new_msg(sender_timestamp):
                 # Check if it is new msg
                 return
@@ -110,7 +111,7 @@ class gnddespatcher():
                     # Check if it is mission update message
                     mission_files = data.data.split()[3:-1]
                     reqFile = LinkMessage()
-                    reqFile.id = self._id
+                    reqFile.id = sender_id
                     for i in mission_files:
                         reqFile.data = i
                         self.file_to_telegram.publish(reqFile)
