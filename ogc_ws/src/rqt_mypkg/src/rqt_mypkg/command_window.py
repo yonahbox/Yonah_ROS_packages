@@ -63,7 +63,11 @@ class CommandWindow(QWidget):
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
-        
+        self.label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
+        self.phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
+        self.imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
+        self.serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
+
         # Get the headers for the payload
         self.air = air_payload()
         self.custom_ping_list = self.air.entries.keys()
@@ -337,21 +341,17 @@ class CommandWindow(QWidget):
         serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
 
         # Additional Information upon hover of textboxes
-        label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
-        name.setToolTip(label_msg)
-        name_lineedit.setToolTip(label_msg)
+        name.setToolTip(self.label_msg)
+        name_lineedit.setToolTip(self.label_msg)
 
-        phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
-        phone.setToolTip(phone_msg)
-        phone_lineedit.setToolTip(phone_msg)
+        phone.setToolTip(self.phone_msg)
+        phone_lineedit.setToolTip(self.phone_msg)
 
-        imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
-        imei.setToolTip(imei_msg)
-        imei_lineedit.setToolTip(imei_msg)
+        imei.setToolTip(self.imei_msg)
+        imei_lineedit.setToolTip(self.imei_msg)
 
-        serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
-        serial.setToolTip(serial_msg)
-        serial_lineedit.setToolTip(serial_msg)
+        serial.setToolTip(self.serial_msg)
+        serial_lineedit.setToolTip(self.serial_msg)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -478,6 +478,19 @@ class CommandWindow(QWidget):
 
         box.accepted.connect(partial(self.edit_identifiers_accept, side))
         box.rejected.connect(partial(self.close_identifiers, "Edit"))
+        
+        # Additional Information upon hover of textboxes
+        name.setToolTip(self.label_msg)
+        self.name_lineedit.setToolTip(self.label_msg)
+
+        phone.setToolTip(self.phone_msg)
+        self.phone_lineedit.setToolTip(self.phone_msg)
+
+        imei.setToolTip(self.imei_msg)
+        self.imei_lineedit.setToolTip(self.imei_msg)
+
+        serial.setToolTip(self.serial_msg)
+        self.serial_lineedit.setToolTip(self.serial_msg)
 
         lay = QFormLayout(self.edit_ground_air_dialog)
         lay.addRow(title)
