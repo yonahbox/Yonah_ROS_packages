@@ -54,6 +54,7 @@ class CommandWindow(QWidget):
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
+
         for i in range (self.active_aircrafts + 1):
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
         
@@ -123,10 +124,13 @@ class CommandWindow(QWidget):
     def create_layout(self):
         # Create the layout
         self.main_layout = QVBoxLayout()
+        self.secondary_layout = QVBoxLayout()
+        self.full_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
         self.ping_row = QFormLayout()
+
         # Set main_layout as the layout that occupies the entire widget
         self.setLayout(self.main_layout) 
 
@@ -139,6 +143,8 @@ class CommandWindow(QWidget):
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
 
+        self.scroll_area = QScrollArea()
+        self.frame1 = QFrame()
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -169,7 +175,7 @@ class CommandWindow(QWidget):
         self.ros_reader.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
-        self.main_layout.addWidget(self.combo_box)
+        self.secondary_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
@@ -182,11 +188,17 @@ class CommandWindow(QWidget):
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
-        self.main_layout.addLayout(self.first_row)
-        self.main_layout.addLayout(self.second_row)
+        self.secondary_layout.addLayout(self.first_row)
+        self.secondary_layout.addLayout(self.second_row)
         self.third_row.addLayout(self.ping_row)
         self.third_row.addWidget(self.ros_reader)
-        self.main_layout.addLayout(self.third_row)
+        self.secondary_layout.addLayout(self.third_row)
+        self.frame1.setLayout(self.secondary_layout)
+        self.scroll_area.setWidget(self.frame1)
+        self.scroll_area.setMaximumHeight(500)
+        self.scroll_area.setMinimumWidth(600)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.main_layout.addWidget(self.scroll_area)
 
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
