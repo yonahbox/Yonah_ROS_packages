@@ -64,6 +64,12 @@ class Identifiers:
 				print("invalid identifier file")
 				exit()
 
+		# clear the whitelists to prevent duplicates
+		self.whitelist.clear()
+		self.whitelist_nums.clear()
+		self.whitelist_rb_serial.clear()
+		self.whitelist_telegram_ids.clear()
+
 		# For loop with ternary operator to decide which array to check from the json object
 		# add all whitelisted devices into the whitelist
 		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
@@ -75,7 +81,7 @@ class Identifiers:
 					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
 				else:
 					print("telegram id not found")
-					self.update_telegram_id(obj["id"])
+					self.update_telegram_id(obj["label"], obj["number"])
 
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
@@ -109,11 +115,6 @@ class Identifiers:
 
 		return None
 
-	def get_device_new(self, id_n):
-		for device in self.json_obj["ground"] if self.is_air else self.json_obj["air"]:
-			if device["id"] == id_n:
-				return device
-
 	# return phone number associated with id if it is whitelisted
 	def get_number(self, id_n):
 		device = self.get_device(id_n)
@@ -124,10 +125,10 @@ class Identifiers:
 		device = self.get_device(id_n)
 		if device is None:
 			return None
-
+		
 		telegram_id = device.telegram_id
 		if telegram_id is None:
-			self.update_telegram_id(id_n)
+			self.update_telegram_id(device.label, device.number)
 			return None
 
 		return telegram_id
@@ -224,14 +225,14 @@ class Identifiers:
 				if device.get("telegram_id", 0) != telegram_id:
 					device["telegram_id"] = telegram_id
 					obj_edited = True
-				break
+					break
 
 		for device in self.json_obj["ground"]:
 			if device["number"] == number:
 				if device.get("telegram_id", 0) != telegram_id:
 					device["telegram_id"] = telegram_id
 					obj_edited = True
-				break
+					break
 
 		if not obj_edited:
 			return False
@@ -242,12 +243,11 @@ class Identifiers:
 		self._parse_file()
 		return True
 
-	def update_telegram_id(self, id_n):
+	def update_telegram_id(self, label, number):
 		print("requesting telegram_id")
-		device = self.get_device_new(id_n)
 		contact = ContactInfo()
-		contact.label = device["label"]
-		contact.number = device["number"]
+		contact.label = label
+		contact.number = number
 		self.telegram_add_contact.publish(contact)
 
 
