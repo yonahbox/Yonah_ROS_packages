@@ -32,7 +32,7 @@ class ServiceHandler:
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
 
 	def get_phone_number(self, request):
-		return GetDetailsResponse(self._ids.get_number(request.id))
+		return GetDetailsResponse(data=self._ids.get_number(request.id))
 
 	def get_imei(self, request):
 		return GetDetailsResponse(self._ids.get_sbd_imei(request.id))
