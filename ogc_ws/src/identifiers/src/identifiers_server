@@ -33,19 +33,16 @@ class ServiceHandler:
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
 
 	def get_phone_number(self, request):
-		return GetDetailsResponse(self._ids.get_number(request.id))
+		return GetDetailsResponse(data=self._ids.get_number(request.id))
 
 	def get_imei(self, request):
-		return GetDetailsResponse(self._ids.get_sbd_imei(request.id))
+		return GetDetailsResponse(data=self._ids.get_sbd_imei(request.id))
 
 	def get_serial(self, request):
-		return GetDetailsResponse(self._ids.get_sbd_serial(request.id))
+		return GetDetailsResponse(data=self._ids.get_sbd_serial(request.id))
 
 	def get_telegram_id(self, request):
-		rospy.loginfo(request.id)
-		result = self._ids.get_telegram_id(request.id)
-		rospy.loginfo(result)
-		return GetDetailsResponse(result)
+		return GetDetailsResponse(data_int=self._ids.get_telegram_id(request.id))
 
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
@@ -55,10 +52,10 @@ class ServiceHandler:
 			return None
 
 	def get_self_imei(self, request):
-		return GetSelfDetailsResponse(self._ids.get_self_imei())
+		return GetSelfDetailsResponse(data=self._ids.get_self_imei())
 
 	def get_self_serial(self, request):
-		return GetSelfDetailsResponse(self._ids.get_self_serial())
+		return GetSelfDetailsResponse(data=self._ids.get_self_serial())
 
 	def get_sbd_details(self, request):
 		username, password, url = self._ids.get_sbd_credentials()

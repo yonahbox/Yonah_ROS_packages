@@ -130,7 +130,7 @@ class Identifiers:
 			self.update_telegram_id(id_n)
 			return None
 
-		return str(telegram_id)
+		return telegram_id
 
 	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)

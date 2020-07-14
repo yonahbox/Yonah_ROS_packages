@@ -33,9 +33,9 @@ def tdlib_topic_cb(msg, args):
 	td = args[0]
 	id_service = args[1]
 	tele_id = id_service(msg.id)
-	if tele_id.data != "":
+	if tele_id.data is not None:
 		rospy.loginfo("sending message")
-		td.send_message(int(tele_id.data), msg.data)
+		td.send_message(tele_id.data_int, msg.data)
 	else:
 		rospy.logwarn("Telegram user id not available")
 
@@ -73,8 +73,8 @@ def tdlib_recv():
 					continue
 
 				is_valid_sender = is_valid_sender_service(0, str(event["message"]["sender_user_id"]))
-				rospy.logwarn(is_valid_sender)
-				if not is_valid_sender:
+				# rospy.logwarn(is_valid_sender)
+				if not is_valid_sender.success:
 					continue
 
 				#checks if the message received is from a whitelisted number
