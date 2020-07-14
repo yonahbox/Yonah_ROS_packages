@@ -24,6 +24,7 @@ from identifiers.srv import CheckSender, CheckSenderResponse
 from identifiers.srv import GetSBDDetails, GetSBDDetailsResponse
 from identifiers.srv import AddNewDevice, AddNewDeviceResponse
 from identifiers.srv import EditDevice, EditDeviceResponse
+from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
 
@@ -35,10 +36,13 @@ class ServiceHandler:
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
 
 	def get_imei(self, request):
-		return GetDetailsResponse(self._ids.get_sbd_imei(request.id))
+		return GetDetailsResponse(data=self._ids.get_sbd_imei(request.id))
 
 	def get_serial(self, request):
-		return GetDetailsResponse(self._ids.get_sbd_serial(request.id))
+		return GetDetailsResponse(data=self._ids.get_sbd_serial(request.id))
+
+	def get_telegram_id(self, request):
+		return GetDetailsResponse(data_int=self._ids.get_telegram_id(request.id))
 
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
@@ -48,10 +52,10 @@ class ServiceHandler:
 			return None
 
 	def get_self_imei(self, request):
-		return GetSelfDetailsResponse(self._ids.get_self_imei())
+		return GetSelfDetailsResponse(data=self._ids.get_self_imei())
 
 	def get_self_serial(self, request):
-		return GetSelfDetailsResponse(self._ids.get_self_serial())
+		return GetSelfDetailsResponse(data=self._ids.get_self_serial())
 
 	def get_sbd_details(self, request):
 		username, password, url = self._ids.get_sbd_credentials()
@@ -70,6 +74,9 @@ class ServiceHandler:
 			rospy.logwarn("Failed to edit device in identifiers_file")
 
 		return EditDeviceResponse(result)
+
+	def add_telegram_id(self, request):
+		return AddTelegramIdResponse(self._ids.add_telegram_id(request.number, request.telegram_id))
 
 	def get_ids(self, request):
 		air_ids, ground_ids = self._ids.get_active_ids()
@@ -99,7 +106,8 @@ if __name__ == '__main__':
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
-	
+	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
 	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
@@ -108,6 +116,7 @@ if __name__ == '__main__':
 
 	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
 	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
+	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
