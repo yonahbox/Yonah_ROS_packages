@@ -33,11 +33,11 @@ def tdlib_topic_cb(msg, args):
 	td = args[0]
 	id_service = args[1]
 	tele_id = id_service(msg.id)
-	if tele_id.data is not None:
-		rospy.loginfo("sending message")
-		td.send_message(tele_id.data_int, msg.data)
+	if tele_id.data_int == 0:
+		rospy.logwarn("Invalid user id")
 	else:
-		rospy.logwarn("Telegram user id not available")
+		rospy.loginfo(f"sending message to {tele_id.data_int}")
+		td.send_message(tele_id.data_int, msg.data)
 
 
 def tdlib_add_contact_cb(contact, td):

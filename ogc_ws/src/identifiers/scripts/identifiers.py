@@ -121,11 +121,11 @@ class Identifiers:
 		return device.number if device else None
 
 	def get_telegram_id(self, id_n):
-		device = self.get_device_new(id_n)
+		device = self.get_device(id_n)
 		if device is None:
 			return None
 
-		telegram_id = device.get("telegram_id",  None)
+		telegram_id = device.telegram_id
 		if telegram_id is None:
 			self.update_telegram_id(id_n)
 			return None
