@@ -74,11 +74,11 @@ class Td():
 		if result:
 			return json.loads(result.decode('utf-8'))
 
-	# # # Get the 10 most recent chats	
-	# def get_contacts(self):
-	# 	self.send({
-	# 		"@type": "getContacts",
-	# 	})
+	# Get the contacts of this telegram account
+	def get_contacts(self):
+		self.send({
+			"@type": "getContacts",
+		})
 
 	# add new contacts to the telegram account
 	# expects a list of strings containing the numbers of the form 6512345678
