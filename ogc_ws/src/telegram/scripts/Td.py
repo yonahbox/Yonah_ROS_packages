@@ -80,18 +80,6 @@ class Td():
 			"@type": "getContacts",
 		})
 
-	# add new contacts to the telegram account
-	# expects a list of strings containing the numbers of the form 6512345678
-	# def add_contacts(self, number_list):
-	# 	self.send({
-	# 		"@type": "importContacts",
-	# 		"contacts": [{
-	# 			"@type": "contact",
-	# 			"first_name": "Td " + number,
-	# 			"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
-	# 		} for number in number_list]		# List of objects created using list comprehension
-	# 	})
-
 	# Add single contact to telegram account
 	# number should be a string of the form 6512345678
 	def add_contact(self, number, label):
