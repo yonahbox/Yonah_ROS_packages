@@ -30,9 +30,10 @@ from Td import Td
 
 # callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, args):
-	td = args[0]
-	id_service = args[1]
-	tele_id = id_service(msg.id)
+	td = args[0]					# instance of Td class
+	id_service = args[1]			# service proxy for identifers service to get the telegram user id
+	tele_id = id_service(msg.id)	# get the telegram user id to send the message to
+
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
 	else:
@@ -42,8 +43,13 @@ def tdlib_topic_cb(msg, args):
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
 	rospy.loginfo("Received request to add contact " + contact.label + " " + contact.number)
-	td.add_contact(contact.number, contact.label)
-	# td.get_contacts()
+
+	# check if the requested contact is the account itself
+	if contact.me:
+		td.get_me()										# get information about this telegram account
+	else:
+		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
+	td.get_contacts()									# refresh contacts to get the user ids
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -61,8 +67,9 @@ def tdlib_recv():
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
 
+			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
-				print(event)
+				# print(event)
 				result = identifiers_add_tele_id(event["phone_number"], event["id"])
 
 			# new message received 
@@ -81,8 +88,7 @@ def tdlib_recv():
 
 				# Mark message as read
 				td.set_read(event["message"]["chat_id"], event["message"]["id"])
-
-				rospy.loginfo("Incoming message from command user: %s", message)
+				rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 if __name__ == '__main__':
 	try:
