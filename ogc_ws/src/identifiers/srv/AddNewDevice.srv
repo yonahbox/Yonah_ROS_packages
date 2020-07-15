@@ -1,0 +1,7 @@
+string label
+bool is_air
+string number
+string imei
+string rb_serial
+---
+bool success
