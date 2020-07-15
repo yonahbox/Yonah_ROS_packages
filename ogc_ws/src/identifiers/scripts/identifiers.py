@@ -31,6 +31,22 @@ class Device:
 		self.rb_serial = rb_serial
 		self.telegram_id = telegram_id
 
+class TopicSubscriberNotification:
+	def __init__(self, callback):
+		self.callback = callback
+		self.subscriber_count = 0
+
+	def peer_subscribe(self, topic_name, topic_publish, peer_publish):
+		rospy.loginfo("SUBSCRIBED to %s", topic_name)
+		self.subscriber_count += 1
+		if self.subscriber_count == 1:
+			self.callback()
+
+	def peer_unsubscribe(self, topic_name, num_peers):
+		rospy.loginfo("UNSUBSCRIBED from %s", topic_name)
+		self.subscriber_count -= 1
+
+
 class Identifiers:
 	def __init__(self, json_file, is_air, self_id, valid_ids):
 		self.json_file = json_file	# Location of identifiers file
@@ -48,7 +64,10 @@ class Identifiers:
 		self.rock7_pw = ""			# password for rockblock
 		self.aws_url = ""			# url to AWS instance
 
-		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, latch=True, queue_size=10)
+		topic_cb = TopicSubscriberNotification(self.request_telegram_id)
+
+		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10, subscriber_listener=topic_cb)
+		self.telegram_unknown_ids = []
 
 		# parse the identifiers file
 		self._parse_file()
@@ -70,6 +89,11 @@ class Identifiers:
 		self.whitelist_rb_serial.clear()
 		self.whitelist_telegram_ids.clear()
 
+		for obj in self.json_obj["ground"] + self.json_obj["air"]:
+			if "telegram_id" not in obj.keys():
+					# self.update_telegram_id(obj["label"], obj["number"])
+					self.telegram_unknown_ids.append((obj["label"], obj["number"]))
+
 		# For loop with ternary operator to decide which array to check from the json object
 		# add all whitelisted devices into the whitelist
 		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
@@ -79,9 +103,6 @@ class Identifiers:
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 				if "telegram_id" in obj.keys():
 					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
-				else:
-					print("telegram id not found")
-					self.update_telegram_id(obj["label"], obj["number"])
 
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
@@ -96,6 +117,13 @@ class Identifiers:
 		self.rock7_un = self.json_obj["sbd_details"]["rock7_username"]
 		self.rock7_pw = self.json_obj["sbd_details"]["rock7_password"]
 		self.aws_url = self.json_obj["sbd_details"]["aws_url"]
+
+	def request_telegram_id(self):
+		rospy.loginfo("SUBSCRIBER ADDED")
+		while self.telegram_unknown_ids:
+			contact = self.telegram_unknown_ids.pop(0)
+			self.update_telegram_id(contact[0], contact[1])
+			rospy.sleep(1)
 
 	# refresh details from file, in case it has changed since the time the object was initialized
 	def refresh_details(self):
@@ -219,6 +247,7 @@ class Identifiers:
 		return True
 
 	def add_telegram_id(self, number, telegram_id):
+		rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
 		obj_edited = False
 		for device in self.json_obj["air"]:
 			if device["number"] == number:
@@ -244,7 +273,7 @@ class Identifiers:
 		return True
 
 	def update_telegram_id(self, label, number):
-		print("requesting telegram_id")
+		rospy.loginfo("requesting telegram_id for %s (%s)", label, number)
 		contact = ContactInfo()
 		contact.label = label
 		contact.number = number
