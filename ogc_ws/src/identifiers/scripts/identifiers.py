@@ -195,6 +195,9 @@ class Identifiers:
 	def get_self_imei(self):
 		return self.self_device.imei
 
+	def get_self_number(self):
+		return self.device.number
+
 	# return all the id numbers currently in use (device exists in identifiers file)
 	def get_active_ids(self):
 		air_ids = [dev["id"] for dev in self.json_obj["air"]]
@@ -274,8 +277,6 @@ class Identifiers:
 
 	# write the telegram user id for a device into the identifiers file
 	def add_telegram_id(self, number, telegram_id):
-		rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
-
 		# edit objects in both air and ground if it exists in both (mainly needed in testing, unlikely to be needed in ops)
 		obj_edited = False
 		for device in self.json_obj["air"]:
@@ -295,6 +296,8 @@ class Identifiers:
 		if not obj_edited:
 			return False
 
+		rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
+
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
 
@@ -307,6 +310,14 @@ class Identifiers:
 		contact = ContactInfo()
 		contact.label = label
 		contact.number = number
+		
+		# check if the number is for the telegram account itself
+		# it is not possible to add a contact of yourself in telegram
+		if number == self.self_device.number:
+			contact.me = True
+		else:
+			contact.me = False
+
 		self.telegram_add_contact.publish(contact)
 
 

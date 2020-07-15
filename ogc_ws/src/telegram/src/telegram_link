@@ -43,8 +43,13 @@ def tdlib_topic_cb(msg, args):
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
 	rospy.loginfo("Received request to add contact " + contact.label + " " + contact.number)
-	td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
-	td.get_contacts()								# refresh contacts to get the user ids
+
+	# check if the requested contact is the account itself
+	if contact.me:
+		td.get_me()										# get information about this telegram account
+	else:
+		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
+	td.get_contacts()									# refresh contacts to get the user ids
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -64,6 +69,7 @@ def tdlib_recv():
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
+				# print(event)
 				result = identifiers_add_tele_id(event["phone_number"], event["id"])
 
 			# new message received 

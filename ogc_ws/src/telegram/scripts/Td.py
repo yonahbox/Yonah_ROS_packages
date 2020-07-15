@@ -80,6 +80,12 @@ class Td():
 			"@type": "getContacts",
 		})
 
+	# get information about the user
+	def get_me(self):
+		self.send({
+			"@type": "getMe"
+		})
+
 	# Add single contact to telegram account
 	# number should be a string of the form 6512345678
 	def add_contact(self, number, label):
