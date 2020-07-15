@@ -598,20 +598,15 @@ class CommandWindow(QWidget):
         rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
 
         try:
-            print('a')
             new_edit_device = self.get_device(current_identifier)
             self.name_lineedit.setText(str(new_edit_device.label))
             self.edit_label = new_edit_device.label
-            print('b')
             self.phone_lineedit.setText(str(new_edit_device.number))
             self.edit_phone = new_edit_device.number
-            print('c')
             self.imei_lineedit.setText(str(new_edit_device.imei))
             self.edit_imei = new_edit_device.imei
-            print('d')
             self.serial_lineedit.setText(str(new_edit_device.rb_serial))
             self.edit_serial = new_edit_device.rb_serial
-            print('es')
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
             self.warning = QMessageBox()
