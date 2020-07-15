@@ -54,7 +54,7 @@ class satcommsgnd(satcomms):
         } # Credentials required to post MT data to Rock 7 server
 
         rospy.wait_for_service("identifiers/get/imei")
-        rospy.wait_for_service("identifiers/get/sbd_details")
+        rospy.wait_for_service("identifiers/self/sbd")
         rospy.wait_for_service("identifiers/check/proper")
 
         self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
@@ -129,6 +129,9 @@ class satcommsgnd(satcomms):
         # Send HTTP post request to Rock 7 server, incoming msg (if any) stored in reply
         try:
             reply_str = requests.post(self._server_url, data=values).text
+        except requests.exceptions.MissingSchema:
+            rospy.logerr("Web Server Missing Schema; did you miss out http:// ?")
+            return
         except requests.exceptions.ConnectionError:
             rospy.logerr("Web Server Timed Out")
             return
@@ -142,8 +145,10 @@ class satcommsgnd(satcomms):
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
                 else:
                     rospy.logwarn("Received unknown msg from Rockblock " + str(reply['serial']))
+        except (SyntaxError):
+            rospy.logwarn("Web Server Syntax Error")
         except (ValueError):
-            rospy.logwarn("Invalid message received from web server")
+            rospy.logwarn("Web Server Message Value Error")
     
     ############################
     # Main msg handlers

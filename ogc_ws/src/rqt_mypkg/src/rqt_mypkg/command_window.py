@@ -25,8 +25,8 @@ import rospy
 from functools import partial
 
 from PyQt5.QtWidgets import *
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
-from python_qt_binding.QtGui import QFont, QIntValidator
+from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QRegExp
+from python_qt_binding.QtGui import QFont, QIntValidator, QRegExpValidator, QValidator
 
 from regular import air_payload
 from despatcher.msg import LinkMessage
@@ -54,6 +54,7 @@ class CommandWindow(QWidget):
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
+
         for i in range (self.active_aircrafts + 1):
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
         
@@ -62,7 +63,11 @@ class CommandWindow(QWidget):
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
-        
+        self.label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
+        self.phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
+        self.imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
+        self.serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
+
         # Get the headers for the payload
         self.air = air_payload()
         self.custom_ping_list = self.air.entries.keys()
@@ -123,10 +128,13 @@ class CommandWindow(QWidget):
     def create_layout(self):
         # Create the layout
         self.main_layout = QVBoxLayout()
+        self.secondary_layout = QVBoxLayout()
+        self.full_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
         self.ping_row = QFormLayout()
+
         # Set main_layout as the layout that occupies the entire widget
         self.setLayout(self.main_layout) 
 
@@ -139,6 +147,8 @@ class CommandWindow(QWidget):
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
 
+        self.scroll_area = QScrollArea()
+        self.frame1 = QFrame()
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -169,7 +179,7 @@ class CommandWindow(QWidget):
         self.ros_reader.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
-        self.main_layout.addWidget(self.combo_box)
+        self.secondary_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
@@ -182,11 +192,17 @@ class CommandWindow(QWidget):
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
-        self.main_layout.addLayout(self.first_row)
-        self.main_layout.addLayout(self.second_row)
+        self.secondary_layout.addLayout(self.first_row)
+        self.secondary_layout.addLayout(self.second_row)
         self.third_row.addLayout(self.ping_row)
         self.third_row.addWidget(self.ros_reader)
-        self.main_layout.addLayout(self.third_row)
+        self.secondary_layout.addLayout(self.third_row)
+        self.frame1.setLayout(self.secondary_layout)
+        self.scroll_area.setWidget(self.frame1)
+        self.scroll_area.setMaximumHeight(500)
+        self.scroll_area.setMinimumWidth(600)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.main_layout.addWidget(self.scroll_area)
 
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
@@ -290,30 +306,51 @@ class CommandWindow(QWidget):
 
         identifiers_layout = QFormLayout()
         identifiers_layout.addRow(title)
-    
+        
+        self.add_validity = [0, 0, 0, 0]
         name = QLabel("Label")
         name_lineedit = QLineEdit()
+        name_lineedit.setMaxLength(15)
+        
+        name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
         identifiers_layout.addRow(name, name_lineedit)
         name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
+        name_lineedit.textChanged.emit(name_lineedit.text())
 
         phone = QLabel("Phone number")
         phone_lineedit = QLineEdit()
-        # phone_lineedit.setValidator(QIntValidator())
-        phone_lineedit.setMaxLength(10)
+        rx = QRegExpValidator(QRegExp("[0-9.-]{10,12}$"))
+        phone_lineedit.setValidator(rx)
         identifiers_layout.addRow(phone, phone_lineedit)
         phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
 
         imei = QLabel("IMEI number")
         imei_lineedit = QLineEdit()
-        # imei_lineedit.setValidator(QIntValidator())
+        imei_lineedit.setMaxLength(15)
+        rx = QRegExpValidator(QRegExp("[0-9]\\d{14}"))
+        imei_lineedit.setValidator(rx)
         identifiers_layout.addRow(imei, imei_lineedit)
         imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
 
         serial = QLabel("Serial number")
         serial_lineedit = QLineEdit()
-        # serial_lineedit.setValidator(QIntValidator())
+        rx = QRegExpValidator(QRegExp("[0-9]\\d{4}"))
+        serial_lineedit.setValidator(rx)
         identifiers_layout.addRow(serial, serial_lineedit)
         serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
+
+        # Additional Information upon hover of textboxes
+        name.setToolTip(self.label_msg)
+        name_lineedit.setToolTip(self.label_msg)
+
+        phone.setToolTip(self.phone_msg)
+        phone_lineedit.setToolTip(self.phone_msg)
+
+        imei.setToolTip(self.imei_msg)
+        imei_lineedit.setToolTip(self.imei_msg)
+
+        serial.setToolTip(self.serial_msg)
+        serial_lineedit.setToolTip(self.serial_msg)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -326,16 +363,54 @@ class CommandWindow(QWidget):
         self.add_ground_air_dialog.show()
 
     def add_identifiers_submit(self, subfields, text):
+        sender = self.sender()
+        validator = sender.validator()
+        state = validator.validate(text, 0)[0]
+        if state == QValidator.Acceptable:
+            color = '#c4df9b' # green
+        elif state == QValidator.Intermediate:
+            color = '#fff79a' # yellow
+        else:
+            color = '#f6989d' # red
+        sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
+
         if subfields == "label":
             self.add_label = text
+            if state == QValidator.Acceptable:
+                self.add_validity[0] = 1  
+            else: 
+                self.add_validity[0] = 2
         elif subfields == "phone":
             self.add_phone = text
+            if state == QValidator.Acceptable:
+                self.add_validity[1] = 1  
+            else: 
+                self.add_validity[1] = 2
         elif subfields == "imei":
             self.add_imei = text
+            if state == QValidator.Acceptable:
+                self.add_validity[2] = 1  
+            else: 
+                self.add_validity[2] = 2
         elif subfields == "serial":
             self.add_serial = text
+            if state == QValidator.Acceptable:
+                self.add_validity[3] = 1  
+            else: 
+                self.add_validity[3] = 2
 
     def add_identifiers_accept(self, side):
+        if sum(self.add_validity) != 4:
+            self.warning = QMessageBox()
+            self.warning.setIcon(QMessageBox.Warning)
+            self.warning.setText("Some input fields requirement have not been met.\nPlease check your inputs again")
+            self.warning.setInformativeText("Hover mouse over input field for more information")
+            self.warning.setWindowTitle("Error Message")
+            self.warning.setStandardButtons(QMessageBox.Ok)
+            self.warning.buttonClicked.connect(self.warning.close)
+            self.warning.show()
+            return 0
+
         new_identifier = AddNewDeviceRequest()
         new_identifier.label = self.add_label
         new_identifier.number = self.add_phone
@@ -376,32 +451,50 @@ class CommandWindow(QWidget):
                 self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
+        self.edit_validity = [0, 0, 0, 0]
         name = QLabel("Label")
         self.name_lineedit = QLineEdit()
-        # self.name_lineedit.setText(new_edit_device.label)
+        self.name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
         self.name_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "label"))
-        
+        self.name_lineedit.textChanged.emit(self.name_lineedit.text())
+
         phone = QLabel("Phone number")
         self.phone_lineedit = QLineEdit()
-        # self.phone_lineedit.setValidator(QIntValidator())
+        self.phone_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9.-]{10,12}$")))
         self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
+        self.phone_lineedit.textChanged.emit(self.phone_lineedit.text())
 
         imei = QLabel("IMEI number")
         self.imei_lineedit = QLineEdit()
-        # imei_lineedit.setValidator(QIntValidator())
+        self.imei_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{14}")))
         self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
+        self.imei_lineedit.textChanged.emit(self.imei_lineedit.text())
 
         serial = QLabel("Serial number")
         self.serial_lineedit = QLineEdit()
-        # serial_lineedit.setValidator(QIntValidator())
+        self.serial_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{4}")))
         self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
-        
+        self.serial_lineedit.textChanged.emit(self.imei_lineedit.text())
+
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
 
         box.accepted.connect(partial(self.edit_identifiers_accept, side))
         box.rejected.connect(partial(self.close_identifiers, "Edit"))
+        
+        # Additional Information upon hover of textboxes
+        name.setToolTip(self.label_msg)
+        self.name_lineedit.setToolTip(self.label_msg)
+
+        phone.setToolTip(self.phone_msg)
+        self.phone_lineedit.setToolTip(self.phone_msg)
+
+        imei.setToolTip(self.imei_msg)
+        self.imei_lineedit.setToolTip(self.imei_msg)
+
+        serial.setToolTip(self.serial_msg)
+        self.serial_lineedit.setToolTip(self.serial_msg)
 
         lay = QFormLayout(self.edit_ground_air_dialog)
         lay.addRow(title)
@@ -423,16 +516,54 @@ class CommandWindow(QWidget):
         self.change_identifiers_dialog.show()
 
     def edit_identifiers_text(self, subfields, text):
+        sender = self.sender()
+        validator = sender.validator()
+        state = validator.validate(text, 0)[0]
+        if state == QValidator.Acceptable:
+            color = '#c4df9b' # green
+        elif state == QValidator.Intermediate:
+            color = '#fff79a' # yellow
+        else:
+            color = '#f6989d' # red
+        sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
+
         if subfields == "label":
-            self.edit_label = text
+            self.add_label = text
+            if state == QValidator.Acceptable:
+                self.edit_validity[0] = 1  
+            else: 
+                self.edit_validity[0] = 2
         elif subfields == "phone":
-            self.edit_phone = text
+            self.add_phone = text
+            if state == QValidator.Acceptable:
+                self.edit_validity[1] = 1  
+            else: 
+                self.edit_validity[1] = 2
         elif subfields == "imei":
-            self.edit_imei = text
+            self.add_imei = text
+            if state == QValidator.Acceptable:
+                self.edit_validity[2] = 1  
+            else: 
+                self.edit_validity[2] = 2
         elif subfields == "serial":
-            self.edit_serial = text
+            self.add_serial = text
+            if state == QValidator.Acceptable:
+                self.edit_validity[3] = 1  
+            else: 
+                self.edit_validity[3] = 2
 
     def edit_identifiers_accept(self, side):
+        if sum(self.edit_validity) != 4:
+            self.warning = QMessageBox()
+            self.warning.setIcon(QMessageBox.Warning)
+            self.warning.setText("Some input fields requirement have not been met.\nPlease check your inputs again")
+            self.warning.setInformativeText("Hover mouse over input field for more information")
+            self.warning.setWindowTitle("Error Message")
+            self.warning.setStandardButtons(QMessageBox.Ok)
+            self.warning.buttonClicked.connect(self.warning.close)
+            self.warning.show()
+            return 0
+
         edit_identifiers = EditDeviceRequest()
         edit_identifiers.id = self.edit_identifiers_id
         rospy.loginfo("ID that is sent: " + str(edit_identifiers.id))

@@ -4,27 +4,25 @@
 	<arg name="log_output" default="screen" />
 	<arg name="interval_1" default="10"/>
 	<arg name="interval_2" default="60"/>
-	<arg name="interval_3" default="1"/>
+	<arg name="interval_3" default="5"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
 	<arg name="link_select" default="0" />
 	
 	<!-- identifiers args -->
-	<arg name="identifiers_file" default="/home/ubuntu/identifiers.json" />
+	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
 	<arg name="ground_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
 
 	<!-- tele args -->
-	<arg name="tdlib_auth_dir" default="/home/ubuntu/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
-	<arg name="own_serial" default="12345"/>
-	<arg name="client_serial" default="12345"/>
 
 	<!-- rff args -->
-	<arg name="waypoint_folder" default="/home/ubuntu/Yonah_ROS_packages/Waypoints/"/>
+	<arg name="waypoint_folder" default="$(env HOME)/Yonah_ROS_packages/Waypoints/"/>
 
 	<!-- tele link node -->
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
