@@ -28,7 +28,7 @@ from despatcher.msg import LinkMessage
 
 # Local
 import regular
-import g2a
+from g2a import recognised_commands
 
 class gnddespatcher():
 
@@ -60,7 +60,7 @@ class gnddespatcher():
     
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        if data.data.split()[0] not in g2a.recognised_commands:
+        if data.data.split()[0] not in recognised_commands:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             msg = LinkMessage()
@@ -115,6 +115,7 @@ class gnddespatcher():
                     for i in mission_files:
                         reqFile.data = i
                         self.file_to_telegram.publish(reqFile)
+                        rospy.sleep(1)
                 else:
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):

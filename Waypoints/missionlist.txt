@@ -1,3 +1,0 @@
-egFlyToRemote.txt
-egReturnFromRemote.txt
-Last update: 1594265595
