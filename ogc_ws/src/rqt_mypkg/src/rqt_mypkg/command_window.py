@@ -301,7 +301,7 @@ class CommandWindow(QWidget):
 
         identifiers_layout = QFormLayout()
         identifiers_layout.addRow(title)
-        self.add_validity = [0, 0, 0, 0]
+        self.check_validity = [0, 0, 0, 0]
 
         self.identifiers_input_field("add")
         identifiers_layout.addRow(self.name, self.name_lineedit)
@@ -336,17 +336,10 @@ class CommandWindow(QWidget):
         self.serial_lineedit = QLineEdit()
         self.serial_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{4}")))
         
-        if field == "add":
-            self.name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
-            self.phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
-            self.imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
-            self.serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
-        
-        else:
-            self.name_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "label"))
-            self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
-            self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
-            self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
+        self.name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "label"))
+        self.phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "phone"))
+        self.imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "imei"))
+        self.serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "serial"))
 
         # Additional Information upon hover of textboxes
         self.name.setToolTip(self.label_msg)
@@ -361,7 +354,7 @@ class CommandWindow(QWidget):
         self.serial.setToolTip(self.serial_msg)
         self.serial_lineedit.setToolTip(self.serial_msg)
 
-    def add_identifiers_submit(self, subfields, text):
+    def add_identifiers_submit(self, field, subfields, text):
         sender = self.sender()
         validator = sender.validator()
         state = validator.validate(text, 0)[0]
@@ -374,35 +367,46 @@ class CommandWindow(QWidget):
         sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
 
         if subfields == "label":
-            self.add_label = text
+            if field == "add":
+                self.add_label = text
+            else:
+                self.edit_label = text
             if state == QValidator.Acceptable:
-                self.add_validity[0] = 1  
+                self.check_validity[0] = 1  
             else: 
-                self.add_validity[0] = 2
+                self.check_validity[0] = 2
         elif subfields == "phone":
-            self.add_phone = text
+            if field == "add":
+                self.add_phone = text
+            else:
+                self.edit_phone = text
             if state == QValidator.Acceptable:
-                self.add_validity[1] = 1  
+                self.check_validity[1] = 1  
             else: 
-                self.add_validity[1] = 2
+                self.check_validity[1] = 2
         elif subfields == "imei":
-            self.add_imei = text
+            if field == "add":
+                self.add_imei = text
+            else:
+                self.edit_imei = text
             if state == QValidator.Acceptable:
-                self.add_validity[2] = 1  
+                self.check_validity[2] = 1  
             else: 
-                self.add_validity[2] = 2
+                self.check_validity[2] = 2
         elif subfields == "serial":
-            self.add_serial = text
+            if field == "add":
+                self.add_serial = text
+            else:
+                self.edit_serial = text
             if state == QValidator.Acceptable:
-                self.add_validity[3] = 1  
+                self.check_validity[3] = 1  
             else: 
-                self.add_validity[3] = 2
+                self.check_validity[3] = 2
 
     def add_identifiers_accept(self, side):
-        if sum(self.add_validity) != 4:
+        if sum(self.check_validity) != 4:
             self.PopupMessages.warning_message("Some input fields requirement have not been met.\nPlease check your inputs again", "Hover mouse over input field for more information")
             return 0
-
         new_identifier = AddNewDeviceRequest()
         new_identifier.label = self.add_label
         new_identifier.number = self.add_phone
@@ -445,7 +449,7 @@ class CommandWindow(QWidget):
                 self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
-        self.edit_validity = [0, 0, 0, 0]
+        self.check_validity = [0, 0, 0, 0]
         self.identifiers_input_field("edit")
 
         box = QDialogButtonBox(
@@ -476,45 +480,8 @@ class CommandWindow(QWidget):
         self.change_identifiers_dialog.show()
         self.is_window_open[0] = 1
 
-    def edit_identifiers_text(self, subfields, text):
-        sender = self.sender()
-        validator = sender.validator()
-        state = validator.validate(text, 0)[0]
-        if state == QValidator.Acceptable:
-            color = '#c4df9b' # green
-        elif state == QValidator.Intermediate:
-            color = '#fff79a' # yellow
-        else:
-            color = '#f6989d' # red
-        sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
-
-        if subfields == "label":
-            self.add_label = text
-            if state == QValidator.Acceptable:
-                self.edit_validity[0] = 1  
-            else: 
-                self.edit_validity[0] = 2
-        elif subfields == "phone":
-            self.add_phone = text
-            if state == QValidator.Acceptable:
-                self.edit_validity[1] = 1  
-            else: 
-                self.edit_validity[1] = 2
-        elif subfields == "imei":
-            self.add_imei = text
-            if state == QValidator.Acceptable:
-                self.edit_validity[2] = 1  
-            else: 
-                self.edit_validity[2] = 2
-        elif subfields == "serial":
-            self.add_serial = text
-            if state == QValidator.Acceptable:
-                self.edit_validity[3] = 1  
-            else: 
-                self.edit_validity[3] = 2
-
     def edit_identifiers_accept(self, side):
-        if sum(self.edit_validity) != 4:
+        if sum(self.check_validity) != 4:
             self.PopupMessages.warning_message("Some input fields requirement have not been met.\nPlease check your inputs again", "Hover mouse over input field for more information")
             return 0
 
