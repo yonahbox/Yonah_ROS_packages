@@ -80,7 +80,7 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
-        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
+        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages

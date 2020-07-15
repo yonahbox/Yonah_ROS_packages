@@ -6,6 +6,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
+from missionserver import MissionServer
 
 
 # Wait for MAVROS services
@@ -103,6 +104,8 @@ def check_mission(self):
 			mission_write(self)
 		elif self._recv_msg[1] == 'update':
 			mission_update(self)
+		elif self._recv_msg[1] == 'server':
+			mission_server_update(self)
 		else:
 			return
 
@@ -229,3 +232,8 @@ def mission_update(self):
 	required_files = waypoint.compare_time(gndtime, airtime)
 	self._msg = " ".join(required_files)
 	self.sendmsg("m")
+
+def mission_server_update(self):
+	run = MissionServer()
+	run.update_files()
+	run.close()
