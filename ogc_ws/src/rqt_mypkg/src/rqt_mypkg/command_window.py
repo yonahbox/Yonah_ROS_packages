@@ -51,6 +51,7 @@ class CommandWindow(QWidget):
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
+        self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
@@ -63,6 +64,7 @@ class CommandWindow(QWidget):
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
+        
         self.label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
         self.phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
         self.imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
@@ -227,9 +229,6 @@ class CommandWindow(QWidget):
             self.PopupMessages.arm_window(self.destination_id, ["ARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to ARM?")
         if self.arm_status.get('AC' + str(self.destination_id)) == "DISARMED":
             pass
-            # self.aircrafts_info.get("AC" + str(self.destination_id)).initial_time = self.time
-            # rospy.logdebug("[AIRCRAFT ARM LIST] %s", self.aircrafts_info)
-            # print('time start')
 
     def disarm(self):
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
@@ -267,6 +266,7 @@ class CommandWindow(QWidget):
             rospy.logerr("Attempt to open change identifiers window without initialising identifiers node")
             self.warning.show()
             return 0
+        
         self.change_identifiers_dialog = QDialog()
         self.change_identifiers_dialog.setWindowTitle("Edit Identifiers")
         layout = QVBoxLayout(self.change_identifiers_dialog)
@@ -292,13 +292,16 @@ class CommandWindow(QWidget):
         layout.addWidget(edit_air)
 
         self.change_identifiers_dialog.show()
+        self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
+        self.is_window_open[0] = 0
 
-        self.add_ground_air_dialog = QDialog()
-        self.add_ground_air_dialog.setWindowTitle("Add {} Identifier".format(side))
+        self.add_identifiers_dialog = QDialog()
+        self.add_identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
+        self.is_window_open[1] = 1
 
         title = QLabel("Add New {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -359,8 +362,8 @@ class CommandWindow(QWidget):
         buttons.rejected.connect(partial(self.close_identifiers, "Add"))
 
         identifiers_layout.addWidget(buttons)
-        self.add_ground_air_dialog.setLayout(identifiers_layout)
-        self.add_ground_air_dialog.show()
+        self.add_identifiers_dialog.setLayout(identifiers_layout)
+        self.add_identifiers_dialog.show()
 
     def add_identifiers_submit(self, subfields, text):
         sender = self.sender()
@@ -422,19 +425,21 @@ class CommandWindow(QWidget):
             new_identifier.is_air = False
         add_identifier = self.add_new_device(new_identifier)
         rospy.loginfo(add_identifier.success)
-        self.add_ground_air_dialog.close()
-        self.change_identifiers_dialog.close()
+        self.add_identifiers_dialog.close()
+        self.is_window_open[1] = 0
 
     def edit_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
+        self.is_window_open[0] = 0
 
         ids_response = self.get_ids()
         self.air_ids = ids_response.air_ids
         self.ground_ids = ids_response.ground_ids
-        self.edit_ground_air_dialog = QDialog()
-        self.edit_ground_air_dialog.setWindowTitle("Edit {} Identifier".format(side))
 
+        self.edit_identifiers_dialog = QDialog()
+        self.is_window_open[2] = 1
+        self.edit_identifiers_dialog.setWindowTitle("Edit {} Identifier".format(side))
         title = QLabel("Edit Existing {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
         title.setContentsMargins(0, 0, 0, 10)
@@ -479,7 +484,6 @@ class CommandWindow(QWidget):
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
-
         box.accepted.connect(partial(self.edit_identifiers_accept, side))
         box.rejected.connect(partial(self.close_identifiers, "Edit"))
         
@@ -496,7 +500,7 @@ class CommandWindow(QWidget):
         serial.setToolTip(self.serial_msg)
         self.serial_lineedit.setToolTip(self.serial_msg)
 
-        lay = QFormLayout(self.edit_ground_air_dialog)
+        lay = QFormLayout(self.edit_identifiers_dialog)
         lay.addRow(title)
         lay.addRow(label, self.edit_combo_box)
         lay.addRow(name, self.name_lineedit)
@@ -506,14 +510,17 @@ class CommandWindow(QWidget):
 
         self.changed()
         lay.addWidget(box)
-        self.edit_ground_air_dialog.show()
+        self.edit_identifiers_dialog.show()
 
     def close_identifiers(self, side):
         if side == "Edit":
-            self.edit_ground_air_dialog.close()
+            self.edit_identifiers_dialog.close()
+            self.is_window_open[2] = 0
         else:
-            self.add_ground_air_dialog.close()
+            self.add_identifiers_dialog.close()
+            self.is_window_open[1] = 0
         self.change_identifiers_dialog.show()
+        self.is_window_open[0] = 1
 
     def edit_identifiers_text(self, subfields, text):
         sender = self.sender()
@@ -577,7 +584,8 @@ class CommandWindow(QWidget):
             edit_identifiers.is_air = False
         edit_result = self.edit_device(edit_identifiers)
         rospy.loginfo("Result: " + str(edit_result.success))
-        self.edit_ground_air_dialog.close()
+        self.edit_identifiers_dialog.close()
+        self.is_window_open[2] = 0
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1 # Identifiers start with index 1
@@ -586,22 +594,24 @@ class CommandWindow(QWidget):
     def changed(self):
         current_identifier = GetAllDetailsRequest()
         current_identifier.id = self.edit_identifiers_id
-        rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
         current_identifier.is_air = True if self.side == "Air" else False
+        rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
+
         try:
+            print('a')
             new_edit_device = self.get_device(current_identifier)
             self.name_lineedit.setText(str(new_edit_device.label))
             self.edit_label = new_edit_device.label
-
+            print('b')
             self.phone_lineedit.setText(str(new_edit_device.number))
             self.edit_phone = new_edit_device.number
-
+            print('c')
             self.imei_lineedit.setText(str(new_edit_device.imei))
             self.edit_imei = new_edit_device.imei
-
+            print('d')
             self.serial_lineedit.setText(str(new_edit_device.rb_serial))
             self.edit_serial = new_edit_device.rb_serial
-        
+            print('es')
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
             self.warning = QMessageBox()
