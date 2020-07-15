@@ -222,7 +222,7 @@ class Td():
 
 	# Mark a message as read (double tick in app)
 	def set_read(self, chat_id, message_id):
-		print('marking as read')
+		# print('marking as read')
 		self.send({
 			'@type': 'viewMessages',
 			'chat_id': chat_id,

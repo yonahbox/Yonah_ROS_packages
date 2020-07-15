@@ -82,7 +82,7 @@ def tdlib_recv():
 				# Mark message as read
 				td.set_read(event["message"]["chat_id"], event["message"]["id"])
 
-				rospy.loginfo("Incoming message from command user: %s", message)
+				rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 if __name__ == '__main__':
 	try:

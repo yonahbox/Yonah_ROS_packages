@@ -48,7 +48,7 @@ class Identifiers:
 		self.rock7_pw = ""			# password for rockblock
 		self.aws_url = ""			# url to AWS instance
 
-		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10)
+		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, latch=True, queue_size=10)
 
 		# parse the identifiers file
 		self._parse_file()
