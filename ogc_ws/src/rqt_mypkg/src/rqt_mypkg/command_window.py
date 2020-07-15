@@ -37,7 +37,7 @@ from identifiers.srv import GetDetails, GetSelfDetails
 from .checklist_window import ChecklistWindow
 from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
-from .popup_window import *
+from .popup_window import PopupMessages
 from .aircraft_info import *
 
 ### File is still changing rapidly and dynamically, hence comments might not be accurate
@@ -108,14 +108,7 @@ class CommandWindow(QWidget):
             rospy.wait_for_service("identifiers/get/ids", timeout= 5)
 
         except rospy.ROSException:
-            self.warning = QMessageBox()
-            self.warning.setIcon(QMessageBox.Warning)
-            self.warning.setText("Identifiers Node failed to start")
-            self.warning.setInformativeText("Edit and Add Identifiers function will be unavailable")
-            self.warning.setWindowTitle("Error Message")
-            self.warning.setStandardButtons(QMessageBox.Ok)
-            self.warning.buttonClicked.connect(self.warning.close)
-            self.warning.show()
+            self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
             self.identifiers_error = 1
             rospy.logerr("Identifiers node is not initialised")
             
@@ -163,9 +156,8 @@ class CommandWindow(QWidget):
         self.ros_reader = QPushButton('ROS log')
 
         # Set UI properties of the buttons and layout
-        top_row = 60 # Minimum height for the top row buttons
-        bottom_row = 40 # Minimum height for the bottom row buttons
-
+        top_row = 60        # Minimum height for the top row buttons
+        bottom_row = 40     # Minimum height for the bottom row buttons
         self.first_row.setContentsMargins(0,20,0,15)
         self.arm_button.setMinimumHeight(top_row)
         self.disarm_button.setMinimumHeight(top_row)
@@ -264,7 +256,7 @@ class CommandWindow(QWidget):
     def change_identifiers(self):
         if self.identifiers_error == 1:
             rospy.logerr("Attempt to open change identifiers window without initialising identifiers node")
-            self.warning.show()
+            self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
             return 0
         
         self.change_identifiers_dialog = QDialog()
@@ -309,51 +301,13 @@ class CommandWindow(QWidget):
 
         identifiers_layout = QFormLayout()
         identifiers_layout.addRow(title)
-        
         self.add_validity = [0, 0, 0, 0]
-        name = QLabel("Label")
-        name_lineedit = QLineEdit()
-        name_lineedit.setMaxLength(15)
-        
-        name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
-        identifiers_layout.addRow(name, name_lineedit)
-        name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
-        name_lineedit.textChanged.emit(name_lineedit.text())
 
-        phone = QLabel("Phone number")
-        phone_lineedit = QLineEdit()
-        rx = QRegExpValidator(QRegExp("[0-9.-]{10,12}$"))
-        phone_lineedit.setValidator(rx)
-        identifiers_layout.addRow(phone, phone_lineedit)
-        phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
-
-        imei = QLabel("IMEI number")
-        imei_lineedit = QLineEdit()
-        imei_lineedit.setMaxLength(15)
-        rx = QRegExpValidator(QRegExp("[0-9]\\d{14}"))
-        imei_lineedit.setValidator(rx)
-        identifiers_layout.addRow(imei, imei_lineedit)
-        imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
-
-        serial = QLabel("Serial number")
-        serial_lineedit = QLineEdit()
-        rx = QRegExpValidator(QRegExp("[0-9]\\d{4}"))
-        serial_lineedit.setValidator(rx)
-        identifiers_layout.addRow(serial, serial_lineedit)
-        serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
-
-        # Additional Information upon hover of textboxes
-        name.setToolTip(self.label_msg)
-        name_lineedit.setToolTip(self.label_msg)
-
-        phone.setToolTip(self.phone_msg)
-        phone_lineedit.setToolTip(self.phone_msg)
-
-        imei.setToolTip(self.imei_msg)
-        imei_lineedit.setToolTip(self.imei_msg)
-
-        serial.setToolTip(self.serial_msg)
-        serial_lineedit.setToolTip(self.serial_msg)
+        self.identifiers_input_field("add")
+        identifiers_layout.addRow(self.name, self.name_lineedit)
+        identifiers_layout.addRow(self.phone, self.phone_lineedit)
+        identifiers_layout.addRow(self.imei, self.imei_lineedit)
+        identifiers_layout.addRow(self.serial, self.serial_lineedit)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -364,6 +318,48 @@ class CommandWindow(QWidget):
         identifiers_layout.addWidget(buttons)
         self.add_identifiers_dialog.setLayout(identifiers_layout)
         self.add_identifiers_dialog.show()
+
+    def identifiers_input_field(self, field):
+        self.name = QLabel("Label")
+        self.name_lineedit = QLineEdit()
+        self.name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
+        
+        self.phone = QLabel("Phone number")
+        self.phone_lineedit = QLineEdit()
+        self.phone_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9.-]{10,12}$")))
+        
+        self.imei = QLabel("IMEI number")
+        self.imei_lineedit = QLineEdit()
+        self.imei_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{14}")))
+        
+        self.serial = QLabel("Serial number")
+        self.serial_lineedit = QLineEdit()
+        self.serial_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{4}")))
+        
+        if field == "add":
+            self.name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "label"))
+            self.phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "phone"))
+            self.imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "imei"))
+            self.serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, "serial"))
+        
+        else:
+            self.name_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "label"))
+            self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
+            self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
+            self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
+
+        # Additional Information upon hover of textboxes
+        self.name.setToolTip(self.label_msg)
+        self.name_lineedit.setToolTip(self.label_msg)
+
+        self.phone.setToolTip(self.phone_msg)
+        self.phone_lineedit.setToolTip(self.phone_msg)
+
+        self.imei.setToolTip(self.imei_msg)
+        self.imei_lineedit.setToolTip(self.imei_msg)
+
+        self.serial.setToolTip(self.serial_msg)
+        self.serial_lineedit.setToolTip(self.serial_msg)
 
     def add_identifiers_submit(self, subfields, text):
         sender = self.sender()
@@ -404,14 +400,7 @@ class CommandWindow(QWidget):
 
     def add_identifiers_accept(self, side):
         if sum(self.add_validity) != 4:
-            self.warning = QMessageBox()
-            self.warning.setIcon(QMessageBox.Warning)
-            self.warning.setText("Some input fields requirement have not been met.\nPlease check your inputs again")
-            self.warning.setInformativeText("Hover mouse over input field for more information")
-            self.warning.setWindowTitle("Error Message")
-            self.warning.setStandardButtons(QMessageBox.Ok)
-            self.warning.buttonClicked.connect(self.warning.close)
-            self.warning.show()
+            self.PopupMessages.warning_message("Some input fields requirement have not been met.\nPlease check your inputs again", "Hover mouse over input field for more information")
             return 0
 
         new_identifier = AddNewDeviceRequest()
@@ -457,56 +446,21 @@ class CommandWindow(QWidget):
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         self.edit_validity = [0, 0, 0, 0]
-        name = QLabel("Label")
-        self.name_lineedit = QLineEdit()
-        self.name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
-        self.name_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "label"))
-        self.name_lineedit.textChanged.emit(self.name_lineedit.text())
-
-        phone = QLabel("Phone number")
-        self.phone_lineedit = QLineEdit()
-        self.phone_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9.-]{10,12}$")))
-        self.phone_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "phone"))
-        self.phone_lineedit.textChanged.emit(self.phone_lineedit.text())
-
-        imei = QLabel("IMEI number")
-        self.imei_lineedit = QLineEdit()
-        self.imei_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{14}")))
-        self.imei_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "imei"))
-        self.imei_lineedit.textChanged.emit(self.imei_lineedit.text())
-
-        serial = QLabel("Serial number")
-        self.serial_lineedit = QLineEdit()
-        self.serial_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{4}")))
-        self.serial_lineedit.textChanged.connect(partial(self.edit_identifiers_text, "serial"))
-        self.serial_lineedit.textChanged.emit(self.imei_lineedit.text())
+        self.identifiers_input_field("edit")
 
         box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             centerButtons=True,)
         box.accepted.connect(partial(self.edit_identifiers_accept, side))
         box.rejected.connect(partial(self.close_identifiers, "Edit"))
-        
-        # Additional Information upon hover of textboxes
-        name.setToolTip(self.label_msg)
-        self.name_lineedit.setToolTip(self.label_msg)
-
-        phone.setToolTip(self.phone_msg)
-        self.phone_lineedit.setToolTip(self.phone_msg)
-
-        imei.setToolTip(self.imei_msg)
-        self.imei_lineedit.setToolTip(self.imei_msg)
-
-        serial.setToolTip(self.serial_msg)
-        self.serial_lineedit.setToolTip(self.serial_msg)
 
         lay = QFormLayout(self.edit_identifiers_dialog)
         lay.addRow(title)
         lay.addRow(label, self.edit_combo_box)
-        lay.addRow(name, self.name_lineedit)
-        lay.addRow(phone, self.phone_lineedit)
-        lay.addRow(imei, self.imei_lineedit)
-        lay.addRow(serial, self.serial_lineedit)
+        lay.addRow(self.name, self.name_lineedit)
+        lay.addRow(self.phone, self.phone_lineedit)
+        lay.addRow(self.imei, self.imei_lineedit)
+        lay.addRow(self.serial, self.serial_lineedit)
 
         self.changed()
         lay.addWidget(box)
@@ -561,14 +515,7 @@ class CommandWindow(QWidget):
 
     def edit_identifiers_accept(self, side):
         if sum(self.edit_validity) != 4:
-            self.warning = QMessageBox()
-            self.warning.setIcon(QMessageBox.Warning)
-            self.warning.setText("Some input fields requirement have not been met.\nPlease check your inputs again")
-            self.warning.setInformativeText("Hover mouse over input field for more information")
-            self.warning.setWindowTitle("Error Message")
-            self.warning.setStandardButtons(QMessageBox.Ok)
-            self.warning.buttonClicked.connect(self.warning.close)
-            self.warning.show()
+            self.PopupMessages.warning_message("Some input fields requirement have not been met.\nPlease check your inputs again", "Hover mouse over input field for more information")
             return 0
 
         edit_identifiers = EditDeviceRequest()
@@ -596,7 +543,6 @@ class CommandWindow(QWidget):
         current_identifier.id = self.edit_identifiers_id
         current_identifier.is_air = True if self.side == "Air" else False
         rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
-
         try:
             new_edit_device = self.get_device(current_identifier)
             self.name_lineedit.setText(str(new_edit_device.label))
@@ -609,14 +555,7 @@ class CommandWindow(QWidget):
             self.edit_serial = new_edit_device.rb_serial
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
-            self.warning = QMessageBox()
-            self.warning.setIcon(QMessageBox.Warning)
-            self.warning.setText("The ID you have selected is invalid")
-            self.warning.setInformativeText("Please select another ID")
-            self.warning.setWindowTitle("Error Message")
-            self.warning.setStandardButtons(QMessageBox.Ok)
-            self.warning.buttonClicked.connect(self.warning.close)
-            self.warning.show()
+            self.PopupMessages.warning_message("The ID you have selected is invalid", "Please select another ID")
 
     def change_mode(self):
         self.change_mode_dialog = QDialog()

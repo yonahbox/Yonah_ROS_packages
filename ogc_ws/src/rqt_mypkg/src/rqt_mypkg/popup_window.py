@@ -90,3 +90,13 @@ class PopupMessages(QWidget):
             rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
+    
+    def warning_message(self, heading, text):
+        self.warning = QMessageBox()
+        self.warning.setIcon(QMessageBox.Warning)
+        self.warning.setText(heading)
+        self.warning.setInformativeText(text)
+        self.warning.setWindowTitle("Error Message")
+        self.warning.setStandardButtons(QMessageBox.Ok)
+        self.warning.buttonClicked.connect(self.warning.close)
+        self.warning.show()

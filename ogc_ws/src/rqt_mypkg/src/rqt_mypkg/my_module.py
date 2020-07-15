@@ -295,7 +295,7 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + str(data))
         rospy.logdebug("[AC %d on_demand] %s", int(id), data)
     
-    ##### SITL Display Functions (for developer testing only) #####
+    ####### SITL Display Functions (for developer testing only) #######
     def mode_status_display_sitl(self, mode_status, id):
         mode_status = str(mode_status)
         self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode_status)
@@ -308,12 +308,20 @@ class MyPlugin(Plugin):
         self.WaypointWindow.waypoint_plaintext_dict.get("aircraft" + id).setPlainText("Current WP: " + str(sequence) + " out of " + str(total))
         rospy.logdebug_throttle(30, "[AC {} MODE display] {}".format(int(id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
-    # TODO close all ROS connections as well (unsubscribe from the channels)
+    def shortcuts(self):
+        '''Create keyboard short-cuts'''
+        disarming = QShortcut(self._widget)
+        disarming.setKey(Qt.CTRL + Qt.Key_D)
+        disarming.activated.connect(self.PopupMessages.emergency_disarm)
+
+        shutdown = QShortcut(self._widget)
+        shutdown.setKey(Qt.ALT + Qt.Key_F4)
+        shutdown.activated.connect(self.shutdown_plugin)
+
     def shutdown_plugin(self):
         # Shutdown all the checklist windows
         for i in range (self.active_aircrafts):
             self.checklist_info.get("AC" + str(i)).shutdown()
-
         if sum(self.CommandWindow.is_window_open):
             if self.CommandWindow.is_window_open[0]:
                 self.CommandWindow.change_identifiers_dialog.close()
@@ -335,15 +343,7 @@ class MyPlugin(Plugin):
         # v = instance_settings.value(k)
         pass
     
-    def shortcuts(self):
-        '''Create keyboard short-cuts'''
-        disarming = QShortcut(self._widget)
-        disarming.setKey(Qt.CTRL + Qt.Key_D)
-        disarming.activated.connect(self.PopupMessages.emergency_disarm)
-
-        shutdown = QShortcut(self._widget)
-        shutdown.setKey(Qt.ALT + Qt.Key_F4)
-        shutdown.activated.connect(self.shutdown_plugin)
+    
 
     #def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure
