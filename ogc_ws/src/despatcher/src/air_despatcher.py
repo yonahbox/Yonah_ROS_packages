@@ -31,6 +31,11 @@ from mavros_msgs.msg import WaypointReached
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
+from mavros_msgs.srv import CommandBool
+from mavros_msgs.srv import SetMode
+from mavros_msgs.srv import WaypointSetCurrent
+from mavros_msgs.srv import WaypointPush
+from mavros_msgs.srv import WaypointClear
 from std_msgs.msg import String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
@@ -78,6 +83,13 @@ class airdespatcher():
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
         # Note that there is no sbd interval. This interval is controlled by sbd link node
 
+        # Wait for MAVROS services
+        rospy.wait_for_service('mavros/cmd/arming')
+        rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/mission/set_current')
+        rospy.wait_for_service('mavros/mission/push')
+        rospy.wait_for_service('mavros/mission/clear')
+        
         # Mission params
         self.hop = False
         self.missionlist = []
@@ -126,6 +138,13 @@ class airdespatcher():
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
+
+    def _push_waypoint(self, waypoints):
+        wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+        wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
+        if wppush(0, waypoints).success:
+            if wp_set(1).success:
+                self._send_ack()
 
     #########################################
     # Handle Air-to-Ground (A2G) messages
