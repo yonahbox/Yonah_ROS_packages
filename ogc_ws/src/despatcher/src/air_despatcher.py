@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ROS/Third-Party
 import rospy
 import csv
+from pathlib import Path
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
@@ -80,7 +81,8 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
-        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
+        home_dir = str(Path.home())
+        self.wpfolder = home_dir + "/Waypoints/"
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages

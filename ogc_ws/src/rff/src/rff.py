@@ -12,6 +12,7 @@ from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.msg import WaypointList
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import State
+from pathlib import Path
 from waypoint import WP
 
 missionlist = []
@@ -27,6 +28,8 @@ class RFF:
 		for line in f:
 			# Ignores # comments
 			if line.startswith('#'):
+				continue
+			if line.startswith('Last update:'):
 				continue
 			missionlist.append(line.rstrip())
 		# Prints the missions for operator to check
@@ -117,7 +120,8 @@ class Button:
 
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
-	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
+	home_dir = str(Path.home())
+	waypointsfolder = home_dir + "/Waypoints/"
 	rff = RFF()
 
 	try:
