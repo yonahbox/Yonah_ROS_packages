@@ -13,7 +13,7 @@
       </group>
       -->
       <label>Yonah</label>
-      <icon type="theme">face-crying</icon>
+      <icon type="file">Yonah_Logo_red.jpg</icon>
       <statustip>Great user interface to provide real value.</statustip>
     </qtgui>
   </class>

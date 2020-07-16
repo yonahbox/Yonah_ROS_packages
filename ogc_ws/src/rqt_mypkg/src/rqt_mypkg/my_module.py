@@ -272,8 +272,8 @@ class MyPlugin(Plugin):
         if self.text_to_display == "DISARMED":
             self.aircrafts_info.get("AC" + id).waypoint_plaintext_dict.get("aircraftFlying Time" + id).setPlainText("00:00:00")
         else:
-            self.time = AC_time # sets the UI time to the data time
-            self.time_in_seconds = AC_time - self.aircrafts_info.get("AC" + id).initial_time
+            self.time = AC_time # sync the UI time to the data time
+            self.time_in_seconds = self.time - self.aircrafts_info.get("AC" + id).initial_time
             minutes = str(self.time_in_seconds // 60)
             hours = str(self.time_in_seconds // 3600)
             seconds = str(self.time_in_seconds - (minutes * 60) - (hours * 3600))
@@ -342,8 +342,6 @@ class MyPlugin(Plugin):
         # TODO restore intrinsic configuration, usually using:
         # v = instance_settings.value(k)
         pass
-    
-    
 
     #def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure

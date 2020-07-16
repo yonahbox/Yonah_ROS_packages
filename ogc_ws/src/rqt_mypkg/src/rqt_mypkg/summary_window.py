@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QLabel, QHBoxLayout, QWidget
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QFont
 
@@ -34,8 +34,7 @@ class SummaryWindow(QWidget):
         # Declare the layouts
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
-        # Set main_layout as the layout that occupies the entire widget
-        self.setLayout(self.main_layout)
+        self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
 
         # Declare the widgets
         summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
@@ -58,7 +57,6 @@ class SummaryWindow(QWidget):
         self.summary_details_layout.addWidget(self.aircraft_label)
         
         for i in summarised_fields:
-            # 
             self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)

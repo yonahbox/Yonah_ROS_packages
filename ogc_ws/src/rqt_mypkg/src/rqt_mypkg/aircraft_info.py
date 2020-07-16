@@ -17,15 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
-
-import os
-import rospkg
-import __main__
-
-from python_qt_binding import loadUi
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit
 from python_qt_binding.QtGui import QFont
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot
 
 # File is still changing rapidly and dynamically, hence comments might not be accurate
 # @TODO change the variable names. As of now it is heavily referenced from the summary page
@@ -39,7 +32,7 @@ class AircraftInfo(QWidget):
         self.initial_time = 0
         # Create the layout
         self.main_layout = QVBoxLayout()
-        self.summary_layout = QVBoxLayout()
+        self.info_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
     
         summarised_fields = [
@@ -57,66 +50,44 @@ class AircraftInfo(QWidget):
             'Fuel Level',
             'Quad Battery']
 
-        self.aircraft_id = aircraft_id
-        self.create_summary(self.aircraft_id, summarised_fields)
-        self.statustext_label = QLabel('Status Text')
-        self.statustext_label.setContentsMargins(0, 30, 0, 0)
-        self.statustext = QPlainTextEdit()
-        self.statustext.setReadOnly(True)
-        self.statustext.setMinimumHeight(300)
+        aircraft_id = aircraft_id
+        self.create_info(aircraft_id, summarised_fields)
+        statustext_label = QLabel('Status Text')
+        statustext_label.setContentsMargins(0, 30, 0, 0)
+        statustext = QPlainTextEdit()
+        statustext.setReadOnly(True)
+        statustext.setMinimumHeight(300)
 
         # Add the widgets into the layouts
-        self.main_layout.addLayout(self.summary_layout)
-        self.main_layout.addWidget(self.statustext_label)
-        self.main_layout.addWidget(self.statustext)
+        self.main_layout.addLayout(self.info_layout)
+        self.main_layout.addWidget(statustext_label)
+        self.main_layout.addWidget(statustext)
 
-    def create_summary(self, aircraft_no, summarised_fields):
+    def create_info(self, aircraft_no, summarised_fields):
         self.styling()
-        self.summary_details_layout = QVBoxLayout()
-         # summary_fields_layout will be nested inside summary_details_layout with the progress bar beneath it
-        self.aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
-        self.aircraft_label.setFont(self.h2)
-        self.summary_details_layout.addWidget(self.aircraft_label)
+        info_details_layout = QVBoxLayout()
+        # info_fields_layout will be nested inside info_details_layout with the progress bar beneath it
+        aircraft_label = QLabel('Aircraft ' + str(aircraft_no))
+        aircraft_label.setFont(self.h2)
+        info_details_layout.addWidget(aircraft_label)
         for i in summarised_fields:
-            self.summary_fields_layout = QHBoxLayout()
-            self.subfield_label_mode = QLabel(i)
-            self.subfield_label_mode.setFixedSize(120,30)
+            info_fields_layout = QHBoxLayout()
+            subfield_label_mode = QLabel(i)
+            subfield_label_mode.setFixedSize(120, 30)
+
             # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
             self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
             self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
             self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
 
-            self.summary_fields_layout.addWidget(self.subfield_label_mode)
-            self.summary_fields_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)])
-            self.summary_details_layout.addLayout(self.summary_fields_layout)
+            info_fields_layout.addWidget(subfield_label_mode)
+            info_fields_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)])
+            info_details_layout.addLayout(info_fields_layout)
 
-        self.summary_layout.addLayout(self.summary_details_layout)
+        self.info_layout.addLayout(info_details_layout)
 
     def styling(self):
         self.h2 = QFont("Ubuntu", 15, QFont.Bold) 
 
     def shutdown(self):
         self.close()
-
-# The child classes as of now are empty -- meaning they do not modify anything from the parent class
-# This serves as a placeholder in the case we need to modify anything specific to an aircraft, then we can do it easily
-class Aircraft1(AircraftInfo):
-    pass
-class Aircraft2(AircraftInfo):
-    pass
-class Aircraft3(AircraftInfo):
-    pass
-class Aircraft4(AircraftInfo):
-    pass
-class Aircraft5(AircraftInfo):
-    pass
-class Aircraft6(AircraftInfo):
-    pass
-class Aircraft7(AircraftInfo):
-    pass
-class Aircraft8(AircraftInfo):
-    pass
-class Aircraft9(AircraftInfo):
-    pass
-class Aircraft10(AircraftInfo):
-    pass

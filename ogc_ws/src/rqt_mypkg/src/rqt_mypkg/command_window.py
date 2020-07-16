@@ -17,16 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
-
-import os
-import rospkg
-import __main__
 import rospy
-from functools import partial
 
-from PyQt5.QtWidgets import *
-from python_qt_binding.QtCore import QFile, QIODevice, Qt, Signal, Slot, QRegExp
-from python_qt_binding.QtGui import QFont, QIntValidator, QRegExpValidator, QValidator
+from functools import partial
+from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox
+from PyQt5.QtWidgets import QScrollArea, QFrame, QPushButton, QDialog, QLabel, QLineEdit, QDialogButtonBox
+from python_qt_binding.QtCore import Qt, Signal, Slot, QRegExp
+from python_qt_binding.QtGui import QFont, QRegExpValidator, QValidator
 
 from regular import air_payload
 from despatcher.msg import LinkMessage
@@ -38,10 +35,7 @@ from .checklist_window import ChecklistWindow
 from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import PopupMessages
-from .aircraft_info import *
 
-### File is still changing rapidly and dynamically, hence comments might not be accurate
-# Self-note: Consider changing the structure of the code to not over-populate the init
 class CommandWindow(QWidget):
     def __init__(self, active_aircrafts):
         super(CommandWindow, self).__init__()
@@ -64,11 +58,6 @@ class CommandWindow(QWidget):
                           "LOITER","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]
         self.decoder = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","","AUTO","RTL",
                           "LOITER","","LAND","GUIDED","INITIALISING","QSTABILIZE","QHOVER","QLOITER","QLAND","QRTL"]                  
-        
-        self.label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
-        self.phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
-        self.imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
-        self.serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
 
         # Get the headers for the payload
         self.air = air_payload()
@@ -96,6 +85,7 @@ class CommandWindow(QWidget):
 
         # Publisher Command
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
+
         # Service Command
         try:
             rospy.wait_for_service("identifiers/get/imei", timeout= 5)
@@ -336,25 +326,27 @@ class CommandWindow(QWidget):
         self.serial_lineedit = QLineEdit()
         self.serial_lineedit.setValidator(QRegExpValidator(QRegExp("[0-9]\\d{4}")))
         
-        self.name_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "label"))
-        self.phone_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "phone"))
-        self.imei_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "imei"))
-        self.serial_lineedit.textChanged.connect(partial(self.add_identifiers_submit, field, "serial"))
+        self.name_lineedit.textChanged.connect(partial(self.identifiers_submit, field, "label"))
+        self.phone_lineedit.textChanged.connect(partial(self.identifiers_submit, field, "phone"))
+        self.imei_lineedit.textChanged.connect(partial(self.identifiers_submit, field, "imei"))
+        self.serial_lineedit.textChanged.connect(partial(self.identifiers_submit, field, "serial"))
 
         # Additional Information upon hover of textboxes
-        self.name.setToolTip(self.label_msg)
-        self.name_lineedit.setToolTip(self.label_msg)
+        label_msg = "Only 2-15 digit alpha-numeric character and _ is allowed \n E.g. Yonah_AC1"
+        phone_msg = "Only 10-12 digit numeric character is allowed \n Please include the country code E.g. 6593511282"
+        imei_msg = "Only 15 digit numeric character is allowed \n E.g. 251902125903967"
+        serial_msg = "Only 5 digit numeric character is allowed \n E.g. 12345"
 
-        self.phone.setToolTip(self.phone_msg)
-        self.phone_lineedit.setToolTip(self.phone_msg)
+        self.name.setToolTip(label_msg)
+        self.name_lineedit.setToolTip(label_msg)
+        self.phone.setToolTip(phone_msg)
+        self.phone_lineedit.setToolTip(phone_msg)
+        self.imei.setToolTip(imei_msg)
+        self.imei_lineedit.setToolTip(imei_msg)
+        self.serial.setToolTip(serial_msg)
+        self.serial_lineedit.setToolTip(serial_msg)
 
-        self.imei.setToolTip(self.imei_msg)
-        self.imei_lineedit.setToolTip(self.imei_msg)
-
-        self.serial.setToolTip(self.serial_msg)
-        self.serial_lineedit.setToolTip(self.serial_msg)
-
-    def add_identifiers_submit(self, field, subfields, text):
+    def identifiers_submit(self, field, subfields, text):
         sender = self.sender()
         validator = sender.validator()
         state = validator.validate(text, 0)[0]
@@ -509,7 +501,6 @@ class CommandWindow(QWidget):
         current_identifier = GetAllDetailsRequest()
         current_identifier.id = self.edit_identifiers_id
         current_identifier.is_air = True if self.side == "Air" else False
-        rospy.loginfo("current ID: " + str(self.edit_identifiers_id))
         try:
             new_edit_device = self.get_device(current_identifier)
             self.name_lineedit.setText(str(new_edit_device.label))
