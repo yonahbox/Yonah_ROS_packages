@@ -5,7 +5,6 @@ import rospy
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
-from mavros_msgs.srv import WaypointPush
 from missionserver import MissionServer
 
 
@@ -13,7 +12,6 @@ from missionserver import MissionServer
 rospy.wait_for_service('mavros/cmd/arming')
 rospy.wait_for_service('mavros/set_mode')
 rospy.wait_for_service('mavros/mission/set_current')
-rospy.wait_for_service('mavros/mission/push')
 
 recognised_commands = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "mission"]
 
