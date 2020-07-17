@@ -120,8 +120,7 @@ class Button:
 
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
-	home_dir = str(Path.home())
-	waypointsfolder = home_dir + "/Waypoints/"
+	waypointsfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
 	rff = RFF()
 
 	try:
