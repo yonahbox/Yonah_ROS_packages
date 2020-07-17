@@ -6,11 +6,11 @@ from pathlib import Path
 import paramiko
 import time
 
-home_dir = str(Path.home())
 serverfolder = "/home/ubuntu/Waypoints/"
 
 class MissionServer():
 	def __init__(self):
+		home_dir = str(Path.home())
 		server_user = "ubuntu"
 		server_ip = "46.137.242.90"
 		server_key = home_dir + "/mission_pvt_key.pem"
