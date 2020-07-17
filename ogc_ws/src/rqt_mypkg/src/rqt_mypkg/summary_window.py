@@ -30,23 +30,24 @@ class SummaryWindow(QWidget):
 
         # Dictionary to store the textedit names
         self.waypoint_plaintext_dict = {} 
-
         # Declare the layouts
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
         self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
 
-        # Declare the widgets
-        summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
-        for i in range(1, active_aircrafts + 1):
-            self.create_summary(i, summarised_fields)
-        self.statustext = QPlainTextEdit()
-        self.statustext.setReadOnly(True)
-
+        self.create_layout(active_aircrafts)
+        
         # add the widgets into the layouts
         self.main_layout.addWidget(self.statustext)
         self.main_layout.addLayout(self.summary_layout)
 
+    def create_layout(self, active_aircrafts):
+        # Declare the widgets
+        summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
+        for i in active_aircrafts:
+            self.create_summary(i, summarised_fields)
+        self.statustext = QPlainTextEdit()
+        self.statustext.setReadOnly(True)
 
     def create_summary(self, aircraft_no, summarised_fields):
         self.styling()
@@ -75,5 +76,28 @@ class SummaryWindow(QWidget):
     def styling(self):
         self.h2 = QFont("Ubuntu", 12, QFont.Bold) 
 
+    def open(self):
+        self.show()
+
+    def remove(self):
+
+        print(self.summary_layout.count())
+        for i in reversed(range(self.summary_layout.count())):
+            child = self.summary_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+            if child.layout():
+                self.clearLayout(child.layout())
+        print(self.summary_layout.count())
+        print(self.main_layout.count())
+    
+    def clearLayout(self, layout):
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+            if child.layout():
+                self.clearLayout(child.layout())
+    
     def shutdown(self):
         self.close()

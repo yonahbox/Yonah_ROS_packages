@@ -28,13 +28,16 @@ class WaypointWindow(QWidget):
         
         self.waypoint_plaintext_dict = {}
         
+        self.create_layout(active_aircrafts)
+
+    def create_layout(self, active_aircrafts):
         # Create the layout
         self.main_layout = QHBoxLayout()
         self.buttons_layout = QVBoxLayout()
         self.progressbar_layout = QVBoxLayout()
 
         # Create the widgets
-        for i in range(1, active_aircrafts + 1):
+        for i in active_aircrafts:
             self.create_progressbar(i)
 
         # add the widgets into the layouts

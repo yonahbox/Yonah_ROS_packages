@@ -50,8 +50,7 @@ class CommandWindow(QWidget):
         self.checklist_info = {}
         self.arm_status = {}
 
-        for i in range (self.active_aircrafts + 1):
-            self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
+        
         
         # Define the mode list as well as the decoder
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
@@ -64,10 +63,9 @@ class CommandWindow(QWidget):
         self.custom_ping_list = self.air.entries.keys()
         self.custom_ping_list.sort()
 
-        self.create_layout()
+        self.create_layout(active_aircrafts)
 
         self.PopupMessages = PopupMessages()
-        self.WaypointWindow = WaypointWindow(self.active_aircrafts)
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
 
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
@@ -87,20 +85,20 @@ class CommandWindow(QWidget):
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
         # Service Command
-        try:
-            rospy.wait_for_service("identifiers/get/imei", timeout= 5)
-            rospy.wait_for_service("identifiers/get/serial", timeout= 5)
-            rospy.wait_for_service("identifiers/get/all", timeout= 5)
-            rospy.wait_for_service("identifiers/get/number", timeout= 5)
+        # try:
+        #     rospy.wait_for_service("identifiers/get/imei", timeout= 5)
+        #     rospy.wait_for_service("identifiers/get/serial", timeout= 5)
+        #     rospy.wait_for_service("identifiers/get/all", timeout= 5)
+        #     rospy.wait_for_service("identifiers/get/number", timeout= 5)
 
-            rospy.wait_for_service("identifiers/add/device", timeout= 5)
-            rospy.wait_for_service("identifiers/edit/device", timeout= 5)
-            rospy.wait_for_service("identifiers/get/ids", timeout= 5)
+        #     rospy.wait_for_service("identifiers/add/device", timeout= 5)
+        #     rospy.wait_for_service("identifiers/edit/device", timeout= 5)
+        #     rospy.wait_for_service("identifiers/get/ids", timeout= 5)
 
-        except rospy.ROSException:
-            self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
-            self.identifiers_error = 1
-            rospy.logerr("Identifiers node is not initialised")
+        # except rospy.ROSException:
+        #     self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
+        #     self.identifiers_error = 1
+        #     rospy.logerr("Identifiers node is not initialised")
             
         self.add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
         self.edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
@@ -110,7 +108,7 @@ class CommandWindow(QWidget):
         self.get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self.get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
 
-    def create_layout(self):
+    def create_layout(self, active_aircrafts):
         # Create the layout
         self.main_layout = QVBoxLayout()
         self.secondary_layout = QVBoxLayout()
@@ -127,8 +125,10 @@ class CommandWindow(QWidget):
         self.combo_box = QComboBox()
         self.custom_ping_combobox = QComboBox()
         # Use a for loop to add items inside the drop down menu
-        for i in range(1, self.active_aircrafts + 1): 
+        for i in active_aircrafts: 
             self.combo_box.addItem('Aircraft ' + str(i))
+            self.checklist_info["AC" + str(i)] = ChecklistWindow(i) # Create the checklist as well
+
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
 

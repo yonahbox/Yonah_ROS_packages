@@ -60,17 +60,16 @@ class MyPlugin(Plugin):
         self.time = 0
         self.destination_id = 1
         self.active_aircrafts = 10
+        self.aircraft_list = [1,2,3,4]
         self.aircrafts_info = {}
         self.checklist_info = {}
-        for i in range (self.active_aircrafts + 1):
-            self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
-            self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
         
         # Declare attributes for each imported class
         self.PopupMessages = PopupMessages()
-        self.WaypointWindow = WaypointWindow(self.active_aircrafts)
-        self.SummaryWindow = SummaryWindow(self.active_aircrafts)
-        self.CommandWindow = CommandWindow(self.active_aircrafts)
+        self.WaypointWindow = WaypointWindow(self.aircraft_list)
+        self.SummaryWindow = SummaryWindow(self.aircraft_list)
+        self.CommandWindow = CommandWindow(self.aircraft_list)
+
         self.create_layout()
         self.shortcuts()
 
@@ -115,7 +114,26 @@ class MyPlugin(Plugin):
 
         self.tab = QTabWidget()
         self.tab.addTab(summary_scroll, "Summary")
-        for i in range (1, self.active_aircrafts + 1):
+
+        if self.aircraft_list == []:
+            aircraft_list = [1,2,3,4,5,6,7,8,9]
+        else:
+            aircraft_list = self.aircraft_list
+        
+        aircraft_list = [2,6,1]
+        self.WaypointWindow.create_layout(aircraft_list)
+
+        self.SummaryWindow.remove()
+        self.SummaryWindow.create_layout(aircraft_list)
+        # self.SummaryWindow.open()
+
+        self.CommandWindow.create_layout(aircraft_list)
+
+
+        for i in aircraft_list:
+            self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
+            self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
+
             key = "aircraft" + str(i) + " scroll"
             self.aircrafts_info[key] = QScrollArea()
             self.aircrafts_info.get(key).setMinimumHeight(500)
@@ -136,6 +154,9 @@ class MyPlugin(Plugin):
     ################################
     def regular_payload(self, data):
         aircraft_id = str(data.vehicle_no)
+        if aircraft_id not in self.aircraft_list:
+            self.aircraft_list.append(aircraft_id)
+            self.aircraft_list.sort()
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)
@@ -319,9 +340,11 @@ class MyPlugin(Plugin):
         shutdown.activated.connect(self.shutdown_plugin)
 
     def shutdown_plugin(self):
+        '''Shutdown function'''
         # Shutdown all the checklist windows
-        for i in range (self.active_aircrafts):
+        for i in self.aircraft_list:
             self.checklist_info.get("AC" + str(i)).shutdown()
+        # Shutdown all identifiers windows
         if sum(self.CommandWindow.is_window_open):
             if self.CommandWindow.is_window_open[0]:
                 self.CommandWindow.change_identifiers_dialog.close()

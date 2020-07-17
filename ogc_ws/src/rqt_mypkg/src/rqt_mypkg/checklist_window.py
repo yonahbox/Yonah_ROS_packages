@@ -31,7 +31,6 @@ class ChecklistWindow(QWidget):
         self.setWindowTitle("BTO and BPO Checklist")
         self.resize(500, 700)
         self.move(200,100)
-        self.aircraft_id = aircraft_id
         self.checklist_state = 0
 
         # Relative path for the default BPO and BTO checklist
@@ -46,7 +45,7 @@ class ChecklistWindow(QWidget):
         except:
             print("\033[91m ERROR: Checklist files are missing or named wrongly. Please follow the original directory and naming")
             exit()
-        
+    
         # Create the layout
         self.main_layout = QVBoxLayout()
         self.buttons_layout = QHBoxLayout()
