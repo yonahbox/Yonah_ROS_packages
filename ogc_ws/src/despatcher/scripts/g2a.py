@@ -8,12 +8,8 @@ from mavros_msgs.srv import WaypointSetCurrent
 from missionserver import MissionServer
 
 
-# Wait for MAVROS services
-# rospy.wait_for_service('mavros/cmd/arming')
-# rospy.wait_for_service('mavros/set_mode')
-# rospy.wait_for_service('mavros/mission/set_current')
-
 recognised_commands = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "mission"]
+
 
 def check_ping(self):
 	'''Check for ping commands from Ground Control'''
@@ -62,6 +58,7 @@ def check_statustext(self):
 
 def check_arming(self):
 	"""Check for Arm/Disarm commands from Ground Control"""
+	rospy.wait_for_service('mavros/cmd/arming')
 	arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 	if len(self._recv_msg) == 1:
 		if self._recv_msg[0] == "disarm":
@@ -76,6 +73,7 @@ def check_arming(self):
 
 def check_mode(self):
 	"""Check for Mode change commands from Ground Control"""
+	rospy.wait_for_service('mavros/set_mode')
 	mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
 	# Message structure: mode <flight mode>; extract 2nd word to get flightmode
 	if self._recv_msg[0] == 'mode' and len(self._recv_msg) == 2:
@@ -109,6 +107,7 @@ def check_mission(self):
 
 def wp_set(self):
 	# Message structure: wp set <seq_no>, extract the 3rd word to get seq no
+	rospy.wait_for_service('mavros/mission/set_current')
 	wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
 	seq_no = self._recv_msg[2]
 	# Set target waypoint, check if successful

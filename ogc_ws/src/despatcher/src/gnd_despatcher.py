@@ -112,6 +112,8 @@ class gnddespatcher():
                     mission_files = data.data.split()[3:-1]
                     reqFile = LinkMessage()
                     reqFile.id = sender_id
+                    if mission_files == ["No", "update", "required"]:
+                        return
                     for i in mission_files:
                         reqFile.data = i
                         self.file_to_telegram.publish(reqFile)

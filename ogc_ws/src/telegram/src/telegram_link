@@ -118,7 +118,7 @@ def tdlib_recv():
 				message_type = event['message']['content']['@type']
 				if message_type == 'messageText':
 					message = event['message']['content']['text']['text']
-					rospy.logwarn(message)
+					# rospy.logwarn(message)
 					from_tele_pub.publish(message)
 
 					# Mark message as read
