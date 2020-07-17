@@ -123,6 +123,19 @@ class Td():
 		for id_n in ids:
 			self.send_message(id_n, msg)
 
+	def send_file(self, telegram_id, path):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessageDocument',
+				'document': {
+					'@type': 'inputFileLocal',
+					'path': path
+				}
+			}
+		})
+
 	# Wrapper to send an image to a specific number
 	def send_image(self, telegram_id, path):
 		self.send({
@@ -169,6 +182,13 @@ class Td():
 					}
 				}
 			}
+		})
+
+	def download_file(self, remote_id):
+		self.send({
+			'@type': 'downloadFile',
+			'file_id': remote_id,
+			'priority': 1,
 		})
 
 	# receive information from telegram

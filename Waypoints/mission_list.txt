@@ -1,3 +1,0 @@
-eg_fly_to_remote.txt
-eg_return_from_remote.txt
-# does_not_exist.txt
