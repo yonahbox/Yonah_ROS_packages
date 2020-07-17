@@ -363,7 +363,7 @@ class rockBlock(object):
                             self.callback.rockBlockTxSuccess( moMsn, self.mo_msg )
                         pass
                     elif (moStatus <= 4 and not have_queued_msg):
-                        if(self.callback != None and callable(self.callback.rockBlockTxSuccess) ):   
+                        if(self.callback != None and callable(self.callback.rockBlockTxBlankMsg) ):   
                             self.callback.rockBlockTxBlankMsg()
                         pass
                     else:
