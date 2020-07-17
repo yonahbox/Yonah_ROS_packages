@@ -9,9 +9,9 @@ from missionserver import MissionServer
 
 
 # Wait for MAVROS services
-rospy.wait_for_service('mavros/cmd/arming')
-rospy.wait_for_service('mavros/set_mode')
-rospy.wait_for_service('mavros/mission/set_current')
+# rospy.wait_for_service('mavros/cmd/arming')
+# rospy.wait_for_service('mavros/set_mode')
+# rospy.wait_for_service('mavros/mission/set_current')
 
 recognised_commands = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "mission"]
 

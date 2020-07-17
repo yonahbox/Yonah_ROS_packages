@@ -53,14 +53,14 @@ def tdlib_add_contact_cb(contact, td):
 	td.get_contacts()									# refresh contacts to get the user ids
 
 def tdlib_file_cb(msg, args):
-  td = args[0]
-  id_service = args[1]
-  tele_id = id_service(msg.id)
-  
-  if tele_id.data_int == 0:
-    rospy.logwarn("Invalid user id")
-    return
-  
+	td = args[0]
+	id_service = args[1]
+	tele_id = id_service(msg.id)
+
+	if tele_id.data_int == 0:
+		rospy.logwarn("Invalid user id")
+		return
+
 	rospy.loginfo("SENDING FILE")
 	home_dir = str(Path.home())
 	file_path = home_dir + "/Waypoints/" + msg.data
@@ -82,7 +82,7 @@ def tdlib_recv():
 			# log details if there is an error
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
-        
+
 			# For knowing status of downloading files
 			if event['@type'] == 'updateFile':
 				# Check if the file has finished downloading
@@ -123,8 +123,8 @@ def tdlib_recv():
 
 					# Mark message as read
 					td.set_read(event["message"]["chat_id"], event["message"]["id"])
+					rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
-          rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 				elif message_type == 'messageDocument':
 					file_id = event['message']['content']['document']['document']['id']
 					local_path = event['message']['content']['document']['document']['local']['path']
@@ -161,7 +161,7 @@ if __name__ == '__main__':
 		recv_thread.start()
 
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id))
-    rospy.Subscriber('ogc/to_telegram_file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
+		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
 
 		# inform all valid nodes that the link is up
