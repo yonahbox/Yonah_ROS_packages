@@ -8,7 +8,8 @@ import time
 
 class MissionServer():
 	def __init__(self):
-		self.home_dir = str(Path.home())
+		home_dir = str(Path.home())
+		self.localfolder = self.home_dir + "/Waypoints/"
 		self.serverfolder = "/home/ubuntu/Waypoints/"
 		# TODO: Remove these variables and use identifiers + public key on server
 		server_user = "ubuntu"
@@ -33,11 +34,10 @@ class MissionServer():
 				_, stdout, _ = self.ssh.exec_command(cmd, timeout=5)
 				serverupdatetime[i] = stdout.readlines()[-1].rstrip().split()[-1]
 
-			localfolder = self.home_dir + "/Waypoints/"
-			localfiles = os.listdir(localfolder)
+			localfiles = os.listdir(self.localfolder)
 			localupdatetime = {}
 			for i in localfiles:
-				g = open(localfolder + i, "r")
+				g = open(self.localfolder + i, "r")
 				localupdatetime[i] = str(g.readlines()[-1].rstrip().split()[-1])
 
 			to_local = []
@@ -55,7 +55,7 @@ class MissionServer():
 
 			sftp = self.ssh.open_sftp()
 			for i in to_server:
-				file_src = localfolder + i
+				file_src = self.localfolder + i
 				file_dest = self.serverfolder + i
 				sftp.put(file_src, file_dest)
 				if time.time()-2 < sftp.stat(file_dest).st_mtime < time.time()+2:
@@ -63,7 +63,7 @@ class MissionServer():
 
 			for i in to_local:
 				file_src = self.serverfolder + i
-				file_dest = localfolder + i
+				file_dest = self.localfolder + i
 				sftp.get(file_src, file_dest)
 				if time.time()-2 < os.stat(file_dest).st_mtime < time.time()+2:
 					rospy.loginfo("Synced %s to local" % i)

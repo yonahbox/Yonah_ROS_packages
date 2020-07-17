@@ -31,6 +31,8 @@ from mavros_msgs.msg import WaypointReached
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.msg import Vibration
 from sensor_msgs.msg import NavSatFix
+from mavros_msgs.srv import CommandBool
+from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
 from std_msgs.msg import String
@@ -83,8 +85,13 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
-        home_dir = str(Path.home())
-        self.wpfolder = home_dir + "/Waypoints/"
+        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
+
+        # Wait for MAVROS services
+        rospy.wait_for_service('mavros/cmd/arming')
+        rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/mission/set_current')
+        rospy.wait_for_service('mavros/mission/push')
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -129,14 +136,6 @@ class airdespatcher():
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
 
-    def _push_waypoint(self, waypoints):
-        rospy.wait_for_service('mavros/mission/set_current')
-        rospy.wait_for_service('mavros/mission/push')
-        wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-        wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-        if wppush(0, waypoints).success:
-            if wp_set(1).success:
-                self._send_ack()
 
     #########################################
     # Handle Air-to-Ground (A2G) messages
