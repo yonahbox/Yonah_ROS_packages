@@ -20,13 +20,12 @@ class mission_updater():
 			g = open(gndfolder + i, "r")
 			update_time = g.readlines()[-1].rstrip().split()[-1]
 			mission_msg.append(str(i) + " " + str(update_time))
-		hello = LinkMessage()
-		hello.id = 4
-		hello.data = "mission update " + " ".join(mission_msg)
+		update = LinkMessage()
+		update.id = 4
+		update.data = "mission update " + " ".join(mission_msg)
 		time.sleep(1)
-		self.pub_to_despatcher.publish(hello)
+		self.pub_to_despatcher.publish(update)
 
 if __name__=='__main__':
 	run = mission_updater()
 	run.update()
-	rospy.spin()
