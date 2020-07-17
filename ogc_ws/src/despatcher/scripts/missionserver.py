@@ -6,11 +6,11 @@ from pathlib import Path
 import paramiko
 import time
 
-serverfolder = "/home/ubuntu/Waypoints/"
-
 class MissionServer():
 	def __init__(self):
-		home_dir = str(Path.home())
+		self.home_dir = str(Path.home())
+		self.serverfolder = "/home/ubuntu/Waypoints/"
+		# TODO: Remove these variables and use identifiers + public key on server
 		server_user = "ubuntu"
 		server_ip = "46.137.242.90"
 		server_key = home_dir + "/mission_pvt_key.pem"
@@ -33,7 +33,7 @@ class MissionServer():
 				_, stdout, _ = self.ssh.exec_command(cmd, timeout=5)
 				serverupdatetime[i] = stdout.readlines()[-1].rstrip().split()[-1]
 
-			localfolder = home_dir + "/Waypoints/"
+			localfolder = self.home_dir + "/Waypoints/"
 			localfiles = os.listdir(localfolder)
 			localupdatetime = {}
 			for i in localfiles:
@@ -56,13 +56,13 @@ class MissionServer():
 			sftp = self.ssh.open_sftp()
 			for i in to_server:
 				file_src = localfolder + i
-				file_dest = serverfolder + i
+				file_dest = self.serverfolder + i
 				sftp.put(file_src, file_dest)
 				if time.time()-2 < sftp.stat(file_dest).st_mtime < time.time()+2:
 					rospy.loginfo("Synced %s to server" % i)
 
 			for i in to_local:
-				file_src = serverfolder + i
+				file_src = self.serverfolder + i
 				file_dest = localfolder + i
 				sftp.get(file_src, file_dest)
 				if time.time()-2 < os.stat(file_dest).st_mtime < time.time()+2:
