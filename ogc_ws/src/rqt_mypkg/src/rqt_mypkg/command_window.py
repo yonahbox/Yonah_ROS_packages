@@ -21,7 +21,7 @@ import rospy
 
 from functools import partial
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox
-from PyQt5.QtWidgets import QScrollArea, QFrame, QPushButton, QDialog, QLabel, QLineEdit, QDialogButtonBox
+from PyQt5.QtWidgets import QScrollArea, QFrame, QPushButton, QDialog, QLabel, QLineEdit, QDialogButtonBox, QFileDialog
 from python_qt_binding.QtCore import Qt, Signal, Slot, QRegExp
 from python_qt_binding.QtGui import QFont, QRegExpValidator, QValidator
 
@@ -35,6 +35,7 @@ from .checklist_window import ChecklistWindow
 from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import PopupMessages
+from .log_window import LogWindow
 
 class CommandWindow(QWidget):
     def __init__(self, active_aircrafts):
@@ -80,7 +81,7 @@ class CommandWindow(QWidget):
         self.change_identifiers_button.pressed.connect(self.change_identifiers)
         self.ping_button.pressed.connect(self.ping)
         self.custom_ping_button.pressed.connect(self.custom_ping)
-
+        self.ros_reader.pressed.connect(self.ros_log_parser)
         # Publisher Command
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
@@ -193,6 +194,15 @@ class CommandWindow(QWidget):
         for j in active_aircrafts: 
             self.combo_box.addItem('Aircraft ' + str(j))
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
+
+    # Temporary place so that I dont have to scroll so far down
+    def ros_log_parser(self):
+        filenames = QFileDialog.getOpenFileNames(
+            self, self.tr('Load from Files'), '.', self.tr('log files {.log} (*.log)'))
+        file = open(filenames[0][0], 'r')
+        lines = file.read().splitlines()
+        self.LogWindow = LogWindow(lines, filenames[0][0])
+        file.close()
 
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
@@ -551,5 +561,7 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
         self.change_mode_dialog.close()
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
+
+    
     def shutdown(self):
         self.close()
