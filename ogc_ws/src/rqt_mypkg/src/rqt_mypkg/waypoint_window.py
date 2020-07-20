@@ -27,22 +27,18 @@ class WaypointWindow(QWidget):
         self.move(200,100)
         
         self.waypoint_plaintext_dict = {}
-        
-        self.create_layout(active_aircrafts)
-
-    def create_layout(self, active_aircrafts):
-        # Create the layout
         self.main_layout = QHBoxLayout()
-        self.buttons_layout = QVBoxLayout()
         self.progressbar_layout = QVBoxLayout()
 
-        # Create the widgets
-        for i in active_aircrafts:
-            self.create_progressbar(i)
+        # Why we separate this is so that we can refresh the layout
+        self.create_layout(active_aircrafts)
 
-        # add the widgets into the layouts
         self.main_layout.addLayout(self.progressbar_layout)
         self.setLayout(self.main_layout)
+
+    def create_layout(self, active_aircrafts):
+        for i in active_aircrafts:
+            self.create_progressbar(i)
 
     def create_progressbar(self, aircraft_no):
         waypoint_layout = QVBoxLayout()
@@ -62,5 +58,13 @@ class WaypointWindow(QWidget):
         
         self.progressbar_layout.addLayout(waypoint_layout)
     
+    def remove(self, layout):
+        for i in reversed(range(layout.count())):
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+            if child.layout():
+                self.remove(child.layout())
+
     def shutdown(self):
         self.close()

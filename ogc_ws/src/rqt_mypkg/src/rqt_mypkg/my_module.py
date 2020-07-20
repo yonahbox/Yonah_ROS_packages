@@ -59,8 +59,7 @@ class MyPlugin(Plugin):
         # Declare attributes
         self.time = 0
         self.destination_id = 1
-        self.active_aircrafts = 10
-        self.aircraft_list = [1,2,3,4]
+        self.aircraft_list = []
         self.aircrafts_info = {}
         self.checklist_info = {}
         
@@ -85,7 +84,7 @@ class MyPlugin(Plugin):
 
         # Publisher List
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
-    
+
     def create_layout(self):
         '''Populate the UI with the modules from other files'''
         # Create layout for Waypoint scroll window
@@ -103,7 +102,7 @@ class MyPlugin(Plugin):
         self._widget.verticalLayout.addWidget(scroll)
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
-        
+
     def create_tab_windows(self):
         '''Create layout for Summary scroll window'''
         summary_scroll = QScrollArea()
@@ -116,33 +115,50 @@ class MyPlugin(Plugin):
         self.tab.addTab(summary_scroll, "Summary")
 
         if self.aircraft_list == []:
-            aircraft_list = [1,2,3,4,5,6,7,8,9]
+            active_aircrafts = [x for x in range (1,10)]
+            self.SummaryWindow.create_layout(active_aircrafts)
+            self.CommandWindow.create_combobox(active_aircrafts)
+            self.WaypointWindow.create_layout(active_aircrafts)
         else:
-            aircraft_list = self.aircraft_list
-        
-        aircraft_list = [2,6,1]
-        self.WaypointWindow.create_layout(aircraft_list)
+            active_aircrafts = self.aircraft_list
 
-        self.SummaryWindow.remove()
-        self.SummaryWindow.create_layout(aircraft_list)
-        # self.SummaryWindow.open()
-
-        self.CommandWindow.create_layout(aircraft_list)
-
-
-        for i in aircraft_list:
+        for i in active_aircrafts:
             self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
 
-            key = "aircraft" + str(i) + " scroll"
-            self.aircrafts_info[key] = QScrollArea()
-            self.aircrafts_info.get(key).setMinimumHeight(500)
-            self.aircrafts_info.get(key).setMinimumWidth(600)
-            self.aircrafts_info.get(key).setWidgetResizable(True)
-            self.aircrafts_info.get(key).setWidget(self.aircrafts_info.get("AC" + str(i)))
-            self.tab.addTab(self.aircrafts_info.get(key), "Aircraft " + str(i))
+            self.key = "aircraft" + str(i) + " scroll"
+            self.aircrafts_info[self.key] = QScrollArea()
+            self.aircrafts_info.get(self.key).setMinimumHeight(500)
+            self.aircrafts_info.get(self.key).setMinimumWidth(600)
+            self.aircrafts_info.get(self.key).setWidgetResizable(True)
+            self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(i)))
+            self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(i))
         self.tab.setMinimumHeight(500)
         
+    def update_active_aircrafts(self, active_aircrafts):
+        self.SummaryWindow.remove(self.SummaryWindow.summary_layout)
+        self.SummaryWindow.create_layout(active_aircrafts)
+        self.CommandWindow.create_combobox(active_aircrafts)
+        self.WaypointWindow.remove(self.WaypointWindow.progressbar_layout)
+        self.WaypointWindow.create_layout(active_aircrafts)
+
+        # remove all the tabs
+        for i in range(self.tab.count(), 0, -1):
+            self.tab.removeTab(i)
+        # add back all the tabs
+        for j in active_aircrafts:
+            if self.aircrafts_info.get(self.key) == None:
+                self.aircrafts_info["AC" + str(j)] = AircraftInfo(j)
+                self.checklist_info["AC" + str(j)] = ChecklistWindow(j)
+
+                self.aircrafts_info[self.key] = QScrollArea()
+                self.aircrafts_info.get(self.key).setMinimumHeight(500)
+                self.aircrafts_info.get(self.key).setMinimumWidth(600)
+                self.aircrafts_info.get(self.key).setWidgetResizable(True)
+                self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(j)))
+            
+            self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(j))
+
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
@@ -157,6 +173,7 @@ class MyPlugin(Plugin):
         if aircraft_id not in self.aircraft_list:
             self.aircraft_list.append(aircraft_id)
             self.aircraft_list.sort()
+            self.update_active_aircrafts(self.aircraft_list)
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)

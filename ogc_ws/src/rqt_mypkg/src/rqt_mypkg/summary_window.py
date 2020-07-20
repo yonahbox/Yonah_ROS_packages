@@ -79,25 +79,28 @@ class SummaryWindow(QWidget):
     def open(self):
         self.show()
 
-    def remove(self):
-
-        print(self.summary_layout.count())
-        for i in reversed(range(self.summary_layout.count())):
-            child = self.summary_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-            if child.layout():
-                self.clearLayout(child.layout())
-        print(self.summary_layout.count())
-        print(self.main_layout.count())
-    
-    def clearLayout(self, layout):
-        while layout.count():
+    def remove(self, layout):
+        for i in reversed(range(layout.count())):
             child = layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
             if child.layout():
-                self.clearLayout(child.layout())
+                self.remove(child.layout())
+    # def remove(self):
+    #     for i in reversed(range(self.summary_layout.count())):
+    #         child = self.summary_layout.takeAt(0)
+    #         if child.widget():
+    #             child.widget().deleteLater()
+    #         if child.layout():
+    #             self.clearLayout(child.layout())
+    
+    # def clearLayout(self, layout):
+    #     while layout.count():
+    #         child = layout.takeAt(0)
+    #         if child.widget():
+    #             child.widget().deleteLater()
+    #         if child.layout():
+    #             self.clearLayout(child.layout())
     
     def shutdown(self):
         self.close()

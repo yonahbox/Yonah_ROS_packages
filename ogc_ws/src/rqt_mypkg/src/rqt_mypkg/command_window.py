@@ -124,11 +124,10 @@ class CommandWindow(QWidget):
         # Create the widgets
         self.combo_box = QComboBox()
         self.custom_ping_combobox = QComboBox()
-        # Use a for loop to add items inside the drop down menu
-        for i in active_aircrafts: 
-            self.combo_box.addItem('Aircraft ' + str(i))
-            self.checklist_info["AC" + str(i)] = ChecklistWindow(i) # Create the checklist as well
 
+        self.create_combobox(active_aircrafts)
+        # Use a for loop to add items inside the drop down menu
+        
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
 
@@ -187,6 +186,13 @@ class CommandWindow(QWidget):
         self.scroll_area.setMinimumWidth(600)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.main_layout.addWidget(self.scroll_area)
+
+    def create_combobox(self, active_aircrafts):
+        for i in range(self.combo_box.count(),-1,-1):
+            self.combo_box.removeItem(i)
+        for j in active_aircrafts: 
+            self.combo_box.addItem('Aircraft ' + str(j))
+            self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
 
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
