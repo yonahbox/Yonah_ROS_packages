@@ -30,7 +30,7 @@ class LogWindow(QWidget):
         # Set properties of the window
         self.setWindowTitle("ROS Log Reader")
         self.resize(1000, 700)
-        self.setMaximumWidth(1000)
+        self.setMinimumWidth(500)
         self.move(200,100)
 
         self.file = file
@@ -73,15 +73,14 @@ class LogWindow(QWidget):
         self.buttons_layout.setAlignment(Qt.AlignLeft)
 
         self.table_widget = QTableWidget()
-        self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        # self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.table_widget.setMinimumWidth(1000)
         self.main_layout.addLayout(self.buttons_layout)
         self.main_layout.addWidget(self.table_widget)
 
     def condensed_layout(self):
         self.table_widget.setRowCount(len(self.file))
         self.table_widget.setColumnCount(4)
-        
-        
         j = 0
         for i in self.file:
             # if not i:
@@ -100,9 +99,9 @@ class LogWindow(QWidget):
             self.table_widget.setItem(j, 0, QTableWidgetItem(i[0]))
             self.table_widget.setItem(j, 1, QTableWidgetItem(i[1]))
             self.table_widget.setItem(j, 2, QTableWidgetItem(i[2].replace(";", ":")))
-            self.table_widget.setItem(j, 3, QTableWidgetItem(i[3][:301]))
+            self.table_widget.setItem(j, 3, QTableWidgetItem(i[3][:500]))
             
-            self.table_widget.setHorizontalHeaderLabels(["lol","lol2", "lol3", "lol4"])
+            self.table_widget.setHorizontalHeaderLabels(["Message Type","Priority", "Time", "Message"])
             # self.table_widget.horizontalHeaderItem(1).setText("Priority")
             # self.table_widget.horizontalHeaderItem(2).setText("Time")
             # self.table_widget.horizontalHeaderItem(3).setText("Message")
