@@ -199,6 +199,8 @@ class CommandWindow(QWidget):
     def ros_log_parser(self):
         filenames = QFileDialog.getOpenFileNames(
             self, self.tr('Load from Files'), '.', self.tr('log files {.log} (*.log)'))
+        if filenames[0] == []:
+            return 0
         file = open(filenames[0][0], 'r')
         lines = file.read().splitlines()
         self.LogWindow = LogWindow(lines, filenames[0][0])

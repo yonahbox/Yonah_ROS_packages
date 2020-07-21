@@ -41,7 +41,7 @@ class MyPlugin(Plugin):
     def __init__(self, context):
         super(MyPlugin, self).__init__(context)
         self.setObjectName("main_window")
-        self._widget = QWidget()
+        self._widget = QWidget() 
         self._widget.setMinimumSize(1280, 800)
         self._widget.setWindowTitle("Yonah RQt")
         context.add_widget(self._widget)

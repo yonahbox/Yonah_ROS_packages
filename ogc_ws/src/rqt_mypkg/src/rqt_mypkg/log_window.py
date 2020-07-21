@@ -29,8 +29,8 @@ class LogWindow(QWidget):
         super(LogWindow, self).__init__()
         # Set properties of the window
         self.setWindowTitle("ROS Log Reader")
-        self.resize(1000, 700)
-        self.setMinimumWidth(500)
+        self.resize(1010, 700)
+        self.setMinimumWidth(1010)
         self.move(200,100)
 
         self.file = file
@@ -46,8 +46,7 @@ class LogWindow(QWidget):
         # Create the layout
         self.main_layout = QVBoxLayout()
         self.buttons_layout = QHBoxLayout()
-        
-       
+
         # Create the widgets
         self.create_layout()
         self.condensed_layout()
@@ -55,7 +54,7 @@ class LogWindow(QWidget):
         # Connect the Buttons
         self.condense.pressed.connect(self.condensed_layout)
         self.long.pressed.connect(self.lengthy_layout)
-
+        self.path_button.pressed.connect(self.reload_file)
         # Add the widgets into the layouts
         self.setLayout(self.main_layout)
         self.show()
@@ -79,12 +78,49 @@ class LogWindow(QWidget):
         self.main_layout.addWidget(self.table_widget)
 
     def condensed_layout(self):
+        print(len(self.file))
+        print(self.file)
+        self.file = [x for x in self.file if x]
         self.table_widget.setRowCount(len(self.file))
         self.table_widget.setColumnCount(4)
         j = 0
         for i in self.file:
-            # if not i:
-            #     continue
+            if not i:
+                continue
+            i = i.replace(":", ";", 2)
+            i = i.replace("[", ":[", 2)
+            i = i.replace("]", "]:", 2)
+            i = i.split(':', 5)
+            i = list(filter(None, i))
+            if len(i) != 4:
+                print('lol')
+                print(j)
+                self.table_widget.setItem(j, 0, QTableWidgetItem(""))
+                self.table_widget.setItem(j, 1, QTableWidgetItem(""))
+                self.table_widget.setItem(j, 2, QTableWidgetItem(""))
+                self.table_widget.setItem(j, 3, QTableWidgetItem(" ".join(i)))
+            else:
+                self.table_widget.setItem(j, 0, QTableWidgetItem(i[0]))
+                self.table_widget.setItem(j, 1, QTableWidgetItem(i[1]))
+                self.table_widget.setItem(j, 2, QTableWidgetItem(i[2].replace(";", ":")))
+                self.table_widget.setItem(j, 3, QTableWidgetItem(i[3][:500]))
+                if len(i[3]) > 499:
+                    self.table_widget.setItem(j, 3, QTableWidgetItem(i[3][:500] + "..."))         
+            j += 1
+
+        self.table_widget.setHorizontalHeaderLabels(["Message Type","Priority", "Time", "Message"])
+        header = self.table_widget.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        self.table_widget.resizeRowsToContents()
+
+    def lengthy_layout(self):
+        self.table_widget.setRowCount(len(self.file))
+        self.table_widget.setColumnCount(4)
+        j = 0
+        for i in self.file:
             i = i.replace(":", ";", 2)
             i = i.replace("[", ":[", 2)
             i = i.replace("]", "]:", 2)
@@ -94,28 +130,27 @@ class LogWindow(QWidget):
                 self.table_widget.setItem(j, 0, QTableWidgetItem(""))
                 self.table_widget.setItem(j, 1, QTableWidgetItem(""))
                 self.table_widget.setItem(j, 2, QTableWidgetItem(""))
-                self.table_widget.setItem(j, 3, QTableWidgetItem(" ".join(i)))
+                self.table_widget.setItem(j, 3, QTableWidgetItem(i[0]))
                 continue
             self.table_widget.setItem(j, 0, QTableWidgetItem(i[0]))
             self.table_widget.setItem(j, 1, QTableWidgetItem(i[1]))
             self.table_widget.setItem(j, 2, QTableWidgetItem(i[2].replace(";", ":")))
-            self.table_widget.setItem(j, 3, QTableWidgetItem(i[3][:500]))
+            self.table_widget.setItem(j, 3, QTableWidgetItem(i[3]))
             
             self.table_widget.setHorizontalHeaderLabels(["Message Type","Priority", "Time", "Message"])
-            # self.table_widget.horizontalHeaderItem(1).setText("Priority")
-            # self.table_widget.horizontalHeaderItem(2).setText("Time")
-            # self.table_widget.horizontalHeaderItem(3).setText("Message")
             j += 1
             header = self.table_widget.horizontalHeader()
             header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(3, QHeaderView.Stretch)
-            self.table_widget.resizeRowsToContents()
-
-    def lengthy_layout(self):
-        self.table_widget.setPlainText("")
-        for i in self.file:
-            if not i:
-                continue
-            self.table_widget.appendPlainText(i)
+    
+    def reload_file(self):
+        filenames = QFileDialog.getOpenFileNames(
+            self, self.tr('Load from Files'), '.', self.tr('log files {.log} (*.log)'))
+        if filenames[0] == []:
+            return 0
+        file = open(filenames[0][0], 'r')
+        lines = file.read().splitlines()
+        self.file = lines
+        self.condensed_layout()
