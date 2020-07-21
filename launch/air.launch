@@ -11,6 +11,8 @@
 	<arg name="respawn_mavros" default="true" />
 
 	<!-- Params for air_data-->
+	<arg name="svr_name" default="ubuntu" />
+	<arg name="svr_ip" default="18.138.24.228" />
 	<arg name="aircraft" default="5" />
 
 	<!-- Params for air_sms-->
@@ -33,6 +35,8 @@
 	</include>
 
 	<include file="$(find air_data)/launch/air_data.launch">
+		<arg name="svr_name" default="$(arg svr_name)" />
+		<arg name="svr_ip" default="$(arg svr_ip)" />
 		<arg name="aircraft" value="$(arg aircraft)" />
 	</include>
 
