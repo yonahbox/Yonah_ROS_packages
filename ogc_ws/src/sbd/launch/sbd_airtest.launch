@@ -1,0 +1,58 @@
+<!-- launch file for Yonah's Iridium Short-Burst-Data (SBD) service (for testing purposes)-->
+
+<launch>
+
+    <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
+    <arg name="log_output" default="screen"/>
+
+    <!-- Serial port that Rockblock is connected to-->
+    <arg name="portID" default="/dev/ttyUSB0"/>
+
+    <!-- Sleep interval between SBD mailbox checks -->
+    <arg name="interval_1" default="5"/>
+    <arg name="interval_2" default="5"/>
+    <arg name="interval_3" default="5"/>
+
+    <!-- Which link we are using -->
+    <arg name="link_select" default="2" />
+
+    <!-- 1 = Comms through server, 0 = Comms through gnd Rockblock -->
+    <arg name="thr_server" default="1" />
+
+    <!-- Identifiers -->
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+    <arg name="ground_ids" default="[1]" />
+    <arg name="self_id" default="1" />
+    <arg name="is_air" default="True" />
+
+    <!-- sbd link node -->
+    <node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="portID" value="$(arg portID)" />
+        <param name="interval" value="$(arg interval_3)" />
+        <param name="thr_server" value="$(arg thr_server)" />
+    </node>
+
+    <node pkg="identifiers" type="identifiers_server" name="identifiers_server" output="$(arg log_output)" >
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+    </node>
+
+    <!-- air_despatcher node -->
+    <node pkg="despatcher" type="air_despatcher.py" name="air_despatcher"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="interval_1" value="$(arg interval_1)" />
+        <param name="interval_2" value="$(arg interval_2)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
+        <param name="link_select" value="$(arg link_select)" />
+    </node>
+
+    <!-- air statustext handler node -->
+	<node pkg="statustext" type="air_statustext.py" name="air_statustext" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node>
+
+</launch>

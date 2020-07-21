@@ -1,0 +1,50 @@
+plugin_blacklist:
+# common
+- ftp
+- safety_area
+- hil
+# extras
+- altitude
+- debug_value
+- image_pub
+- px4flow
+- vision_speed_estimate
+- vision_pose_estimate
+- wheel_odometry
+# Nemo doesn't need
+- adsb
+- 3dr_radio
+- gps_rtk
+- safety_area
+- odom
+- cam_imu_sync
+- fake_gps
+- distance_sensor
+- mocap_pose_estimate
+- obstacle_distance
+- rangefinder
+- trajectory
+- wind_estimation
+- companion_process_status
+- sys_time
+- local_position
+- log_transfer
+- setpoint_velocity
+- setpoint_attitude
+- setpoint_accel
+- setpoint_position
+- setpoint_raw
+- home_position
+- param
+- manual_control
+- actuator_control
+
+plugin_whitelist:
+- sys_status
+- command
+- global_position
+- imu_pub
+- rc_io
+- vfr_hud
+- vibration
+- waypoint
