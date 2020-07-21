@@ -1,8 +1,8 @@
 <launch>
 
 	<!-- EC2 Server hostname and IP Address -->
-	<param name="svr_name" />
-	<param name="svr_ip" />
+	<arg name="svr_name" />
+	<arg name="svr_ip" />
 	
 	<!-- aircraft number-->
     <arg name="aircraft"/>

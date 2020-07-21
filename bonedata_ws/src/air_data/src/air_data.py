@@ -76,7 +76,7 @@ class SSH:
 		port_1 = (10 * rospy.get_param('aircraft')) + 4000
 		port_2 = port_1 + 1
 		port_3 = port_1 + 2
-		self.ssh_linkage = subprocess.Popen(['bash', '$(env HOME)/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh', \
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh', \
 			svr_name, svr_ip, str(port_1), str(port_2), str(port_3)], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
@@ -139,7 +139,7 @@ class SSH:
 		rospy.loginfo("NETCAT Reset")
 		print("\r")
 		#Usage of python subprocessing to open a NETCAT process	
-		self.netcat_linkage = subprocess.Popen(['bash', '$(env HOME)/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
+		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
 		print("\r")
