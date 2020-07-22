@@ -573,7 +573,6 @@ class CommandWindow(QWidget):
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
 
     def direct_update(self):
-        print("direct update")
         home_dir = expanduser("~")
         gndfolder = home_dir + "/Waypoints/"
         gndfiles = listdir(gndfolder)
