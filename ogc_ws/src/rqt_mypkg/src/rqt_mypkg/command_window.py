@@ -18,8 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
+import time
 
 from functools import partial
+from os import listdir
+from os.path import expanduser
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox
 from PyQt5.QtWidgets import QScrollArea, QFrame, QPushButton, QDialog, QLabel, QLineEdit, QDialogButtonBox, QFileDialog
 from python_qt_binding.QtCore import Qt, Signal, Slot, QRegExp
@@ -82,8 +85,10 @@ class CommandWindow(QWidget):
         self.ping_button.pressed.connect(self.ping)
         self.custom_ping_button.pressed.connect(self.custom_ping)
         self.ros_reader.pressed.connect(self.ros_log_parser)
+        self.direct_sync.pressed.connect(self.direct_update)
+
         # Publisher Command
-        self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
+        self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
         # Service Command
         # try:
@@ -144,6 +149,7 @@ class CommandWindow(QWidget):
         self.ping_button = QPushButton('Ping')
         self.custom_ping_button = QPushButton('Custom Ping Button')
         self.ros_reader = QPushButton('ROS log')
+        self.direct_sync = QPushButton('Sync Aircraft')
 
         # Set UI properties of the buttons and layout
         top_row = 60        # Minimum height for the top row buttons
@@ -161,6 +167,7 @@ class CommandWindow(QWidget):
         self.custom_ping_button.setMinimumHeight(bottom_row)
         self.custom_ping_combobox.setMinimumHeight(bottom_row)
         self.ros_reader.setMinimumHeight(bottom_row)
+        self.direct_sync.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
         self.secondary_layout.addWidget(self.combo_box)
@@ -172,14 +179,15 @@ class CommandWindow(QWidget):
         self.second_row.addWidget(self.mission_load_button)
         self.second_row.addWidget(self.change_mode_button)
         self.second_row.addWidget(self.ping_button)
-        
+        self.third_row.addWidget(self.ros_reader)
+        self.third_row.addWidget(self.direct_sync)
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
         self.secondary_layout.addLayout(self.first_row)
         self.secondary_layout.addLayout(self.second_row)
         self.third_row.addLayout(self.ping_row)
-        self.third_row.addWidget(self.ros_reader)
+        
         self.secondary_layout.addLayout(self.third_row)
         self.frame1.setLayout(self.secondary_layout)
         self.scroll_area.setWidget(self.frame1)
@@ -210,7 +218,7 @@ class CommandWindow(QWidget):
         message = LinkMessage()
         message.id = destination_id
         message.data = data
-        self.command_publisher.publish(message)
+        self.pub_to_despatcher.publish(message)
 
     def combo_box_change(self, i):
         self.destination_id = i + 1
@@ -564,6 +572,21 @@ class CommandWindow(QWidget):
         self.change_mode_dialog.close()
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
 
-    
+    def direct_update(self):
+        print("direct update")
+        home_dir = expanduser("~")
+        gndfolder = home_dir + "/Waypoints/"
+        gndfiles = listdir(gndfolder)
+        mission_msg = []
+        for i in gndfiles:
+            g = open(gndfolder + i, "r")
+            update_time = g.readlines()[-1].rstrip().split()[-1]
+            mission_msg.append(str(i) + " " + str(update_time))
+        update = LinkMessage()
+        update.id = self.destination_id
+        update.data = "mission update " + " ".join(mission_msg)
+        time.sleep(1)
+        self.pub_to_despatcher.publish(update)
+
     def shutdown(self):
         self.close()

@@ -20,7 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import csv
 import os
 import rospkg
-import re
 from PyQt5.QtWidgets import *
 from python_qt_binding.QtCore import Qt
 
