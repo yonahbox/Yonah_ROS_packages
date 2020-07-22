@@ -74,23 +74,17 @@ class Td():
 		if result:
 			return json.loads(result.decode('utf-8'))
 
-	# # # Get the 10 most recent chats	
-	# def get_contacts(self):
-	# 	self.send({
-	# 		"@type": "getContacts",
-	# 	})
+	# Get the contacts of this telegram account
+	def get_contacts(self):
+		self.send({
+			"@type": "getContacts",
+		})
 
-	# add new contacts to the telegram account
-	# expects a list of strings containing the numbers of the form 6512345678
-	# def add_contacts(self, number_list):
-	# 	self.send({
-	# 		"@type": "importContacts",
-	# 		"contacts": [{
-	# 			"@type": "contact",
-	# 			"first_name": "Td " + number,
-	# 			"phone_number": "00"+number 	# telegram wants a 00 in front for some reason
-	# 		} for number in number_list]		# List of objects created using list comprehension
-	# 	})
+	# get information about the user
+	def get_me(self):
+		self.send({
+			"@type": "getMe"
+		})
 
 	# Add single contact to telegram account
 	# number should be a string of the form 6512345678
@@ -128,6 +122,19 @@ class Td():
 	def send_message_multi(self, ids, msg):
 		for id_n in ids:
 			self.send_message(id_n, msg)
+
+	def send_file(self, telegram_id, path):
+		self.send({
+			'@type': 'sendMessage',
+			'chat_id': telegram_id,
+			'input_message_content': {
+				'@type': 'inputMessageDocument',
+				'document': {
+					'@type': 'inputFileLocal',
+					'path': path
+				}
+			}
+		})
 
 	# Wrapper to send an image to a specific number
 	def send_image(self, telegram_id, path):
@@ -177,6 +184,13 @@ class Td():
 			}
 		})
 
+	def download_file(self, remote_id):
+		self.send({
+			'@type': 'downloadFile',
+			'file_id': remote_id,
+			'priority': 1,
+		})
+
 	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
@@ -222,7 +236,7 @@ class Td():
 
 	# Mark a message as read (double tick in app)
 	def set_read(self, chat_id, message_id):
-		print('marking as read')
+		# print('marking as read')
 		self.send({
 			'@type': 'viewMessages',
 			'chat_id': chat_id,

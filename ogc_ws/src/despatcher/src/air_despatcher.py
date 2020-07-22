@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ROS/Third-Party
 import rospy
 import csv
+from pathlib import Path
 from mavros_msgs.msg import VFR_HUD
 from mavros_msgs.msg import State
 from mavros_msgs.msg import RCOut
@@ -40,7 +41,8 @@ from despatcher.msg import LinkMessage
 
 # Local
 from regular import air_payload
-from waypoint import WP
+import waypoint
+import g2a
 
 
 class airdespatcher():
@@ -55,6 +57,7 @@ class airdespatcher():
         self.pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5) # Link to SMS node
         self.pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5) # Link to telegram node      
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', LinkMessage, queue_size = 5) # Link to SBD node
+        self.pub_to_rff = rospy.Publisher('ogc/to_rff', String, queue_size = 5)
 
         # Msg handlers
         self._msg = "" # Stores outgoing msg Air-to-Ground message
@@ -78,15 +81,17 @@ class airdespatcher():
         self._tele_interval = self._interval_1 # Interval (seconds) for regular payload over telegrams
         self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
         # Note that there is no sbd interval. This interval is controlled by sbd link node
+      
+        # Mission params
+        self.hop = False
+        self.missionlist = []
+        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
         rospy.wait_for_service('mavros/mission/push')
-
-        self.hop = False
-        self.missionlist = []
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -100,190 +105,6 @@ class airdespatcher():
             self._prev_transmit_time = timestamp
             return True
     
-    def _check_ping(self):
-        '''Check for ping commands from Ground Control'''
-        if len(self._recv_msg) == 1: # Simple "ping" request
-            self._msg = self.payloads.truncate_regular_payload()
-            severity = "r"
-        else:
-            # Make sure the ping command is of the correct format ("ping <command>")
-            if len(self._recv_msg) == 2 and self._recv_msg[0] == 'ping' and \
-                self._recv_msg[1] in self.payloads.ping_entries:
-                self._msg = str(self.payloads.ping_entries[self._recv_msg[1]])
-                severity = "i"
-            else:
-                return
-        self.sendmsg(severity)
-
-    def _check_sms(self):
-        '''Check for SMS commands from Ground Control'''
-        if self._recv_msg[0] == "sms" and len(self._recv_msg) == 2:
-            if self._recv_msg[1] == "true": # Send regular payloads to Ground Control
-                self._regular_payload_flag = True
-            elif self._recv_msg[1] == "false": # Don't send regular payloads
-                self._regular_payload_flag = False
-            elif self._recv_msg[1] == "short": # Send regular payloads at short intervals
-                self._sms_interval = self._interval_1
-            elif self._recv_msg[1] == "long": # Send regular payloads at long intervals
-                self._sms_interval = self._interval_2
-            else:
-                return
-        else:
-            return
-        self._send_ack()
-
-    def _check_statustext(self):
-        '''Check for statustext commands from Ground Control'''
-        if len(self._recv_msg) == 2 and self._recv_msg[0] == "statustext":
-            if self._recv_msg[1] == "true":
-                self._statustext_flag = True
-            elif self._recv_msg[1] == "false":
-                self._statustext_flag = False
-            else:
-                return
-        else:
-            return
-        self._send_ack()
-
-    def _check_arming(self):
-        """Check for Arm/Disarm commands from Ground Control"""
-        arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
-        if len(self._recv_msg) == 1:
-            if self._recv_msg[0] == "disarm":
-                arm(0)
-            elif self._recv_msg[0] == "arm":
-                arm(1)
-            else:
-                return
-        else:
-            return
-        self._send_ack()
-
-    def _check_mode(self):
-        """Check for Mode change commands from Ground Control"""
-        mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
-        # Message structure: mode <flight mode>; extract 2nd word to get flightmode
-        if self._recv_msg[0] == 'mode' and len(self._recv_msg) == 2:
-            # Set flight mode, check if successful
-            if mode(custom_mode = self._recv_msg[1]).mode_sent == True:
-                self._send_ack()
-
-    def _check_mission(self):
-        wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Yonah_ROS_packages/Waypoints/')
-        """Check for mission/waypoint commands from Ground Control"""
-        if self._recv_msg[0] == "wp":
-            if self._recv_msg[1] == 'set':
-                # Message structure: wp set <seq_no>, extract the 3rd word to get seq no
-                wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
-                seq_no = self._recv_msg[2]
-                # Set target waypoint, check if successful
-                if wp_set(wp_seq = int(seq_no)).success == True:
-                    self._send_ack()
-            elif self._recv_msg[1] == 'load':
-                # Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
-                # Assume that wp file is located in Waypoints folder of Beaglebone
-                wp_file = self._recv_msg[2]
-                # Set to non-hop mission
-                self.hop = False
-                # Reset mission and waypoints list
-                self.missionlist = []
-                readwp = WP()
-                try:
-                    waypoints = readwp.read(str(wpfolder + wp_file))
-                    wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                    # Push waypoints, check if successful
-                    if wppush(0, waypoints).success:
-                        self._send_ack()
-                except FileNotFoundError:
-                    self._msg  = "Specified file not found"
-                    self.sendmsg("e")
-                except:
-                    self._msg = "Invalid waypoint file"
-                    self.sendmsg("e")
-            else:
-                return
-        if self._recv_msg[0] == "mission":
-            if self._recv_msg[1] == 'load':
-                # Message structure: mission load <mission file name.txt>
-                self.missionlist = []
-                # Change to hop-mission mode
-                self.hop = True
-                mission_file = self._recv_msg[2]
-                try:
-                    f = open(str(wpfolder + mission_file), "r")
-                except FileNotFoundError:
-                    self._msg = "Specified file not found"
-                    self.sendmsg("e")
-                    return
-                for line in f:
-                    # Ignores # comments
-                    if line.startswith('#'):
-                        continue
-                    # Returns if a waypoint file is loaded instead
-                    elif line.startswith("QGC WPL"):
-                        self._msg = "This is a waypoint file. Please load a mission file."
-                        self.sendmsg("e")
-                        return
-                    try:
-                        g = open(str(wpfolder + line.rstrip()), "r") # Open and close to check each wp file
-                        g.close()
-                    except FileNotFoundError:
-                        # Specify which file in the list is not found
-                        self._msg = str(line.rstrip() + "-->File not found")
-                        self.sendmsg("e")
-                        # Set to non-hop (in this case it is used as a switch for the next step)
-                        self.hop = False
-                f.close()
-                # Returns if any of the files in mission list weren't found
-                if not self.hop:
-                    return
-                # Somehow there is a need to open the file again after the try block finishes
-                f = open(str(wpfolder + mission_file), "r")
-                # This appends the waypoint files into mission list
-                for line in f:
-                    if line.startswith('#'):
-                        continue
-                    self.missionlist.append(line.rstrip())
-                f.close()
-                # Prints the missions for operator to check
-                self._msg = "Missions: " + ", ".join(self.missionlist)
-                self.sendmsg("i")
-                # Load first mission
-                self.current_mission = 0
-                readwp = WP()
-                waypoints = readwp.read(str(wpfolder + self.missionlist[0]))
-                wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                if wppush(0, waypoints).success:
-                    # This acknowledgement implies that the mission list has no errors and the first mission is loaded
-                    self._send_ack()
-
-            elif self._recv_msg[1] == 'next':
-                # Message structure: wp next (no arguments)
-                if not self.hop: # Checks if hop mission
-                    self._msg = "Please load a mission file"
-                    self.sendmsg("e")
-                    return
-                self.current_mission += 1
-                if self.current_mission >= len(self.missionlist):
-                    self.hop = False
-                    self.current_mission = 0
-                    self._msg = "There are no more missions"
-                    self.sendmsg("e")
-                    return
-                waypoints = []
-                readwp = WP()
-                try:
-                    waypoints = readwp.read(str(wpfolder + self.missionlist[self.current_mission]))
-                    wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
-                    if wppush(0, waypoints).success:
-                        self._send_ack()
-                # This error should never be raised if everything above works
-                except FileNotFoundError:
-                    self._msg = "Specified file not found"
-                    self.sendmsg("e")
-            else:
-                return
-
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
@@ -298,21 +119,23 @@ class airdespatcher():
             self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
-                self._check_ping()
+                # self._check_ping()
+                g2a.check_ping(self)
             elif "sms" in self._recv_msg:
-                self._check_sms()
+                g2a.check_sms(self)
             elif "statustext" in self._recv_msg:
-                self._check_statustext()
+                g2a.check_statustext(self)
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
-                self._check_arming()
+                g2a.check_arming(self)
             elif "mode" in self._recv_msg:
-                self._check_mode()
+                g2a.check_mode(self)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
-                self._check_mission()
+                g2a.check_mission(self)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
+
 
     #########################################
     # Handle Air-to-Ground (A2G) messages
@@ -355,6 +178,7 @@ class airdespatcher():
         message = LinkMessage()
         message.id = self.ground_id
         message.data = self._msg
+        print(message.data)
         if self.link_select == 0:
             self.pub_to_telegram.publish(message)
         elif self.link_select == 1:

@@ -10,6 +10,11 @@
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="true" />
 
+	<!-- Params for air_data-->
+	<arg name="svr_name" default="ubuntu" />
+	<arg name="svr_ip" default="18.138.24.228" />
+	<arg name="aircraft" default="5" />
+
 	<!-- Params for air_sms-->
 	<arg name="GCS_no" default="'12345678'"/>
 	<arg name="whitelist" default="$(find air_sms)/scripts/whitelist.txt"/>
@@ -32,8 +37,11 @@
 		<arg name="respawn_mavros" default="$(arg respawn_mavros)" />
 	</include>
 
-	<!-- air_data -->
-	<include file="$(find air_data)/launch/air_data.launch"/>
+	<include file="$(find air_data)/launch/air_data.launch">
+		<arg name="svr_name" default="$(arg svr_name)" />
+		<arg name="svr_ip" default="$(arg svr_ip)" />
+		<arg name="aircraft" value="$(arg aircraft)" />
+	</include>
 
 	<!-- air_sms -->
 	<include file="$(find air_sms)/launch/air_sms.launch">
