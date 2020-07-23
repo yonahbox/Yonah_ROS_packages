@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import rospy
+from std_msgs.msg import String
+
+from syncthing import Syncthing
+
+def st_pause_cb(device, st):
+	print(device)
+	st.pause(device.data)
+
+def st_resume_cb(device, st):
+	print(device)
+	st.resume(device.data)
+
+
+if __name__ == "__main__":
+	rospy.init_node("syncthing", anonymous=False, disable_signals=True)
+
+	st = Syncthing()
+	print("finished init")
+
+	rospy.Subscriber("ogc/syncthing/pause", String, st_pause_cb, st)
+	rospy.Subscriber("ogc/syncthing/resume", String, st_resume_cb, st)
+
+	rospy.spin()

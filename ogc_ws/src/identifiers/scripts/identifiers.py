@@ -22,7 +22,7 @@ from telegram.msg import ContactInfo
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
-	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id):
+	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id, syncthing_id):
 		self.label = label
 		self.is_air = is_air
 		self.id = dev_id
@@ -30,6 +30,7 @@ class Device:
 		self.imei = imei
 		self.rb_serial = rb_serial
 		self.telegram_id = telegram_id
+		self.syncthing_id = syncthing_id
 
 # Class to keep track of subscriptions to any topic when publishing
 class TopicSubscriberNotification:
@@ -101,7 +102,7 @@ class Identifiers:
 		# add all whitelisted devices into the whitelist and required information to their respective whitelists
 		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
 			if obj["id"] in self.valid_ids:
-				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
+				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("synchthing_id", None)))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 				if "telegram_id" in obj.keys():
@@ -110,7 +111,7 @@ class Identifiers:
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
-				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None))
+				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None))
 				break
 
 		# for standalone numbers (not currently in use)
@@ -320,6 +321,23 @@ class Identifiers:
 
 		self.telegram_add_contact.publish(contact)
 
+	def set_syncthing_id(self, device_id):
+		edit_list = self.json_obj["air"] if self.is_air else self.json_obj["ground"]
+
+		selected_device = None
+		for device in edit_list:
+			if device["id"] == self.self_id:
+				selected_device = device
+				break
+
+		selected_device["syncthing_id"] = device_id
+
+		with open(self.json_file, "w") as f:
+			json.dump(self.json_obj, f)
+
+		self._parse_file()
+
+		return True
 
 	# Does a lazy check to see if the received message is from a valid sender
 	# Trusts that the sender of the message was correctly identified in the message headers
