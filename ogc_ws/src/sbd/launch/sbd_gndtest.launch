@@ -53,13 +53,13 @@
 	</node>
 
     <!-- ground test node -->
-    <!-- <node pkg="despatcher" type="gndtest.py" name="gnd_test"
+    <node pkg="despatcher" type="gndtest.py" name="gnd_test"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
-    </node> -->
+    </node>
 
     <!-- rqt node -->
-	<node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-	</node>
+	</node> -->
 
 </launch>

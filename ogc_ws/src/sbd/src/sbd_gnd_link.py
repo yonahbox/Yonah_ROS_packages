@@ -65,7 +65,8 @@ class satcommsgnd(satcomms):
         sbd_details = get_sbd_credentials()
         self._mt_cred['username'] = sbd_details.username
         self._mt_cred['password'] = sbd_details.password
-        self._server_url = sbd_details.url
+        self._server_url = 'http://' + sbd_details.svr_hostname + '@' + sbd_details.svr_ip\
+            + '/cgi-bin/sbd_to_gcs.py' #@TODO: Convert to paramiko ssh
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
         self._serial_0 = (self._own_serial >> 16) & 0xFF
