@@ -326,9 +326,12 @@ class Identifiers:
 
 		selected_device = None
 		for device in edit_list:
-			if device["id"] == self.self_id:
+			if device["id"] == self.self_id and "syncthing_id" not in device:
 				selected_device = device
 				break
+
+		if selected_device is None:
+			return False
 
 		selected_device["syncthing_id"] = device_id
 

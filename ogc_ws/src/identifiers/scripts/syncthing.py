@@ -15,14 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import rospy
+from identifiers.srv import SetDetails
+
 import requests as req
 import xml.etree.ElementTree as xml
 from pathlib import Path
 import subprocess
-
-import rospy
-# from identifiers.srv import SetDetails
-# from identifiers.srv import SetDetails, AddTelegramId, CheckSender
 
 class Syncthing:
 	def __init__(self):
@@ -33,9 +32,9 @@ class Syncthing:
 		self.parse()
 
 		# self.get_device = rospy.ServiceProxy("identifiers/get/st_id")
-		# self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+		self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
 
-		# self.set_id()
+		self.set_id()
 
 	def parse(self):
 		home_dir = str(Path.home())
@@ -52,14 +51,14 @@ class Syncthing:
 		try:
 			sub_call = subprocess.run(["syncthing", "-device-id"], capture_output=True, text=True)
 			self.device_id = sub_call.stdout.rstrip()
-			self.set_device.publish(self.device_id)
+			self.set_device(self.device_id)
 		except FileNotFoundError:
 			rospy.logwarn("unable to call syncthing")
 
 	def pause(self, id_n):
 		# device = self.get_device(id_n)
 		print("device="+id_n)
-		result = req.post(self.host + "/rest/system/pause", data="device=GBJRKX4-EML3F6K-QPCHMD3-BCW3D2J-FQC5NDS-U4FUGIB-4HOXDEP-SBZJOQR", headers={
+		result = req.post(self.host + "/rest/system/pause", data="device=" + id_n, headers={
 			"X-API-Key": self.api_key
 		})
 		print(result)
@@ -67,7 +66,7 @@ class Syncthing:
 	def resume(self, id_n):
 		print("device="+id_n)
 		print(self.api_key)
-		result = req.post(self.host + "/rest/system/resume", data="device=GBJRKX4-EML3F6K-QPCHMD3-BCW3D2J-FQC5NDS-U4FUGIB-4HOXDEP-SBZJOQR", headers={
+		result = req.post(self.host + "/rest/system/resume", data="device=" + id_n, headers={
 			"X-API-Key": self.api_key
 		})
 		print(result)
