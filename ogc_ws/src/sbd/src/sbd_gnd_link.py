@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import ast
 import binascii
 import datetime
+import paramiko
 import requests
 import struct
 
@@ -30,11 +31,11 @@ import struct
 import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
+from identifiers.srv import GetDetails, CheckSender, GetSBDDetails
 
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
-from identifiers.srv import GetDetails, CheckSender, GetSBDDetails
 
 class satcommsgnd(satcomms):
 
@@ -65,13 +66,23 @@ class satcommsgnd(satcomms):
         sbd_details = get_sbd_credentials()
         self._mt_cred['username'] = sbd_details.username
         self._mt_cred['password'] = sbd_details.password
-        self._server_url = 'http://' + sbd_details.svr_hostname + '@' + sbd_details.svr_ip\
-            + '/cgi-bin/sbd_to_gcs.py' #@TODO: Convert to paramiko ssh
+        self._ssh_conn(sbd_details.svr_ip, sbd_details.svr_hostname)
+        self._svr_buffer = "/satcomms_server/buffer.txt" # File in web server that stores MO msg
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
         self._serial_0 = (self._own_serial >> 16) & 0xFF
         self._serial_1 = (self._own_serial >> 8) & 0xFF
         self._serial_2 = self._own_serial & 0xFF
+    
+    def _ssh_conn(self, ip, hostname):
+        '''Establish ssh and sftp connection to web server'''
+        self._ssh = paramiko.SSHClient()
+        self._ssh.load_system_host_keys()
+        try:
+            self._ssh.connect(ip, username=hostname, timeout=10)
+            self._sftp = self._ssh.open_sftp()
+        except:
+            rospy.logerr("SBD: Cannot connect to AWS Server")
     
     ############################
     # Server Message handlers.
@@ -124,20 +135,13 @@ class satcommsgnd(satcomms):
 
     def _server_recv_msg(self):
         '''Extract MO msg from our web server'''
-        # Strictly speaking, this measure isn't foolproof; it only makes it less convenient for malicious
-        # or accidential requests to our server. We cannot use our account pw, because http is unencrypted...
-        values = {'pw':'testpw'}
-        # Send HTTP post request to Rock 7 server, incoming msg (if any) stored in reply
         try:
-            reply_str = requests.post(self._server_url, data=values).text
-        except requests.exceptions.MissingSchema:
-            rospy.logerr("Web Server Missing Schema; did you miss out http:// ?")
-            return
-        except requests.exceptions.ConnectionError:
-            rospy.logerr("Web Server Timed Out")
-            return
-        if "404 Not Found" in reply_str:
-            rospy.logerr("Web Server 404 Not Found; is the URL correct?")
+            # Extract msg from server's MO buffer file through sftp
+            svr_file = self._sftp.file(self._svr_buffer, mode="r")
+            reply_str = svr_file.read().decode()
+            svr_file.close()
+        except:
+            rospy.logerr("SBD: Connection to AWS server lost")
             return
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
@@ -178,6 +182,8 @@ class satcommsgnd(satcomms):
         message_handler = rospy.Timer(rospy.Duration(self.interval), self.recv_msg)
         rospy.spin()
         message_handler.shutdown()
+        self._sftp.close()
+        self._ssh.close()
         self._sbdsession.close()
 
 if __name__=='__main__':
