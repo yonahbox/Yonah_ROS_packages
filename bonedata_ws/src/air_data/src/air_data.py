@@ -94,21 +94,21 @@ class SSH:
 			self.client.connect(('localhost', 4000))
 			self.client.send("AIR".encode())
 			#Receives a status message from the web server
-			self.from_server = self.client.recv(4096)
+			self.from_server = self.client.recv(4096).decode()
 			self.client.close()
 			
-			if ("NETCAT".encode() in self.from_server):
+			if ("NETCAT" in self.from_server):
 				self.ground_netcat = True
 			else:
 				self.ground_netcat = False
 
-			if ("AIR".encode() in self.from_server) and ("GROUND".encode() in self.from_server):	
+			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
 				rospy.loginfo("Air-Server-Ground Established")
 				print ("\r")	
 				self.air_link = True
 				self.ground_link = True
 				return True	
-			elif ("AIR".encode() in self.from_server) and not ("GROUND".encode() in self.from_server):
+			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
 				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
 				print("\r")
 				self.air_link = True
