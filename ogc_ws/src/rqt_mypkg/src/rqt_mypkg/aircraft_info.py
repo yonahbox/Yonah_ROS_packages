@@ -28,7 +28,7 @@ class AircraftInfo(QWidget):
         super(AircraftInfo, self).__init__()
         self.setWindowTitle("Summary Page")
         
-        self.waypoint_plaintext_dict = {}
+        self.aircraft_info_dict = {}
         self.initial_time = 0
         # Create the layout
         self.main_layout = QVBoxLayout()
@@ -50,18 +50,18 @@ class AircraftInfo(QWidget):
             'Fuel Level',
             'Quad Battery']
 
-        aircraft_id = aircraft_id
-        self.create_info(aircraft_id, summarised_fields)
+        self.aircraft_id = aircraft_id
+        self.create_info(self.aircraft_id, summarised_fields)
         statustext_label = QLabel('Status Text')
         statustext_label.setContentsMargins(0, 30, 0, 0)
-        statustext = QPlainTextEdit()
-        statustext.setReadOnly(True)
-        statustext.setMinimumHeight(300)
+        self.statustext = QPlainTextEdit()
+        self.statustext.setReadOnly(True)
+        self.statustext.setMinimumHeight(300)
 
         # Add the widgets into the layouts
         self.main_layout.addLayout(self.info_layout)
         self.main_layout.addWidget(statustext_label)
-        self.main_layout.addWidget(statustext)
+        self.main_layout.addWidget(self.statustext)
 
     def create_info(self, aircraft_no, summarised_fields):
         self.styling()
@@ -76,12 +76,12 @@ class AircraftInfo(QWidget):
             subfield_label_mode.setFixedSize(120, 30)
 
             # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
-            self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
-            self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
-            self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
+            self.aircraft_info_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
+            self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
+            self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
 
             info_fields_layout.addWidget(subfield_label_mode)
-            info_fields_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)])
+            info_fields_layout.addWidget(self.aircraft_info_dict['aircraft' + i + str(aircraft_no)])
             info_details_layout.addLayout(info_fields_layout)
 
         self.info_layout.addLayout(info_details_layout)
