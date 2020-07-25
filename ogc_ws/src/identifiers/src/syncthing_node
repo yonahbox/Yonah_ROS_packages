@@ -22,13 +22,12 @@ from identifiers.srv import SetDetails
 
 from syncthing import Syncthing
 
-def st_pause_cb(device, st):
-	print(device)
-	st.pause(device.data)
-
-def st_resume_cb(device, st):
-	print(device)
-	st.resume(device.data)
+def st_cb(command, st):
+	print(command)
+	if command.data == "pause":
+		st.pause()
+	elif command.data == "resume":
+		st.resume()
 
 
 if __name__ == "__main__":
@@ -37,7 +36,6 @@ if __name__ == "__main__":
 	st = Syncthing()
 	print("finished init")
 
-	rospy.Subscriber("ogc/syncthing/pause", String, st_pause_cb, st)
-	rospy.Subscriber("ogc/syncthing/resume", String, st_resume_cb, st)
+	rospy.Subscriber("ogc/syncthing", String, st_cb, st)
 
 	rospy.spin()

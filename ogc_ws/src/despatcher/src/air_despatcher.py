@@ -88,6 +88,9 @@ class airdespatcher():
         self.hop = False
         self.missionlist = []
 
+        # syncthing controls
+        self.syncthing_control = rospy.Publisher("ogc/syncthing", String, queue_size=5)
+
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################
@@ -284,6 +287,11 @@ class airdespatcher():
             else:
                 return
 
+    def _handle_syncthing(self):
+        if self._recv_msg[0] == 'syncthing' and len(self._recv_msg) == 2:
+            if self._recv_msg[1] in ["pause", "resume"]:
+                self.syncthing_control.publish(self._recv_msg[1])
+
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
@@ -309,6 +317,8 @@ class airdespatcher():
                 self._check_mode()
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
                 self._check_mission()
+            elif "syncthing" in self._recv_msg:
+                self._handle_syncthing()
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError):

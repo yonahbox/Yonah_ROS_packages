@@ -26,15 +26,12 @@ import subprocess
 class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
-		# rospy.wait_for_service("identifiers/get/st_id")
 		rospy.wait_for_service("identifiers/set/st_id")
 
 		self.parse()
 
-		# self.get_device = rospy.ServiceProxy("identifiers/get/st_id")
 		self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
 
-		self.set_id()
 
 	def parse(self):
 		home_dir = str(Path.home())
@@ -47,26 +44,16 @@ class Syncthing:
 		for elem in root.iter('apikey'):
 			self.api_key = elem.text
 
-	def set_id(self):
-		try:
-			sub_call = subprocess.run(["syncthing", "-device-id"], capture_output=True, text=True)
-			self.device_id = sub_call.stdout.rstrip()
-			self.set_device(self.device_id)
-		except FileNotFoundError:
-			rospy.logwarn("unable to call syncthing")
-
-	def pause(self, id_n):
-		# device = self.get_device(id_n)
-		print("device="+id_n)
-		result = req.post(self.host + "/rest/system/pause", data="device=" + id_n, headers={
+	def pause(self):
+		print("pausing")
+		result = req.post(self.host + "/rest/system/pause", headers={
 			"X-API-Key": self.api_key
 		})
 		print(result)
 
-	def resume(self, id_n):
-		print("device="+id_n)
-		print(self.api_key)
-		result = req.post(self.host + "/rest/system/resume", data="device=" + id_n, headers={
+	def resume(self):
+		print("resuming")
+		result = req.post(self.host + "/rest/system/resume", headers={
 			"X-API-Key": self.api_key
 		})
 		print(result)
