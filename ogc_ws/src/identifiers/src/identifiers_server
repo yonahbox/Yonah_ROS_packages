@@ -79,9 +79,6 @@ class ServiceHandler:
 	def add_telegram_id(self, request):
 		return AddTelegramIdResponse(self._ids.add_telegram_id(request.number, request.telegram_id))
 
-	def set_syncthing_id(self, request):
-		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
-
 	def get_ids(self, request):
 		air_ids, ground_ids = self._ids.get_active_ids()
 
@@ -121,7 +118,6 @@ if __name__ == '__main__':
 	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
 	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
-	set_syncthing_id_service = rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)

@@ -58,7 +58,7 @@ class gnddespatcher():
     
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "synchting"]
+        whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "syncthing"]
         if data.data.split()[0] not in whitelisted_prefixes:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:

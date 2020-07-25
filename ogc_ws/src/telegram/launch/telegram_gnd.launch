@@ -44,8 +44,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="self_id" value="$(arg self_id)" />
 		<param name="link_select" value="$(arg link_select)" />
 	</node>
+
+	<node pkg="identifiers" type="syncthing_node" name="syncthing_node" output="$(arg log_output)"></node>
 	
-  <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
-    respawn="true" respawn_delay="3" output="$(arg log_output)">
-    </node>
+	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+		respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node> -->
 </launch>

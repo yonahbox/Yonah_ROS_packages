@@ -30,9 +30,6 @@ class Syncthing:
 
 		self.parse()
 
-		self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
-
-
 	def parse(self):
 		home_dir = str(Path.home())
 		config_path = home_dir + "/.config/syncthing/config.xml"
@@ -45,15 +42,11 @@ class Syncthing:
 			self.api_key = elem.text
 
 	def pause(self):
-		print("pausing")
 		result = req.post(self.host + "/rest/system/pause", headers={
 			"X-API-Key": self.api_key
 		})
-		print(result)
 
 	def resume(self):
-		print("resuming")
 		result = req.post(self.host + "/rest/system/resume", headers={
 			"X-API-Key": self.api_key
 		})
-		print(result)
