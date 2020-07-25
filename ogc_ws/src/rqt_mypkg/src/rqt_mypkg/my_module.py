@@ -319,8 +319,7 @@ class MyPlugin(Plugin):
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,waypoint_total)
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(waypoint)
         self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(waypoint_total))
-        self.aircrafts_flight_data['waypoint' + id] = waypoint
-        self.aircrafts_flight_data['waypoint_total' + id] = total_waypoint
+        self.aircrafts_flight_data['waypoint' + id] = (waypoint, total_waypoint)
 
     def time_display(self, AC_time, id):
         if self.text_to_display == "DISARMED":
@@ -394,8 +393,8 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
-
-        instance_settings.set_value('lastRegPay', self.saved)
+        print(self.aircrafts_flight_data)
+        instance_settings.set_value('lastRegPay', self.aircrafts_flight_data)
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
         # TODO save intrinsic configuration, usually using:
         # instance_settings.set_value(k, v)
@@ -403,8 +402,35 @@ class MyPlugin(Plugin):
 
     def restore_settings(self, plugin_settings, instance_settings):
         shutdown = instance_settings.value('proper_shutdown')
+        aircrafts_flight_data = instance_settings.value('lastRegPay')
         if not shutdown:
-            
+            for i in aircrafts_flight_data:
+                if i[0:-1] == 'airspeed':
+                    self.airspeed_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'altitude':
+                    self.altitude_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'status':
+                    self.arm_status_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'battery':
+                    self.quad_batt_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'fuel':
+                    self.fuel_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'groundspeed':
+                    self.groundspeed_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'gps':
+                    self.gps_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'mode':
+                    self.mode_status_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'vibe':
+                    self.vibe_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'vtol':
+                    self.vtol_display(aircrafts_flight_data.get(i), i[-1])
+                elif i[0:-1] == 'waypoint':
+                    wp = aircrafts_flight_data.get(i)
+                    self.waypoint_display(aircrafts_flight_data.get(wp[0], wp[1], i[-1])
+                elif i[0:-1] == 'time':
+                    self.aircrafts_info.get("AC" + i[-1]).initial_time = aircrafts_flight_data.get(i)
+
         print(instance_settings.value('lastRegPay'))
         # TODO restore intrinsic configuration, usually using:
         # v = instance_settings.value(k)
