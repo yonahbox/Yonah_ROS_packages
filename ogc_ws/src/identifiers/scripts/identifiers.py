@@ -18,6 +18,8 @@
 import json
 import rospy
 
+import time
+
 from telegram.msg import ContactInfo
 
 # helper class to hold information about the devices specified in the identifiers file
@@ -72,16 +74,22 @@ class Identifiers:
 		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10, subscriber_listener=topic_cb)
 		self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
 
-		# parse the identifiers file
-		self.parse_file()
+		# used to prevent two functions writing at the same time
+		# basically a mutex lock
 		self.file_busy = False
 
+		# parse the identifiers file
+		self.parse_file()
+
+
 	def parse_file(self):
+		self.file_busy = True
+
 		with open(self.json_file) as file:
 			try:
 				# read the file as a json object
 				self.json_obj = json.load(file)
-			except JSONDecodeError:
+			except json.JSONDecodeError:
 				# file does not contain valid json
 				print("invalid identifier file")
 				exit()
@@ -122,6 +130,8 @@ class Identifiers:
 		self.rock7_pw = self.json_obj["sbd_details"]["rock7_password"]
 		self.aws_url = self.json_obj["sbd_details"]["aws_url"]
 
+		self.file_busy = False
+
 	# callback function for the topic subscriber class
 	# used to add contacts to telegram after the telegram node has subscribed to the topic
 	def request_telegram_id(self):
@@ -142,7 +152,7 @@ class Identifiers:
 		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 		for dev in device_list:
 			if dev["id"] == id_n:
-				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"])
+				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev.get("telegram_id", None))
 
 		return None
 
@@ -206,6 +216,10 @@ class Identifiers:
 
 	# add new device to the identifiers file
 	def add_new_device(self, is_air, label, number, imei, rb_serial):
+		while self.file_busy:
+			time.sleep(2)
+
+		self.file_busy = True
 		# get the correct array in the json object
 		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 
@@ -240,10 +254,16 @@ class Identifiers:
 
 		# get the telegram user id
 		self.update_telegram_id(label, number)
+		self.file_busy = False
+
 		return True
 
 	# edit an existing device in the identifiers file
 	def edit_device(self, id_n, is_air, label="", number="", imei="", rb_serial=""):
+		while self.file_busy:
+			time.sleep(2)
+
+		self.file_busy = True
 		# get the correct array in the json object
 		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 
@@ -273,10 +293,16 @@ class Identifiers:
 		# add the new number to telegram if number changed
 		if number != "":
 			self.update_telegram_id(selected_device["label"], selected_device["number"])
+
+		self.file_busy = False
 		return True
 
 	# write the telegram user id for a device into the identifiers file
 	def add_telegram_id(self, number, telegram_id):
+		while self.file_busy:
+			time.sleep(2)
+
+		self.file_busy = True
 		# edit objects in both air and ground if it exists in both (mainly needed in testing, unlikely to be needed in ops)
 		obj_edited = False
 		for device in self.json_obj["air"]:
@@ -302,6 +328,8 @@ class Identifiers:
 			json.dump(self.json_obj, f)
 
 		self.parse_file()
+		self.file_busy = False
+
 		return True
 
 	# request telegram to add contact and get the user id
