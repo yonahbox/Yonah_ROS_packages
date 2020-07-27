@@ -62,6 +62,7 @@ def tdlib_recv():
 	while True: 
 		event = td.receive()
 		if event:
+			# print(event)
 			rospy.logdebug(event)
 			# log details if there is an error
 			if event['@type'] == 'error':

@@ -413,6 +413,10 @@ class airdespatcher():
             self._send_regular_payload_sbd()
             # The sleep interval is controlled by sbd link node
 
+    def _handle_modified(self, msg):
+        self._msg = "syncthing downloaded " + msg.data
+        self.sendmsg("i")
+
     ############################
     # "Main" function
     ############################
@@ -428,6 +432,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         message_sender = rospy.Timer(rospy.Duration(1), self.send_regular_payload)
         rospy.spin()
