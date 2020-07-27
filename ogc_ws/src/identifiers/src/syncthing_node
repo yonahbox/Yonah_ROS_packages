@@ -36,6 +36,6 @@ if __name__ == "__main__":
 	st = Syncthing()
 	print("finished init")
 
-	rospy.Subscriber("ogc/syncthing", String, st_cb, st)
+	rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 
 	rospy.spin()

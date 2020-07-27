@@ -89,7 +89,7 @@ class airdespatcher():
         self.missionlist = []
 
         # syncthing controls
-        self.syncthing_control = rospy.Publisher("ogc/syncthing", String, queue_size=5)
+        self.syncthing_control = rospy.Publisher("ogc/files/syncthing", String, queue_size=5)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
