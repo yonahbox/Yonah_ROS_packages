@@ -36,18 +36,18 @@ class SummaryWindow(QWidget):
         self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
 
         self.create_layout(active_aircrafts)
-        
+        self.statustext = QPlainTextEdit()
+        self.statustext.setReadOnly(True)
         # add the widgets into the layouts
         self.main_layout.addWidget(self.statustext)
         self.main_layout.addLayout(self.summary_layout)
+        self.statustext.appendPlainText("in init")
 
     def create_layout(self, active_aircrafts):
         # Declare the widgets
         summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
         for i in active_aircrafts:
             self.create_summary(i, summarised_fields)
-        self.statustext = QPlainTextEdit()
-        self.statustext.setReadOnly(True)
 
     def create_summary(self, aircraft_no, summarised_fields):
         self.styling()

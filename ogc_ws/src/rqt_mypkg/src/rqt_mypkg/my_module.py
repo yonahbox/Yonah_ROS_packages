@@ -145,22 +145,22 @@ class MyPlugin(Plugin):
         self.WaypointWindow.remove(self.WaypointWindow.progressbar_layout)
         self.WaypointWindow.create_layout(active_aircrafts)
 
-        # remove all the tabs
-        for i in range(self.tab.count(), 0, -1):
-            self.tab.removeTab(i)
-        # add back all the tabs
-        for j in active_aircrafts:
-            if self.aircrafts_info.get(self.key) == None:
-                self.aircrafts_info["AC" + str(j)] = AircraftInfo(j)
-                self.checklist_info["AC" + str(j)] = ChecklistWindow(j)
+        # # remove all the tabs
+        # for i in range(self.tab.count(), 0, -1):
+        #     self.tab.removeTab(i)
+        # # add back all the tabs
+        # for j in active_aircrafts:
+        #     if self.aircrafts_info.get(self.key) == None:
+        #         self.aircrafts_info["AC" + str(j)] = AircraftInfo(j)
+        #         self.checklist_info["AC" + str(j)] = ChecklistWindow(j)
 
-                self.aircrafts_info[self.key] = QScrollArea()
-                self.aircrafts_info.get(self.key).setMinimumHeight(500)
-                self.aircrafts_info.get(self.key).setMinimumWidth(600)
-                self.aircrafts_info.get(self.key).setWidgetResizable(True)
-                self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(j)))
+        #         self.aircrafts_info[self.key] = QScrollArea()
+        #         self.aircrafts_info.get(self.key).setMinimumHeight(500)
+        #         self.aircrafts_info.get(self.key).setMinimumWidth(600)
+        #         self.aircrafts_info.get(self.key).setWidgetResizable(True)
+        #         self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(j)))
             
-            self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(j))
+        #     self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(j))
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
@@ -173,10 +173,10 @@ class MyPlugin(Plugin):
     ################################
     def regular_payload(self, data):
         aircraft_id = str(data.vehicle_no)
-        if aircraft_id not in self.aircraft_list:
-            self.aircraft_list.append(aircraft_id)
-            self.aircraft_list.sort()
-            self.update_active_aircrafts(self.aircraft_list)
+        # if aircraft_id not in self.aircraft_list:
+        #     self.aircraft_list.append(aircraft_id)
+        #     self.aircraft_list.sort()
+        #     self.update_active_aircrafts(self.aircraft_list)
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)
@@ -208,7 +208,7 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(str(data), "1")
+        status.ondemand_signal.emit(str(data.data), "1")
 
     def status_text(self, data):
         status = Communicate()
@@ -317,9 +317,9 @@ class MyPlugin(Plugin):
     def waypoint_display(self, waypoint, total_waypoint, id):
         self.aircrafts_flight_data['waypoint' + id] = (waypoint, total_waypoint)
         self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftTarget Waypoint" + id).setPlainText(str(waypoint))
-        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,waypoint_total)
+        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,total_waypoint)
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(waypoint)
-        self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(waypoint_total))
+        self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(total_waypoint))
 
     def time_display(self, AC_time, id):
         if self.text_to_display == "DISARMED":
@@ -345,8 +345,22 @@ class MyPlugin(Plugin):
         rospy.logdebug("[AC %d status_text] %s", int(id), status_text)
 
     def ondemand_display(self, data, id):
-        self.SummaryWindow.statustext.appendPlainText(str(data))
-        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + str(data))
+        status = ""
+        if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
+            data = data.split(" ", 3)
+            if data[0] == "i":
+                status = "INFO"
+            elif data[0] == "w":
+                status = "WARN"
+            elif data[0] == "e":
+                status = "ERROR"
+            elif data[0] == "a":
+                status = "ACKNOWLEDGMENT"
+            id = data[2]
+            data = data[3]
+        text_to_display = "Aircraft {} {}: {}".format(id, status, data)
+        self.SummaryWindow.statustext.appendPlainText(text_to_display)
+        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(text_to_display)
         rospy.logdebug("[AC %d on_demand] %s", int(id), data)
     
     ####### SITL Display Functions (for developer testing only) #######
@@ -395,20 +409,16 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
-        print(self.aircrafts_flight_data)
+        rospy.logwarn("save settings is saved")
         instance_settings.set_value('lastRegPay', self.aircrafts_flight_data)
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
 
     def restore_settings(self, plugin_settings, instance_settings):
-        shutdown = int(instance_settings.value('proper_shutdown'))
+        shutdown = instance_settings.value('proper_shutdown')
         aircrafts_flight_data = instance_settings.value('lastRegPay')
         for i in aircrafts_flight_data:
-            print(i)
-        print(shutdown)
-        if shutdown == 0:
-            print('shutodwnasd')
+        if int(shutdown) == 0:
             for i in aircrafts_flight_data:
-                print(i)
                 if i[0:-1] == 'airspeed':
                     arspd = float(aircrafts_flight_data.get(i))
                     self.airspeed_display(arspd, i[-1])
@@ -434,14 +444,12 @@ class MyPlugin(Plugin):
                     self.vtol_display(aircrafts_flight_data.get(i), i[-1])
                 elif i[0:-1] == 'waypoint':
                     wp = aircrafts_flight_data.get(i)
-                    self.waypoint_display(aircrafts_flight_data.get(wp[0], wp[1], i[-1]))
+                    self.waypoint_display(wp[0], wp[1], i[-1])
                 elif i[0:-1] == 'time':
                     self.aircrafts_info.get("AC" + i[-1]).initial_time = aircrafts_flight_data.get(i)
                 elif i[0:-1] == 'mode_sitl':
-                    print('mode sitl lol')
                     self.mode_status_display_sitl(aircrafts_flight_data.get(i), i[-1])
                 elif i[0:-1] == 'waypoint_sitl':
-                    print('waypoint sitl lol')
                     wp = aircrafts_flight_data.get(i)
                     self.waypoint_sitl_display(wp[0], wp[1], i[-1])
 

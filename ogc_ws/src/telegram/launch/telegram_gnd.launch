@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
   
 	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-	<arg name="air_ids" default="[4]" />
-	<arg name="self_id" default="1" />
+	<arg name="air_ids" default="[1]" />
+	<arg name="self_id" default="3" />
 	<arg name="is_air" default="False" />
 	<arg name="link_select" default="0" />
 
