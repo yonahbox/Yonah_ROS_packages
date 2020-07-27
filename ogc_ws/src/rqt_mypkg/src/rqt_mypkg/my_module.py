@@ -297,29 +297,29 @@ class MyPlugin(Plugin):
         rospy.logdebug_throttle(0.5, "[AC {} MODE display] {}".format(int(id), mode_status))
     
     def throttle_display(self, data, id):
+        self.aircrafts_flight_data['throttle' + id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftThrottle" + id).setPlainText(data)
-        self.aircrafts_flight_data['throttle' + id] = data
         rospy.logdebug_throttle(0.5, "[AC {} THROTTLE display] {}".format(int(id), data))
     
     def vibe_display(self, data, id):
+        self.aircrafts_flight_data['vibe' + id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftVibe Status" + id).setPlainText(data)
-        self.aircrafts_flight_data['vibe' + id] = data
         rospy.logdebug_throttle(0.5, "[AC {} VIBE display] {}".format(int(id), data))
 
     def vtol_display(self, data, id):
+        self.aircrafts_flight_data['vtol' + id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftVTOL Status" + id).setPlainText(data)
-        self.aircrafts_flight_data['vtol' + id] = data
         rospy.logdebug_throttle(0.5, "[AC {} VTOL display] {}".format(int(id), data))
 
     def waypoint_display(self, waypoint, total_waypoint, id):
+        self.aircrafts_flight_data['waypoint' + id] = (waypoint, total_waypoint)
         self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftTarget Waypoint" + id).setPlainText(str(waypoint))
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,waypoint_total)
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(waypoint)
         self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(waypoint_total))
-        self.aircrafts_flight_data['waypoint' + id] = (waypoint, total_waypoint)
 
     def time_display(self, AC_time, id):
         if self.text_to_display == "DISARMED":
