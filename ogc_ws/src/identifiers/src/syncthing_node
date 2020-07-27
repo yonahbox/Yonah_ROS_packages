@@ -15,15 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from inotify.adapters import Inotify
+
 import rospy
 from std_msgs.msg import String
 
 from identifiers.srv import SetDetails
-
 from syncthing import Syncthing
 
 def st_cb(command, st):
-	print(command)
 	if command.data == "pause":
 		st.pause()
 	elif command.data == "resume":
@@ -31,10 +31,30 @@ def st_cb(command, st):
 
 
 if __name__ == "__main__":
-	rospy.init_node("syncthing", anonymous=False, disable_signals=True)
+	try:
+		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
+		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=5)
+		watch_dir = rospy.get_param("~watch_dir")
 
-	st = Syncthing()
+		st = Syncthing()
+		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 
-	rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
+		inotify_adapter = Inotify()
+		inotify_adapter.add_watch(watch_dir)
 
-	rospy.spin()
+		modified_list = []
+
+		for event in inotify_adapter.event_gen(yield_nones=False):
+			if event[1][0] == "IN_MOVED_FROM" and event[3][:11] == ".syncthing." and event[3][-4:] == ".tmp":
+				modified_list.append(event[3][11:-4])
+
+			if event[1][0] == "IN_MOVED_TO":
+				if event[3] in modified_list:
+					rospy.loginfo("File " + event[3] + " modified through syncthing")
+					file_modify_pub.publish(event[3])
+					modified_list.remove(event[3])
+
+	except rospy.ROSInterruptException:
+		exit()
+	except KeyboardInterrupt:
+		exit()
