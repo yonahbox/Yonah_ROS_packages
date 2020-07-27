@@ -17,6 +17,8 @@
 
 import rospy
 
+from std_msgs.msg import String
+
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
 from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
@@ -93,6 +95,10 @@ class ServiceHandler:
 	def check_valid_message_lazy(self, request):
 		return CheckSenderResponse(self._ids.is_valid_message_lazy(request.details))
 
+	def modified_cb(self, msg):
+		if msg.data == "identifiers.json":
+			self._ids.parse_file()
+
 
 if __name__ == '__main__':
 	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
@@ -121,5 +127,7 @@ if __name__ == '__main__':
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
+
+	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
 	rospy.spin()

@@ -34,7 +34,6 @@ if __name__ == "__main__":
 	rospy.init_node("syncthing", anonymous=False, disable_signals=True)
 
 	st = Syncthing()
-	print("finished init")
 
 	rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 

@@ -73,10 +73,10 @@ class Identifiers:
 		self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
 
 		# parse the identifiers file
-		self._parse_file()
+		self.parse_file()
 		self.file_busy = False
 
-	def _parse_file(self):
+	def parse_file(self):
 		with open(self.json_file) as file:
 			try:
 				# read the file as a json object
@@ -236,7 +236,7 @@ class Identifiers:
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
 
-		self._parse_file()
+		self.parse_file()
 
 		# get the telegram user id
 		self.update_telegram_id(label, number)
@@ -268,7 +268,7 @@ class Identifiers:
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
 
-		self._parse_file()
+		self.parse_file()
 
 		# add the new number to telegram if number changed
 		if number != "":
@@ -301,7 +301,7 @@ class Identifiers:
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
 
-		self._parse_file()
+		self.parse_file()
 		return True
 
 	# request telegram to add contact and get the user id

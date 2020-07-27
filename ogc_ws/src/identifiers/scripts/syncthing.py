@@ -26,8 +26,6 @@ import subprocess
 class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
-		rospy.wait_for_service("identifiers/set/st_id")
-
 		self.parse()
 
 	def parse(self):

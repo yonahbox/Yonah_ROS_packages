@@ -26,9 +26,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
 
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
+
 	<!-- test node -->
-	<node pkg="identifiers" type="syncthing_node" name="syncthing_node" output="$(arg log_output)"></node>
+	<node pkg="identifiers" type="syncthing_node" name="syncthing_node" output="$(arg log_output)" />
 	<!-- <node pkg="identifiers" type="test_node" name="test_node" output="$(arg log_output)"></node> -->
+
+	<node pkg="identifiers" type="inotify_node" name="inotify_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
+	</node>
 
 	<!-- identifiers service -->
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" output="$(arg log_output)" >

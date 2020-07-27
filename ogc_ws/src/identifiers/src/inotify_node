@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node("inotify_node", anonymous=False, disable_signals=True)
 
-		file_modify_pub = rospy.Publisher("/ogc/files/modified", String, queue_size=10)
+		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=10)
 
 		watch_dir = rospy.get_param("~watch_dir")
 
