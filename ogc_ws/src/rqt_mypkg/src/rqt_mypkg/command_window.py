@@ -70,7 +70,7 @@ class CommandWindow(QWidget):
 
         # Get the headers for the payload
         self.air = air_payload()
-        self.custom_ping_list = self.air.entries.keys()
+        self.custom_ping_list = [key for key in self.air.entries.keys()]
         self.custom_ping_list.sort()
 
         self.create_layout()
