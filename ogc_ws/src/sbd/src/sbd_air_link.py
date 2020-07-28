@@ -140,7 +140,7 @@ class satcomms(rockBlockProtocol):
         '''
         incoming_msgtype = data.data.split()[0]
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
-        if (incoming_msgtype < self._buffer.msgtype):
+        if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.logdebug("Reject incoming msg " + data.data)
             rospy.loginfo("Existing msg in SBD local MO buffer is of higher priority: " + self._buffer.data)
             return
