@@ -64,7 +64,7 @@ class CommandWindow(QWidget):
 
         # Get the headers for the payload
         self.air = air_payload()
-        self.custom_ping_list = self.air.entries.keys()
+        self.custom_ping_list = [x for x in self.air.entries.keys()]
         self.custom_ping_list.sort()
 
         self.create_layout(active_aircrafts)
@@ -231,7 +231,7 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
-        self.create_link_message(1,2,2)
+        # self.create_link_message(1,2,2)
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
@@ -574,17 +574,21 @@ class CommandWindow(QWidget):
         rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
 
     def direct_update(self):
+        rospy.logwarn('direct update pressed')
         home_dir = expanduser("~")
         gndfolder = home_dir + "/Waypoints/"
         gndfiles = listdir(gndfolder)
         mission_msg = []
         for i in gndfiles:
+            rospy.logwarn('gnd files')
             g = open(gndfolder + i, "r")
             update_time = g.readlines()[-1].rstrip().split()[-1]
             mission_msg.append(str(i) + " " + str(update_time))
         update = LinkMessage()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
+        print(update.data)
+        print(update)
         time.sleep(1)
         self.pub_to_despatcher.publish(update)
 
