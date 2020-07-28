@@ -236,6 +236,7 @@ class Identifiers:
 
 		# if no number is available (implies the maximum number of devices has been reached)
 		if selected_id == -1:
+			self.file_busy = False
 			return False
 
 		edit_list.append({
@@ -276,6 +277,7 @@ class Identifiers:
 
 		# id does not exist
 		if selected_device is None:
+			self.file_busy = False
 			return False
 
 		# edit the fields specified, keep old info if no new information provided
@@ -320,6 +322,7 @@ class Identifiers:
 					break
 
 		if not obj_edited:
+			self.file_busy = False
 			return False
 
 		rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
