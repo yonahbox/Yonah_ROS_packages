@@ -1,6 +1,17 @@
 <launch>
 
+	<!-- EC2 Server hostname and IP Address -->
+	<arg name="svr_name" />
+	<arg name="svr_ip" />
+	
+	<!-- aircraft number-->
+    <arg name="aircraft"/>
+	
 	<node pkg="air_data" name="air_data" type="air_data.py"
 	respawn="true" respawn_delay="3" output="screen"/>
+
+	<param name="svr_name" value="$(arg svr_name)" />
+	<param name="svr_ip" value="$(arg svr_ip)" />
+	<param name="aircraft" value="$(arg aircraft)"/>
 
 </launch>

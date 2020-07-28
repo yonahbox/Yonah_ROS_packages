@@ -28,6 +28,7 @@ from despatcher.msg import LinkMessage
 
 # Local
 import regular
+from g2a import recognised_commands
 
 class gnddespatcher():
 
@@ -40,6 +41,7 @@ class gnddespatcher():
         self.pub_to_rqt_regular = rospy.Publisher('ogc/from_despatcher/regular', RegularPayload, queue_size=5)
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
+        self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
 
         # Link switching
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
@@ -58,8 +60,7 @@ class gnddespatcher():
     
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        whitelisted_prefixes = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "syncthing"]
-        if data.data.split()[0] not in whitelisted_prefixes:
+        if data.data.split()[0] not in recognised_commands:
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             msg = LinkMessage()
@@ -94,6 +95,7 @@ class gnddespatcher():
             entries = data.data.split()
             sender_timestamp = int(entries[-1])
             sender_msgtype = str(entries[0])
+            sender_id = int(entries[2])
             if not self._is_new_msg(sender_timestamp):
                 # Check if it is new msg
                 return
@@ -103,11 +105,20 @@ class gnddespatcher():
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if sender_msgtype == 's':
-                    print('statustext gnd')
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
+                elif sender_msgtype == 'm':
+                    # Check if it is mission update message
+                    mission_files = data.data.split()[3:-1]
+                    reqFile = LinkMessage()
+                    reqFile.id = sender_id
+                    if mission_files == ["No", "update", "required"]:
+                        return
+                    for i in mission_files:
+                        reqFile.data = i
+                        self.file_to_telegram.publish(reqFile)
+                        rospy.sleep(1)
                 else:
-                    print('ondemand gnd')
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")

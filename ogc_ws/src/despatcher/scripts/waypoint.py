@@ -20,7 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import csv
+import rospy
 from mavros_msgs.msg import Waypoint
+from mavros_msgs.srv import WaypointSetCurrent
+from mavros_msgs.srv import WaypointPush
+from os import listdir
 
 class WP(object):
 
@@ -43,7 +47,8 @@ class WP(object):
                 ver = int(ver)
                 if qgc == 'QGC' and wpl == 'WPL' and (ver == 110 or ver ==120):
                     pastheaderline = True
-
+            elif data[0].startswith("Last update"):
+                break
             else:
                 # Convert waypoints into Waypoint format
                 waypoints.append(Waypoint(
@@ -60,3 +65,30 @@ class WP(object):
                     autocontinue = bool(int(data[11]))
                 ))
         return waypoints
+
+def push_waypoints(self, waypoints):
+    wppush = rospy.ServiceProxy('mavros/mission/push', WaypointPush)
+    wpset = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
+    if wppush(0, waypoints).success:
+        if wpset(1).success:
+            self._send_ack()
+
+def get_update_time(wpfolder):
+    files = listdir(wpfolder)
+    updatetime = {}
+    for i in files:
+        g = open(wpfolder + i, "r")
+        updatetime[i] = int(g.readlines()[-1].rstrip().split()[-1])
+    return updatetime
+
+def compare_time(gndtime, airtime):
+    requiredfiles = []
+    for i in gndtime:
+        try:
+            if gndtime[i] > airtime[i]:
+                requiredfiles.append(i)
+        except KeyError:
+            requiredfiles.append(i)
+    if requiredfiles == []:
+        requiredfiles = ["No update required"]
+    return requiredfiles

@@ -16,6 +16,7 @@
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
 	<arg name="link_select" default="0" />
+	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
 	
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
@@ -28,9 +29,6 @@
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
-
-	<!-- rff args -->
-	<arg name="waypoint_folder" default="$(env HOME)/Yonah_ROS_packages/Waypoints/"/>
 
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
@@ -84,6 +82,7 @@
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="self_id" value="$(arg self_id)" />
 		<param name="link_select" value="$(arg link_select)" />
+		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
 	</node>
 
 	<!-- air statustext handler node -->
