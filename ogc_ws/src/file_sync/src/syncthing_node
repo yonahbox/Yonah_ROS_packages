@@ -21,7 +21,6 @@ import re
 import rospy
 from std_msgs.msg import String
 
-from identifiers.srv import SetDetails
 from syncthing import Syncthing
 
 def st_cb(command, st):
