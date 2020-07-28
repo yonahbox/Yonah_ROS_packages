@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from inotify.adapters import Inotify
+import re
 
 import rospy
 from std_msgs.msg import String
@@ -34,6 +35,8 @@ if __name__ == "__main__":
 	try:
 		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
 		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=5)
+		file_conflict_pub = rospy.Publisher("ogc/files/conflict", String, queue_size=5)
+
 		watch_dir = rospy.get_param("~watch_dir")
 
 		st = Syncthing()
@@ -49,10 +52,15 @@ if __name__ == "__main__":
 				modified_list.append(event[3][11:-4])
 
 			if event[1][0] == "IN_MOVED_TO":
-				if event[3] in modified_list:
+				if ".sync-conflict-" in event[3]:
+					rospy.loginfo("File conflic found " + event[3])
+					filename= re.sub("sync-conflict-[0-9]{8}-[0-9]{6}-[A-Z0-9]{7}[.]", "", event[3])
+					file_conflict_pub.publish(filename)
+				elif event[3] in modified_list:
 					rospy.loginfo("File " + event[3] + " modified through syncthing")
 					file_modify_pub.publish(event[3])
 					modified_list.remove(event[3])
+				
 
 	except rospy.ROSInterruptException:
 		exit()
