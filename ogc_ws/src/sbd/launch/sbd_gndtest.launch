@@ -19,8 +19,8 @@
 
     <!-- Identifiers -->
     <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-    <arg name="air_ids" default="[1]" />
-    <arg name="self_id" default="1" />)
+    <arg name="air_ids" default="[1,2]" />
+    <arg name="self_id" default="1" />
     <arg name="is_air" default="False" />
 
     <!-- sbd link node -->
@@ -29,6 +29,7 @@
         <param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
         <param name="thr_server" value="$(arg thr_server)" />
+        <param name="self_id" value="$(arg self_id)" />
     </node>
 
     <!-- identifiers service -->

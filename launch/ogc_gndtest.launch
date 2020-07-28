@@ -40,6 +40,7 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
+		<param name="self_id" value="$(arg self_id)" />
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >

@@ -112,9 +112,7 @@ class airdespatcher():
             # Handle msg headers
             self._recv_msg = data.data.split()
             sender_timestamp = int(self._recv_msg[-1])
-            sender_msgtype = str(self._recv_msg[0])
-            if not self._is_new_msg(sender_timestamp) or not sender_msgtype == 'i':
-                # for now, we only accept info level commands
+            if not self._is_new_msg(sender_timestamp):
                 return
             self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
