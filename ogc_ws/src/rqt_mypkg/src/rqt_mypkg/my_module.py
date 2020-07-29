@@ -351,10 +351,13 @@ class MyPlugin(Plugin):
         status = status_text.split()
         time_stamp = int(status[-1])
         message_type = status[0]
-        aircraft_id = 
-        self.SummaryWindow.statustext.appendPlainText(status_text)
-        self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(aircraft_id + ": " + status_text)
-        rospy.logdebug("[AC %d status_text] %s", int(aircraft_id), status_text)
+        is_air = status[1] # unused variable
+        aircraft_id = status[2]
+        info = status[3:-1]
+        display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, text_displayed)
+        self.SummaryWindow.statustext.appendPlainText(display_text)
+        self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(display_text)
+        rospy.logdebug("[AC %d status_text] %s at %s", int(aircraft_id), display_text, time_stamp)
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
