@@ -29,7 +29,6 @@ from identifiers.srv import EditDevice, EditDeviceResponse
 from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
-from identifiers.srv import SetDetails, SetDetailsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):

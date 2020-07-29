@@ -10,16 +10,19 @@
 	<arg name="link_select" default="0" />
 
 	<!-- identifiers args -->
-	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-	<arg name="air_ids" default="[1]" />
+	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
+	<arg name="air_ids" default="[4]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 	
 	<!-- tele args -->
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
+
+	<!-- file sync args -->
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
 
 	<!-- tele link node -->
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
@@ -29,18 +32,18 @@
 	</node>
 
 	<!-- sms_link node -->
-	<node pkg="sms" type="sms_link.py" name="sms_link"
+	<!-- <node pkg="sms" type="sms_link.py" name="sms_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="router_username" value="$(arg router_username)" />
 		<param name="router_ip" value="$(arg router_ip)" />
-	</node>
+	</node> -->
 	
 	<!-- sbd link node -->
-	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
+	<!-- <node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
-	</node>
+	</node> -->
 
 	<!-- identifiers service node -->
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >

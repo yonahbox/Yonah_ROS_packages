@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from identifiers.srv import SetDetails
 
 import requests as req
 import xml.etree.ElementTree as xml
