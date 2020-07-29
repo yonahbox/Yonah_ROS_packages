@@ -21,7 +21,7 @@ class mission_updater():
 			update_time = g.readlines()[-1].rstrip().split()[-1]
 			mission_msg.append(str(i) + " " + str(update_time))
 		update = LinkMessage()
-		update.id = 4
+		update.id = 2
 		update.data = "mission update " + " ".join(mission_msg)
 		time.sleep(1)
 		self.pub_to_despatcher.publish(update)
