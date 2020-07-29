@@ -26,6 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="self_id" default="2" />
 	<arg name="is_air" default="True" />
 	<arg name="link_select" default="0" />
+	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
 
 	<!--Various regular payload intervals in seconds-->
     <arg name="interval_1" default="10"/>
@@ -50,5 +51,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="self_id" value="$(arg self_id)" />
 		<param name="link_select" value="$(arg link_select)" />
+		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
 	</node>
 </launch>

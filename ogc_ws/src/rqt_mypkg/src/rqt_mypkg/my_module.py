@@ -81,7 +81,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
 
-        rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
+        rospy.Subscriber("mavros/statustext/recv", StatusText, self.ondemand_sitl)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.VFR_HUD_sitl)
         rospy.Subscriber("mavros/mission/waypoints", WaypointList, self.waypoint_sitl)
@@ -212,7 +212,13 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(str(data.data), data.data[5])
+        print(data.data)
+        status.ondemand_signal.emit(data.data, str(data.data[5]))
+
+    def ondemand_sitl(self, data):
+        status = Communicate()
+        status.ondemand_signal.connect(self.ondemand_display)
+        status.ondemand_signal.emit(data.text, "1")
 
     def status_text(self, data):
         status = Communicate()
@@ -253,14 +259,14 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setStyleSheet("Color: rgb(255, 0, 0);")     
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
-        rospy.logdebug_throttle(0.5, "[AC {} AIRSPEED display] {}".format(int(aircraft_id), airspeed))
+        rospy.logdebug("[AC {} AIRSPEED display] {}".format(int(aircraft_id), airspeed))
 
     def altitude_display(self, altitude, aircraft_id):
         self.aircrafts_flight_data['altitude' + aircraft_id] = altitude
         altitude = str(round(altitude, 1)) + " m"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
-        rospy.logdebug_throttle(0.5, "[AC {} ALTITUDE display] {}".format(int(aircraft_id), altitude))
+        rospy.logdebug("[AC {} ALTITUDE display] {}".format(int(aircraft_id), altitude))
 
     def arm_status_display(self, arm_status, aircraft_id):
         self.aircrafts_flight_data['status' + aircraft_id] = arm_status
@@ -278,50 +284,50 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data['battery' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftQuad Battery" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} QUAD BATT display] {}".format(int(aircraft_id), data))
+        rospy.logdebug("[AC {} QUAD BATT display] {}".format(int(aircraft_id), data))
 
     def fuel_display(self, data, aircraft_id):
         self.aircrafts_flight_data['fuel' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFuel Level" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} FUEL display] {}".format(int(aircraft_id), data))
+        rospy.logdebug("[AC {} FUEL display] {}".format(int(aircraft_id), data))
 
     def groundspeed_display(self, gndspeed, aircraft_id):
         self.aircrafts_flight_data['groundspeed' + aircraft_id] = gndspeed
         data = str(round(gndspeed, 1)) + " m/s"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGroundspeed" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} GNDSPEED display] {}".format(int(aircraft_id), data))
+        rospy.logdebug("[AC {} GNDSPEED display] {}".format(int(aircraft_id), data))
 
     def gps_display(self, lat, lon, aircraft_id):
         data = [lat, lon]
         self.aircrafts_flight_data['gps' + aircraft_id] = data
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGPS" + aircraft_id).setPlainText(str(lat) +", " + str(lon))
-        rospy.logdebug_throttle(0.5, "[AC {} GPS display] {}".format(int(aircraft_id), data))
+        rospy.logdebug("[AC {} GPS display] {}".format(int(aircraft_id), data))
 
     def mode_status_display(self, mode_status, aircraft_id):
         self.aircrafts_flight_data['mode' + aircraft_id] = mode_status
         mode = self.CommandWindow.decoder[mode_status] # Convert the integer to its mode
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
-        rospy.logdebug_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
+        rospy.logdebug("[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
     
     def throttle_display(self, data, aircraft_id):
         self.aircrafts_flight_data['throttle' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftThrottle" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} THROTTLE display] {}".format(int(aircraft_id), data))
+        rospy.logdebug( "[AC {} THROTTLE display] {}".format(int(aircraft_id), data))
     
     def vibe_display(self, data, aircraft_id):
         self.aircrafts_flight_data['vibe' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVibe Status" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} VIBE display] {}".format(int(aircraft_id), data))
+        rospy.logdebug("[AC {} VIBE display] {}".format(int(aircraft_id), data))
 
     def vtol_display(self, data, aircraft_id):
         self.aircrafts_flight_data['vtol' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVTOL Status" + aircraft_id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} VTOL display] {}".format(int(aircraft_id), data))
+        rospy.loginfo("[AC {} VTOL display] {}".format(int(aircraft_id), data))
 
     def waypoint_display(self, waypoint, total_waypoint, aircraft_id):
         self.aircrafts_flight_data['waypoint' + aircraft_id] = (waypoint, total_waypoint)
@@ -361,6 +367,7 @@ class MyPlugin(Plugin):
         rospy.logdebug("[AC %d status_text] %s at %s", int(aircraft_id), display_text, time_stamp)
 
     def ondemand_display(self, data, aircraft_id):
+        print(aircraft_id)
         status = ""
         if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
             data = data.split(" ", 3)
@@ -429,6 +436,8 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
+        print(plugin_settings)
+        print(instance_settings)
         rospy.logwarn("save settings is saved")
         instance_settings.set_value('lastRegPay', self.aircrafts_flight_data)
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
