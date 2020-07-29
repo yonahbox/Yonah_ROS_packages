@@ -79,6 +79,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
+        rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
 
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.status_text)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
@@ -217,6 +218,11 @@ class MyPlugin(Plugin):
         status.ondemand_signal.connect(self.status_text_display)
         status.ondemand_signal.emit(data.text, "1")
     
+    def syncthing(self, data):
+        status = Communicate()
+        status.syncthing_signal.connect(self.syncthing_conflict)
+        status.syncthing_signal.emit(data.text)
+
     ####### MAVROS Signal-Slot Functions #######
     def mode_status_sitl(self, data):
         status = Communicate()
@@ -240,95 +246,95 @@ class MyPlugin(Plugin):
     ##################################################
     # Display information from Signal Slot functions #
     ##################################################
-    def airspeed_display(self, airspeed, id):
-        self.aircrafts_flight_data['airspeed' + id] = airspeed
+    def airspeed_display(self, airspeed, aircraft_id):
+        self.aircrafts_flight_data['airspeed' + aircraft_id] = airspeed
         airspeed = str(round(airspeed, 1)) + " m/s"
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftAirspeed" + id).setStyleSheet("Color: rgb(255, 0, 0);")     
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftAirspeed" + id).setPlainText(airspeed)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + id).setPlainText(airspeed)
-        rospy.logdebug_throttle(0.5, "[AC {} AIRSPEED display] {}".format(int(id), airspeed))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setStyleSheet("Color: rgb(255, 0, 0);")     
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
+        rospy.logdebug_throttle(0.5, "[AC {} AIRSPEED display] {}".format(int(aircraft_id), airspeed))
 
-    def altitude_display(self, altitude, id):
-        self.aircrafts_flight_data['altitude' + id] = altitude
+    def altitude_display(self, altitude, aircraft_id):
+        self.aircrafts_flight_data['altitude' + aircraft_id] = altitude
         altitude = str(round(altitude, 1)) + " m"
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftAltitude" + id).setPlainText(altitude)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + id).setPlainText(altitude)
-        rospy.logdebug_throttle(0.5, "[AC {} ALTITUDE display] {}".format(int(id), altitude))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
+        rospy.logdebug_throttle(0.5, "[AC {} ALTITUDE display] {}".format(int(aircraft_id), altitude))
 
-    def arm_status_display(self, arm_status, id):
-        self.aircrafts_flight_data['status' + id] = arm_status
+    def arm_status_display(self, arm_status, aircraft_id):
+        self.aircrafts_flight_data['status' + aircraft_id] = arm_status
         if arm_status == "False" or arm_status == 0:
             self.text_to_display = "DISARMED"
         else:
-            if self.CommandWindow.arm_status.get('AC' + str(id)) == None or self.CommandWindow.arm_status.get('AC' + str(id)) == "DISARMED":
-                self.aircrafts_info.get("AC" + id).initial_time = self.time
+            if self.CommandWindow.arm_status.get('AC' + str(aircraft_id)) == None or self.CommandWindow.arm_status.get('AC' + str(aircraft_id)) == "DISARMED":
+                self.aircrafts_info.get("AC" + aircraft_id).initial_time = self.time
             self.text_to_display = "ARMED"
-        self.CommandWindow.arm_status['AC' + str(id)] = self.text_to_display
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftStatus" + id).setPlainText(self.text_to_display)        
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + id).setPlainText(self.text_to_display)
+        self.CommandWindow.arm_status['AC' + str(aircraft_id)] = self.text_to_display
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftStatus" + aircraft_id).setPlainText(self.text_to_display)        
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + aircraft_id).setPlainText(self.text_to_display)
     
-    def quad_batt_display(self, data, id):
-        self.aircrafts_flight_data['battery' + id] = data
+    def quad_batt_display(self, data, aircraft_id):
+        self.aircrafts_flight_data['battery' + aircraft_id] = data
         data = str(data)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftQuad Battery" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} QUAD BATT display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftQuad Battery" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} QUAD BATT display] {}".format(int(aircraft_id), data))
 
-    def fuel_display(self, data, id):
-        self.aircrafts_flight_data['fuel' + id] = data
+    def fuel_display(self, data, aircraft_id):
+        self.aircrafts_flight_data['fuel' + aircraft_id] = data
         data = str(data)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftFuel Level" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} FUEL display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFuel Level" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} FUEL display] {}".format(int(aircraft_id), data))
 
-    def groundspeed_display(self, gndspeed, id):
-        self.aircrafts_flight_data['groundspeed' + id] = gndspeed
+    def groundspeed_display(self, gndspeed, aircraft_id):
+        self.aircrafts_flight_data['groundspeed' + aircraft_id] = gndspeed
         data = str(round(gndspeed, 1)) + " m/s"
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftGroundspeed" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} GNDSPEED display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGroundspeed" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} GNDSPEED display] {}".format(int(aircraft_id), data))
 
-    def gps_display(self, lat, lon, id):
+    def gps_display(self, lat, lon, aircraft_id):
         data = [lat, lon]
-        self.aircrafts_flight_data['gps' + id] = data
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftGPS" + id).setPlainText(str(lat) +", " + str(lon))
-        rospy.logdebug_throttle(0.5, "[AC {} GPS display] {}".format(int(id), data))
+        self.aircrafts_flight_data['gps' + aircraft_id] = data
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGPS" + aircraft_id).setPlainText(str(lat) +", " + str(lon))
+        rospy.logdebug_throttle(0.5, "[AC {} GPS display] {}".format(int(aircraft_id), data))
 
-    def mode_status_display(self, mode_status, id):
-        self.aircrafts_flight_data['mode' + id] = mode_status
+    def mode_status_display(self, mode_status, aircraft_id):
+        self.aircrafts_flight_data['mode' + aircraft_id] = mode_status
         mode = self.CommandWindow.decoder[mode_status] # Convert the integer to its mode
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftMode" + id).setPlainText(mode)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode)
-        rospy.logdebug_throttle(0.5, "[AC {} MODE display] {}".format(int(id), mode_status))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
+        rospy.logdebug_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
     
-    def throttle_display(self, data, id):
-        self.aircrafts_flight_data['throttle' + id] = data
+    def throttle_display(self, data, aircraft_id):
+        self.aircrafts_flight_data['throttle' + aircraft_id] = data
         data = str(data)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftThrottle" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} THROTTLE display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftThrottle" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} THROTTLE display] {}".format(int(aircraft_id), data))
     
-    def vibe_display(self, data, id):
-        self.aircrafts_flight_data['vibe' + id] = data
+    def vibe_display(self, data, aircraft_id):
+        self.aircrafts_flight_data['vibe' + aircraft_id] = data
         data = str(data)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftVibe Status" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} VIBE display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVibe Status" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} VIBE display] {}".format(int(aircraft_id), data))
 
-    def vtol_display(self, data, id):
-        self.aircrafts_flight_data['vtol' + id] = data
+    def vtol_display(self, data, aircraft_id):
+        self.aircrafts_flight_data['vtol' + aircraft_id] = data
         data = str(data)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftVTOL Status" + id).setPlainText(data)
-        rospy.logdebug_throttle(0.5, "[AC {} VTOL display] {}".format(int(id), data))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVTOL Status" + aircraft_id).setPlainText(data)
+        rospy.logdebug_throttle(0.5, "[AC {} VTOL display] {}".format(int(aircraft_id), data))
 
-    def waypoint_display(self, waypoint, total_waypoint, id):
-        self.aircrafts_flight_data['waypoint' + id] = (waypoint, total_waypoint)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftTarget Waypoint" + id).setPlainText(str(waypoint))
-        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,total_waypoint)
-        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(waypoint)
-        self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(total_waypoint))
+    def waypoint_display(self, waypoint, total_waypoint, aircraft_id):
+        self.aircrafts_flight_data['waypoint' + aircraft_id] = (waypoint, total_waypoint)
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftTarget Waypoint" + aircraft_id).setPlainText(str(waypoint))
+        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setRange(0,total_waypoint)
+        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setValue(waypoint)
+        self.WaypointWindow.waypoint_plaintext_dict. get("aircraft" + aircraft_id).setPlainText("Current WP: " + str(waypoint) + " out of " + str(total_waypoint))
 
-    def time_display(self, AC_time, id):
+    def time_display(self, AC_time, aircraft_id):
         if self.text_to_display == "DISARMED":
-            self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftFlying Time" + id).setPlainText("00:00:00")
+            self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText("00:00:00")
         else:
             self.time = AC_time # sync the UI time to the data time
-            self.time_in_seconds = self.time - self.aircrafts_info.get("AC" + id).initial_time
+            self.time_in_seconds = self.time - self.aircrafts_info.get("AC" + aircraft_id).initial_time
             minutes = str(self.time_in_seconds // 60)
             hours = str(self.time_in_seconds // 3600)
             seconds = str(self.time_in_seconds - (minutes * 60) - (hours * 3600))
@@ -338,15 +344,19 @@ class MyPlugin(Plugin):
                 minutes = "0" + minutes
             if hours < 10:
                 hours = "0" + hours
-            self.aircrafts_flight_data['time' + id] = self.aircrafts_info.get("AC" + id).initial_time
-            self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftFlying Time" + id).setPlainText(hours + ":" + minutes + ":" + seconds)
+            self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
+            self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
 
-    def status_text_display(self, status_text, id):
+    def status_text_display(self, status_text, aircraft_id):
+        status = status_text.split()
+        time_stamp = int(status[-1])
+        message_type = status[0]
+        aircraft_id = 
         self.SummaryWindow.statustext.appendPlainText(status_text)
-        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(id + ": " + status_text)
-        rospy.logdebug("[AC %d status_text] %s", int(id), status_text)
+        self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(aircraft_id + ": " + status_text)
+        rospy.logdebug("[AC %d status_text] %s", int(aircraft_id), status_text)
 
-    def ondemand_display(self, data, id):
+    def ondemand_display(self, data, aircraft_id):
         status = ""
         if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
             data = data.split(" ", 3)
@@ -359,27 +369,27 @@ class MyPlugin(Plugin):
             elif data[0] == "a":
                 status = "ACKNOWLEDGMENT"
             data = data[3]
-        text_to_display = "Aircraft {} {}: {}".format(id, status, data)
+        text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
-        self.aircrafts_info.get("AC" + id).statustext.appendPlainText(text_to_display)
-        rospy.logdebug("[AC %d on_demand] %s", int(id), data)
+        self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)
+        rospy.logdebug("[AC %d on_demand] %s", int(aircraft_id), data)
     
     ####### SITL Display Functions (for developer testing only) #######
-    def mode_status_display_sitl(self, mode_status, id):
-        self.aircrafts_flight_data['mode_sitl' + id] = mode_status
+    def mode_status_display_sitl(self, mode_status, aircraft_id):
+        self.aircrafts_flight_data['mode_sitl' + aircraft_id] = mode_status
         mode_status = str(mode_status)
-        self.aircrafts_info.get("AC" + id).aircraft_info_dict.get("aircraftMode" + id).setPlainText(mode_status)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + id).setPlainText(mode_status)
-        self.saved =  "[AC {} MODE display] {}".format(int(id), mode_status)
-        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(id), mode_status))
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
+        self.saved =  "[AC {} MODE display] {}".format(int(aircraft_id), mode_status)
+        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
    
-    def waypoint_sitl_display(self, total, sequence, id):
-        self.aircrafts_flight_data['waypoint_sitl' + id] = [total, sequence]
+    def waypoint_sitl_display(self, total, sequence, aircraft_id):
+        self.aircrafts_flight_data['waypoint_sitl' + aircraft_id] = [total, sequence]
         total = len(total) - 1
-        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setRange(0,total)
-        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + id).setValue(sequence)
-        self.WaypointWindow.waypoint_plaintext_dict.get("aircraft" + id).setPlainText("Current WP: " + str(sequence) + " out of " + str(total))
-        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(id), "Current WP: " + str(sequence) + " out of " + str(total)))
+        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setRange(0,total)
+        self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setValue(sequence)
+        self.WaypointWindow.waypoint_plaintext_dict.get("aircraft" + aircraft_id).setPlainText("Current WP: " + str(sequence) + " out of " + str(total))
+        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
     def shortcuts(self):
         '''Create keyboard short-cuts'''
@@ -390,6 +400,11 @@ class MyPlugin(Plugin):
         shutdown = QShortcut(self._widget)
         shutdown.setKey(Qt.ALT + Qt.Key_F4)
         shutdown.activated.connect(self.shutdown_plugin)
+
+    def syncthing_conflict(self, file_name):
+        heading = "Your edit to the file {} encountered an error.".format(file_name)
+        info_text = "This might be caused by more than one edit"
+        self.PopupMessages.warning_message(heading, info_text)
 
     def shutdown_plugin(self):
         self.proper_shutdown = 0
@@ -477,7 +492,7 @@ class Communicate (QObject):
 
     status_text_signal = Signal(str)
     ondemand_signal = Signal(str, str)
-    
+    syncthing_signal = Signal(str)
     # SITL specific signals
     waypoint_list_signal = Signal(list, int, str)
     mode_sitl_signal = Signal(str, str)
