@@ -231,7 +231,7 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
-        # self.create_link_message(1,2,2)
+        # self.create_link_message(1,2,2) # this line is to destroy the rqt
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:

@@ -210,7 +210,7 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(str(data.data), "1")
+        status.ondemand_signal.emit(str(data.data), data.data[5])
 
     def status_text(self, data):
         status = Communicate()
@@ -358,7 +358,6 @@ class MyPlugin(Plugin):
                 status = "ERROR"
             elif data[0] == "a":
                 status = "ACKNOWLEDGMENT"
-            id = data[2]
             data = data[3]
         text_to_display = "Aircraft {} {}: {}".format(id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
@@ -455,10 +454,10 @@ class MyPlugin(Plugin):
                         wp = aircrafts_flight_data.get(i)
                         self.waypoint_sitl_display(wp[0], wp[1], i[-1])
 
-    #def trigger_configuration(self):
-        # Comment in to signal that the plugin has a way to configure
-        # This will enable a setting button (gear icon) in each dock widget title bar
-        # Usually used to open a modal configuration dialog
+    # def trigger_configuration(self):
+    #     Comment in to signal that the plugin has a way to configure
+    #     This will enable a setting button (gear icon) in each dock widget title bar
+    #     Usually used to open a modal configuration dialog
    
 # Class that is responsible for signal and slot function
 class Communicate (QObject):
