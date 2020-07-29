@@ -138,7 +138,8 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(i)))
             self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(i))
         self.tab.setMinimumHeight(500)
-        
+    
+    '''Commented out function for dynamic UI'''
     # def update_active_aircrafts(self, active_aircrafts):
     #     self.SummaryWindow.remove(self.SummaryWindow.summary_layout)
     #     self.SummaryWindow.create_layout(active_aircrafts)
@@ -216,12 +217,12 @@ class MyPlugin(Plugin):
     def status_text(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.status_text_display)
-        status.ondemand_signal.emit(data.text, "1")
+        status.ondemand_signal.emit(data)
     
     def syncthing(self, data):
         status = Communicate()
         status.syncthing_signal.connect(self.syncthing_conflict)
-        status.syncthing_signal.emit(data.text)
+        status.syncthing_signal.emit(data)
 
     ####### MAVROS Signal-Slot Functions #######
     def mode_status_sitl(self, data):
@@ -405,8 +406,8 @@ class MyPlugin(Plugin):
         shutdown.activated.connect(self.shutdown_plugin)
 
     def syncthing_conflict(self, file_name):
-        heading = "Your edit to the file {} encountered an error.".format(file_name)
-        info_text = "This might be caused by more than one edit"
+        heading = "Your edit to the file {} encountered an error".format(file_name)
+        info_text = "This might be caused due edits happening at the same time \n Please check whether there is another person editing the same file"
         self.PopupMessages.warning_message(heading, info_text)
 
     def shutdown_plugin(self):
