@@ -61,6 +61,7 @@ class satcommsgnd(satcomms):
         # Switch state: Temporary state where gnd node is switching between server and ground rockblock
         self._switch_state = False # True = switch state is active
         self._id = rospy.get_param("~self_id") # Our GCS ID
+        self._is_air = 0 # We are a ground node!
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
         self._serial_0 = (self._own_serial >> 16) & 0xFF

@@ -48,6 +48,7 @@ class satcomms(rockBlockProtocol):
         rospy.wait_for_service("identifiers/check/lazy")
 
         self._init_variables()
+        self._is_air = 1 # We are an air node!
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
@@ -111,7 +112,13 @@ class satcomms(rockBlockProtocol):
     def rockBlockRxReceived(self,mtmsn,data):
         check_result = self._check_lazy(details=data)
         if check_result.result:
-            self._pub_to_despatcher.publish(data)
+            # Act on switch cmds immediately and publish the rest to despatcher
+            if self._is_air:
+                is_switch_cmd = self._check_switch_cmd(data)
+            else:
+                is_switch_cmd = False
+            if not is_switch_cmd:
+                self._pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
         rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
@@ -128,6 +135,21 @@ class satcomms(rockBlockProtocol):
 
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("Mailbox check " + str(self._count) + " complete")
+
+    ############################
+    # Check for switch cmds
+    ############################
+
+    def _check_switch_cmd(self, data):
+        '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
+        data = data[3:-1] # Strip out message headers
+        if data == "sbd switch 0":
+            self._thr_server = 0
+            return True
+        if data == "sbd switch 1":
+            self._thr_server = 1
+            return True
+        return False
 
     ############################
     # Rockblock MO/MT msg calls
