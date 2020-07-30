@@ -62,6 +62,7 @@ def check_arming(self):
 			arm(0)
 		elif self._recv_msg[0] == "arm":
 			arm(1)
+			self.syncthing_control.publish("pause")
 		else:
 			return
 	else:
@@ -162,7 +163,6 @@ def mission_load(self):
 			# Change to hop-mission mode
 			self.hop = True
 			self.pub_to_rff.publish("hop True")
-			self.syncthing_control.publish("pause")
 	f.close()
 	# Returns if any of the files in mission list weren't found
 	if not self.hop:
