@@ -49,7 +49,6 @@ def tdlib_topic_cb(msg, args):
 		rospy.loginfo("SENDING FILE")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
-		dest_path = msg.
 		td.send_file(tele_id.data_int, file_path, msg.data)
 
 # callback function run to add a contact to the telegram account
@@ -69,11 +68,11 @@ def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
 	identifiers_add_tele_id = rospy.ServiceProxy("identifiers/add/telegram_id", AddTelegramId)
 	is_valid_sender_service = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
-	# Loop runs indefinitely, checking for any updates in telegram
 	boot_time = rospy.get_rostime().secs
 
 	file_locations = {}
 
+	# Loop runs indefinitely, checking for any updates in telegram
 	while True: 
 		event = td.receive()
 		if event:
@@ -96,22 +95,20 @@ def tdlib_recv():
 					# Currenly only supports sending waypoint files
 					base_dir = str(Path.home()) + "/Sync/"
 					try:
-						final_dir = file_locations[file_id] + "/"
+						final_dir = file_locations[file_id]
 					except KeyError:
 						continue
 
-					final_path = home_dir + final_dir
-					final_dir_path = Path(final_path)
+					final_path = base_dir + final_dir
+					final_dir_path = Path(os.path.dirname(final_path))
 					final_dir_path.mkdir(parents=True, exist_ok=True)
 					
-					final_path += os.path.basename(local_path)
 					# Move the file
 					os.rename(local_path, final_path)
 					#from_tele_pub.publish(f"File {final_path} Downloaded")
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
-				# print(event)
 				result = identifiers_add_tele_id(event["phone_number"], event["id"])
 
 			# new message received 
@@ -125,8 +122,6 @@ def tdlib_recv():
 				if not is_valid_sender.result:
 					continue
 
-				# rospy.loginfo(json.dumps(event))
-
 				message_type = event['message']['content']['@type']
 				if message_type == 'messageText':
 					message = event['message']['content']['text']['text']
@@ -138,11 +133,10 @@ def tdlib_recv():
 					rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 				elif message_type == 'messageDocument':
-					print(json.dumps(event))
 					file_id = event['message']['content']['document']['document']['id']
 					local_path = event['message']['content']['document']['document']['local']['path']
 					final_path = event['message']['content']['caption']['text']
-					# rospy.logwarn(final_path)
+
 					# download the file
 					if local_path != 1:
 						td.download_file(file_id)

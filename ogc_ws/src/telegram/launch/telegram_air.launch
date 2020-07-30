@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="link_select" default="0" />
 
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints" />
+	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
 
 
 	<!--Various regular payload intervals in seconds-->

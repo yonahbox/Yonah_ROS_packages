@@ -115,7 +115,7 @@ class gnddespatcher():
                     if mission_files == ["No", "update", "required"]:
                         return
                     for i in mission_files:
-                        reqFile.data = i
+                        reqFile.data = "Waypoints/" + i
                         self.file_to_telegram.publish(reqFile)
                         rospy.sleep(1)
                 else:
