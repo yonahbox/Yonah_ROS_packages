@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
+from std_msgs.msg import String
 
 import requests as req
 import xml.etree.ElementTree as xml
@@ -26,7 +27,7 @@ class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
 		self.parse()
-		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String)
+		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
 
 	def parse(self):
 		home_dir = str(Path.home())
