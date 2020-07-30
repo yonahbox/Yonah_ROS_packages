@@ -39,15 +39,16 @@ class Syncthing:
 		for elem in root.iter('apikey'):
 			self.api_key = elem.text
 
-	def pause(self):
-		result = req.post(self.host + "/rest/system/pause", headers={
-			"X-API-Key": self.api_key
-		})
-
-	def resume(self):
+	def _post(self, url):
 		try:
-			result = req.post(self.host + "/rest/system/resume", headers={
+			req.post(self.host + url, headers = {
 				"X-API-Key": self.api_key
 			})
-		except ConnectionRefusedError:
+		except req.exceptions.RequestException:
 			self._error_pub.publish("syncthing not running")
+
+	def pause(self):
+		self._post("/rest/system/pause")
+
+	def resume(self):
+		self._post("/rest/system/resume")
