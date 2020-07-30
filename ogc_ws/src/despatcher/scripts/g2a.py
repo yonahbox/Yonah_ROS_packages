@@ -162,6 +162,7 @@ def mission_load(self):
 			# Change to hop-mission mode
 			self.hop = True
 			self.pub_to_rff.publish("hop True")
+			self.syncthing_control.publish("pause")
 	f.close()
 	# Returns if any of the files in mission list weren't found
 	if not self.hop:

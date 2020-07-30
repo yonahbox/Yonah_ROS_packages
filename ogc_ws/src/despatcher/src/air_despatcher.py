@@ -122,7 +122,6 @@ class airdespatcher():
             self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
-                # self._check_ping()
                 g2a.check_ping(self)
             elif "sms" in self._recv_msg:
                 g2a.check_sms(self)
@@ -141,6 +140,9 @@ class airdespatcher():
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
 
+    def resume_syncthing(self, data):
+        if int(data.armed) == 0 and self.hop == False: 
+            self.syncthing_control.publish("resume")
 
     #########################################
     # Handle Air-to-Ground (A2G) messages
@@ -242,6 +244,7 @@ class airdespatcher():
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
+        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
