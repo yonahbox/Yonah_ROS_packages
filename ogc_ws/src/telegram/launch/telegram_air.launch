@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 	<arg name="identifiers_file"  default="$(env HOME)/identifiers.json" />
-	<arg name="ground_ids" default="[3]" />
+	<arg name="ground_ids" default="[1]" />
 	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
 	<arg name="link_select" default="0" />

@@ -132,7 +132,7 @@ class Td():
 		for id_n in ids:
 			self.send_message(id_n, msg)
 
-	def send_file(self, telegram_id, path):
+	def send_file(self, telegram_id, path, destination):
 		self.send({
 			'@type': 'sendMessage',
 			'chat_id': telegram_id,
@@ -141,6 +141,10 @@ class Td():
 				'document': {
 					'@type': 'inputFileLocal',
 					'path': path
+				},
+				'caption': {
+					'@type': 'formattedText',
+					'text': destination
 				}
 			}
 		})
