@@ -238,6 +238,11 @@ class airdespatcher():
         self._msg = "syncthing downloaded " + msg.data
         self.sendmsg("i")
 
+    def _handle_error(self, msg):
+        self._msg = msg.data
+        self.sendmsg("e")
+
+
     ############################
     # "Main" function
     ############################
@@ -255,6 +260,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
+        rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         message_sender = rospy.Timer(rospy.Duration(1), self.send_regular_payload)
         rospy.spin()

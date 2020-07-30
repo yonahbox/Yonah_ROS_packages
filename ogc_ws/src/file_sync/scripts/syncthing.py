@@ -26,6 +26,7 @@ class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
 		self.parse()
+		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String)
 
 	def parse(self):
 		home_dir = str(Path.home())
@@ -44,6 +45,9 @@ class Syncthing:
 		})
 
 	def resume(self):
-		result = req.post(self.host + "/rest/system/resume", headers={
-			"X-API-Key": self.api_key
-		})
+		try:
+			result = req.post(self.host + "/rest/system/resume", headers={
+				"X-API-Key": self.api_key
+			})
+		except ConnectionRefusedError:
+			self._error_pub.publish("syncthing not running")
