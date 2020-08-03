@@ -65,6 +65,15 @@ class MyPlugin(Plugin):
         self.aircrafts_info = {}
         self.checklist_info = {}
         self.aircrafts_flight_data = {}
+        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        if data[4][40] != '2':
+            print(data[2])
+            print(data[2][7])
+            print('not2')
+        else:
+            print('correct 2')
  
         # Declare attributes for each imported class
         self.PopupMessages = PopupMessages()
@@ -212,7 +221,6 @@ class MyPlugin(Plugin):
     def ondemand(self, data):
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        print(data.data)
         status.ondemand_signal.emit(data.data, str(data.data[5]))
 
     def ondemand_sitl(self, data):
@@ -341,10 +349,10 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText("00:00:00")
         else:
             self.time = AC_time # sync the UI time to the data time
-            self.time_in_seconds = self.time - self.aircrafts_info.get("AC" + aircraft_id).initial_time
+            self.time_in_seconds = int(self.time) - int(self.aircrafts_info.get("AC" + aircraft_id).initial_time)
             minutes = str(self.time_in_seconds // 60)
             hours = str(self.time_in_seconds // 3600)
-            seconds = str(self.time_in_seconds - (minutes * 60) - (hours * 3600))
+            seconds = str(self.time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
             if seconds < 10:
                 seconds = "0" + seconds
             if minutes < 10:
@@ -367,7 +375,6 @@ class MyPlugin(Plugin):
         rospy.logdebug("[AC %d status_text] %s at %s", int(aircraft_id), display_text, time_stamp)
 
     def ondemand_display(self, data, aircraft_id):
-        print(aircraft_id)
         status = ""
         if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
             data = data.split(" ", 3)
@@ -392,7 +399,6 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
         self.saved =  "[AC {} MODE display] {}".format(int(aircraft_id), mode_status)
-        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
    
     def waypoint_sitl_display(self, total, sequence, aircraft_id):
         self.aircrafts_flight_data['waypoint_sitl' + aircraft_id] = [total, sequence]
@@ -400,7 +406,6 @@ class MyPlugin(Plugin):
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setRange(0,total)
         self.WaypointWindow.waypoint_plaintext_dict.get("progress_bar_aircraft" + aircraft_id).setValue(sequence)
         self.WaypointWindow.waypoint_plaintext_dict.get("aircraft" + aircraft_id).setPlainText("Current WP: " + str(sequence) + " out of " + str(total))
-        rospy.loginfo_throttle(0.5, "[AC {} MODE display] {}".format(int(aircraft_id), "Current WP: " + str(sequence) + " out of " + str(total)))
     
     def shortcuts(self):
         '''Create keyboard short-cuts'''
@@ -418,7 +423,7 @@ class MyPlugin(Plugin):
         self.PopupMessages.warning_message(heading, info_text)
 
     def shutdown_plugin(self):
-        self.proper_shutdown = 0
+        self.proper_shutdown = 1
         '''Shutdown function'''
         # Shutdown all the checklist windows
         for i in self.aircraft_list:
@@ -436,8 +441,6 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
-        print(plugin_settings)
-        print(instance_settings)
         rospy.logwarn("save settings is saved")
         instance_settings.set_value('lastRegPay', self.aircrafts_flight_data)
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
@@ -445,42 +448,65 @@ class MyPlugin(Plugin):
     def restore_settings(self, plugin_settings, instance_settings):
         shutdown = instance_settings.value('proper_shutdown')
         aircrafts_flight_data = instance_settings.value('lastRegPay')
-        for i in aircrafts_flight_data:
-            if int(shutdown) == 0:
-                for i in aircrafts_flight_data:
-                    if i[0:-1] == 'airspeed':
-                        arspd = float(aircrafts_flight_data.get(i))
-                        self.airspeed_display(arspd, i[-1])
-                    elif i[0:-1] == 'altitude':
-                        alt = float(aircrafts_flight_data.get(i))
-                        self.altitude_display(alt, i[-1])
-                    elif i[0:-1] == 'status':
-                        self.arm_status_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'battery':
-                        self.quad_batt_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'fuel':
-                        self.fuel_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'groundspeed':
-                        self.groundspeed_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'gps':
-                        gps = aircrafts_flight_data.get(i)
-                        self.gps_display(gps[0], gps[1], i[-1])
-                    elif i[0:-1] == 'mode':
-                        self.mode_status_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'vibe':
-                        self.vibe_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'vtol':
-                        self.vtol_display(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'waypoint':
-                        wp = aircrafts_flight_data.get(i)
-                        self.waypoint_display(wp[0], wp[1], i[-1])
-                    elif i[0:-1] == 'time':
-                        self.aircrafts_info.get("AC" + i[-1]).initial_time = aircrafts_flight_data.get(i)
-                    elif i[0:-1] == 'mode_sitl':
-                        self.mode_status_display_sitl(aircrafts_flight_data.get(i), i[-1])
-                    elif i[0:-1] == 'waypoint_sitl':
-                        wp = aircrafts_flight_data.get(i)
-                        self.waypoint_sitl_display(wp[0], wp[1], i[-1])
+        if int(shutdown) == 0:
+            with open(path, 'r') as files:
+                data = lines.readlines()
+            for i in data:
+                if i[0] == "F":
+                    continue
+                else:
+                    aircraft_id = data[2]
+                    print(data[2])
+                    self.altitude_display(float(data[0]), i[-1])
+                    self.arm_status_display(data[0], i[-1])
+                    self.quad_batt_display(data[0], i[-1])
+                    self.fuel_display(data[0], i[-1])
+                    self.groundspeed_display(data[0], i[-1])
+                    gps = data[0]
+                    self.gps_display(gps[0], gps[1], i[-1])
+                    self.mode_status_display(data[0], i[-1])
+                    self.vibe_display(data[0], i[-1])
+                    self.vtol_display(data[0], i[-1])
+                    wp = data[0]
+                    self.waypoint_display(wp[0], wp[1], i[-1])
+                    self.aircrafts_info.get("AC" + i[-1]).initial_time = data[0]
+            
+        # for i in aircrafts_flight_data:
+        #     if int(shutdown) == 0:
+        #         for i in aircrafts_flight_data:
+        #             if i[0:-1] == 'airspeed':
+        #                 arspd = float(aircrafts_flight_data.get(i))
+        #                 self.airspeed_display(arspd, i[-1])
+        #             elif i[0:-1] == 'altitude':
+        #                 alt = float(aircrafts_flight_data.get(i))
+        #                 self.altitude_display(alt, i[-1])
+        #             elif i[0:-1] == 'status':
+        #                 self.arm_status_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'battery':
+        #                 self.quad_batt_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'fuel':
+        #                 self.fuel_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'groundspeed':
+        #                 self.groundspeed_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'gps':
+        #                 gps = aircrafts_flight_data.get(i)
+        #                 self.gps_display(gps[0], gps[1], i[-1])
+        #             elif i[0:-1] == 'mode':
+        #                 self.mode_status_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'vibe':
+        #                 self.vibe_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'vtol':
+        #                 self.vtol_display(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'waypoint':
+        #                 wp = aircrafts_flight_data.get(i)
+        #                 self.waypoint_display(wp[0], wp[1], i[-1])
+        #             elif i[0:-1] == 'time':
+        #                 self.aircrafts_info.get("AC" + i[-1]).initial_time = aircrafts_flight_data.get(i)
+        #             elif i[0:-1] == 'mode_sitl':
+        #                 self.mode_status_display_sitl(aircrafts_flight_data.get(i), i[-1])
+        #             elif i[0:-1] == 'waypoint_sitl':
+        #                 wp = aircrafts_flight_data.get(i)
+        #                 self.waypoint_sitl_display(wp[0], wp[1], i[-1])
 
     # def trigger_configuration(self):
     #     Comment in to signal that the plugin has a way to configure

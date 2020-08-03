@@ -231,7 +231,9 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
-        # self.create_link_message(1,2,2) # this line is to destroy the rqt
+        # self.create_link_message(1,2,2) # this line is to destroy the rqt through TypeError
+        # while True: # Generate loop error
+        #     continue
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
@@ -587,10 +589,11 @@ class CommandWindow(QWidget):
         update = LinkMessage()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
-        print(update.data)
-        print(update)
         time.sleep(1)
         self.pub_to_despatcher.publish(update)
+    
+    def direct_update_identifiers(self):
+        pass
 
     def shutdown(self):
         self.close()

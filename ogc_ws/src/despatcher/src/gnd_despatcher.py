@@ -100,6 +100,7 @@ class gnddespatcher():
                 # Check if it is new msg
                 return
             if regular.is_regular(sender_msgtype, len(entries)):
+                self.rqt_recovery_log(entries, sender_id)
                 # Check if it is regular payload
                 msg = regular.convert_to_rosmsg(entries)
                 self.pub_to_rqt_regular.publish(msg)
@@ -122,7 +123,22 @@ class gnddespatcher():
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
-    
+
+    def rqt_recovery_log(self, entries, aircraft_id):
+        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        if len(data) < aircraft_id:
+            log = open(path, 'a')
+            for i in range (aircraft_id - len(data)):
+                log.write("F" + entries)
+            log.close()
+            with open(path, 'r') as lines:
+                data = lines.readlines()
+        data[aircraft_id - 1] = entries
+        with open(path, 'w') as files:
+            files.writelines(data)
+
     ############################
     # "Main" function
     ############################
