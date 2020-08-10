@@ -66,6 +66,7 @@ add_service_files(
   EditDevice.srv
   AddTelegramId.srv
   SetDetails.srv
+  GetId.srv
 )
 
 ## Generate actions in the 'action' folder

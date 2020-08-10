@@ -16,8 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from std_msgs.msg import String
-from identifiers.srv import SetDetails
+from std_msgs.msg import String, UInt8
+from identifiers.srv import SetDetails, GetId, GetIdRequest
 
 import requests as req
 import xml.etree.ElementTree as xml
@@ -30,14 +30,18 @@ class Syncthing:
 		self.host = "http://localhost:8384"
 
 		rospy.wait_for_service("identifiers/set/st_id")
+		rospy.wait_for_service("identifiers/get/id")
 
 		self.parse()
 
 		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
-		self._connected_pub = rospy.Publisher("ogc/files/connected", String, queue_size=5)
-		self._disconnected_pub = rospy.Publisher("ogc/files/disconnected", String, queue_size=5)
+		self._connected_pub = rospy.Publisher("ogc/files/connected", UInt8, queue_size=5)
+		self._disconnected_pub = rospy.Publisher("ogc/files/disconnected", UInt8, queue_size=5)
+		self._connected_pub_str = rospy.Publisher("ogc/files/connected/string", String, queue_size=5)
+		self._disconnected_pub_str = rospy.Publisher("ogc/files/disconnected/string", String, queue_size=5)
 
 		self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+		self.get_device = rospy.ServiceProxy("identifiers/get/id", GetId)
 
 		self.set_id()
 
@@ -98,9 +102,16 @@ class Syncthing:
 			if len(response) == 0:
 				continue
 
+			last_id = response[0]["id"]
 			device_id = response[0]["data"]["id"]
 
+			id_request = GetIdRequest()
+			id_request.type = 5
+			id_request.data = device_id
+
+			system_id = self.get_device(id_request)
+
 			if response[0]["type"] == "DeviceConnected":
-				self._connected_pub.publish(device_id)
+				self._connected_pub_str.publish(device_id) if system_id.id == 0 else self._connected_pub.publish(system_id.id)
 			elif response[0]["type"] == "DeviceDisconnected":
-				self._disconnected_pub.publish(device_id)
+				self._disconnected_pub_str.publish(device_id) if system_id.id == 0 else self._disconnected_pub.publish(system_id.id)

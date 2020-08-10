@@ -215,6 +215,35 @@ class Identifiers:
 		ground_ids = [dev["id"] for dev in self.json_obj["ground"]]
 		return (air_ids, ground_ids)
 
+	# returns the system id for a certain device based on information type
+	# data_type values:
+	#	0: label
+	#	1: number
+	#	2: imei
+	#	3: rb_serial
+	#	4: telegram_id
+	#	5: syncthing_id
+	def get_system_id(self, data_type, data):
+		for obj in self.json_obj["air"] + self.json_obj["ground"]:
+			val = None
+			if data_type == 0 and data == obj["label"]:
+				return obj["id"]
+			elif data_type == 1 and data == obj["number"]:
+				return obj["id"]
+			elif data_type == 2 and data == obj["imei"]:
+				return obj["id"]
+			elif data_type == 3 and data == obj["rb_serial"]:
+				return obj["id"]
+			elif data_type == 4 and data == obj.get("telegram_id", None):
+				return obj["id"]
+			elif data_type == 5 and data == obj.get("syncthing_id", None):
+				return obj["id"]
+
+			if val == data:
+				return obj["id"]
+
+		return 0
+
 	# add new device to the identifiers file
 	def add_new_device(self, is_air, label, number, imei, rb_serial):
 		while self.file_busy:

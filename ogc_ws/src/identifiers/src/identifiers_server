@@ -30,6 +30,7 @@ from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
 from identifiers.srv import SetDetails, SetDetailsResponse
+from identifiers.srv import GetId, GetIdResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -63,6 +64,12 @@ class ServiceHandler:
 	def get_sbd_details(self, request):
 		username, password, url = self._ids.get_sbd_credentials()
 		return GetSBDDetailsResponse(username=username, password=password, url=url)
+
+	def get_system_id(self, request):
+		if request.type == 4:
+			return GetIdResponse(self._ids.get_system_id(request.type, request.data_int))
+		else:
+			return GetIdResponse(self._ids.get_system_id(request.type, request.data))
 
 	def add_new_device(self, request):
 		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
@@ -117,6 +124,7 @@ if __name__ == '__main__':
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	system_id_server = rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
 
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
