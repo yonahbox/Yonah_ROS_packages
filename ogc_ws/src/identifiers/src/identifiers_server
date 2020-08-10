@@ -29,6 +29,7 @@ from identifiers.srv import EditDevice, EditDeviceResponse
 from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
+from identifiers.srv import SetDetails, SetDetailsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -88,6 +89,9 @@ class ServiceHandler:
 		response.ground_ids = ground_ids
 		return response
 
+	def set_syncthing_id(self, request):
+		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
+
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
@@ -123,6 +127,7 @@ if __name__ == '__main__':
 	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
 	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
+	set_syncthing_id_service = rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)

@@ -17,6 +17,7 @@
 
 import rospy
 from std_msgs.msg import String
+from identifiers.srv import SetDetails
 
 import requests as req
 import xml.etree.ElementTree as xml
@@ -27,12 +28,18 @@ import json
 class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
+
+		rospy.wait_for_service("identifiers/set/st_id")
+
 		self.parse()
 
 		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
 		self._connected_pub = rospy.Publisher("ogc/files/connected", String, queue_size=5)
 		self._disconnected_pub = rospy.Publisher("ogc/files/disconnected", String, queue_size=5)
 
+		self.set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+
+		self.set_id()
 
 	def parse(self):
 		home_dir = str(Path.home())
@@ -44,6 +51,14 @@ class Syncthing:
 		root = xml.parse(config_path)
 		for elem in root.iter('apikey'):
 			self.api_key = elem.text
+
+	def set_id(self):
+		try:
+			sub_call = subprocess.run(["syncthing", "-device-id"], capture_output=True, text=True)
+			self.device_id = sub_call.stdout.rstrip()
+			self.set_device(self.device_id)
+		except FileNotFoundError:
+			rospy.logwarn("Unable to call syncthing")
 
 	def _post(self, url):
 		try:
