@@ -17,6 +17,7 @@
 
 from inotify.adapters import Inotify
 import re
+from threading import Thread
 
 import rospy
 from std_msgs.msg import String
@@ -29,7 +30,6 @@ def st_cb(command, st):
 	elif command.data == "resume":
 		st.resume()
 
-
 if __name__ == "__main__":
 	try:
 		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
@@ -40,6 +40,10 @@ if __name__ == "__main__":
 
 		st = Syncthing()
 		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
+
+		event_thread = Thread(target=st.event_subscribe)
+		event_thread.daemon = True
+		event_thread.start()
 
 		inotify_adapter = Inotify()
 		inotify_adapter.add_watch(watch_dir)

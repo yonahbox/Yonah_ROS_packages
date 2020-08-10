@@ -247,7 +247,7 @@ class CommandWindow(QWidget):
         elif self.PopupMessages.input_text[0] == "":
             statustext_message = "ERROR: Please input a valid waypoint file"
         else:
-            data = self.PopupMessages.input_text[0]
+            data = "mission load " + str(self.PopupMessages.input_text[0])
             load_destination_id = self.PopupMessages.input_text[1]
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.create_link_message(load_destination_id, data)

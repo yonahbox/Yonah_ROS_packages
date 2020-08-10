@@ -22,12 +22,17 @@ import requests as req
 import xml.etree.ElementTree as xml
 from pathlib import Path
 import subprocess
+import json
 
 class Syncthing:
 	def __init__(self):
 		self.host = "http://localhost:8384"
 		self.parse()
+
 		self._error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
+		self._connected_pub = rospy.Publisher("ogc/files/connected", String, queue_size=5)
+		self._disconnected_pub = rospy.Publisher("ogc/files/disconnected", String, queue_size=5)
+
 
 	def parse(self):
 		home_dir = str(Path.home())
@@ -48,8 +53,39 @@ class Syncthing:
 		except req.exceptions.RequestException:
 			self._error_pub.publish("syncthing not running")
 
+	def _get(self, url):
+		try:
+			result = req.get(self.host + url, headers={
+				"X-API-Key": self.api_key
+			})
+		except req.exceptions.RequestException:
+			self._error_pub.publish("syncthing not running")
+			return None
+
+		return result.json()
+
 	def pause(self):
 		self._post("/rest/system/pause")
 
 	def resume(self):
 		self._post("/rest/system/resume")
+
+	def event_subscribe(self):
+		last_id = 0
+		while True:
+			rospy.loginfo("MAKING REQUEST")
+			response = self._get("/rest/events?events=DeviceConnected,DeviceDisconnected&limit=1&since="+str(last_id))
+			
+			if response is None:
+				return
+
+			print(json.dumps(response, sort_keys=True, indent=4))
+			if len(response) == 0:
+				continue
+
+			device_id = response[0]["data"]["id"]
+
+			if response[0]["type"] == "DeviceConnected":
+				self._connected_pub.publish(device_id)
+			elif response[0]["type"] == "DeviceDisconnected":
+				self._disconnected_pub.publish(device_id)

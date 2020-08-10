@@ -93,6 +93,8 @@ class airdespatcher():
         rospy.wait_for_service('mavros/mission/set_current')
         rospy.wait_for_service('mavros/mission/push')
 
+        self._armed_st = False
+
         # syncthing controls
         self.syncthing_control = rospy.Publisher("ogc/files/syncthing", String, queue_size=5)
 
@@ -140,9 +142,10 @@ class airdespatcher():
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
 
-    def resume_syncthing(self, data):
-        if int(data.armed) == 0 and self.hop == False: 
-            self.syncthing_control.publish("resume")
+    # def resume_syncthing(self, data):
+    #     if int(data.armed) == 0 and self.hop == False: 
+    #         self.syncthing_control.publish("resume")
+
 
     #########################################
     # Handle Air-to-Ground (A2G) messages
@@ -249,7 +252,7 @@ class airdespatcher():
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
-        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
+        # rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
