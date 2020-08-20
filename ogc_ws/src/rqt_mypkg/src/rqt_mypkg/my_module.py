@@ -65,15 +65,6 @@ class MyPlugin(Plugin):
         self.aircrafts_info = {}
         self.checklist_info = {}
         self.aircrafts_flight_data = {}
-        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
-        with open(path, 'r') as lines:
-            data = lines.readlines()
-        if data[4][40] != '2':
-            print(data[2])
-            print(data[2][7])
-            print('not2')
-        else:
-            print('correct 2')
  
         # Declare attributes for each imported class
         self.PopupMessages = PopupMessages()
@@ -446,67 +437,18 @@ class MyPlugin(Plugin):
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
 
     def restore_settings(self, plugin_settings, instance_settings):
-        shutdown = instance_settings.value('proper_shutdown')
-        aircrafts_flight_data = instance_settings.value('lastRegPay')
-        if int(shutdown) == 0:
-            with open(path, 'r') as files:
-                data = lines.readlines()
-            for i in data:
-                if i[0] == "F":
-                    continue
-                else:
-                    aircraft_id = data[2]
-                    print(data[2])
-                    self.altitude_display(float(data[0]), i[-1])
-                    self.arm_status_display(data[0], i[-1])
-                    self.quad_batt_display(data[0], i[-1])
-                    self.fuel_display(data[0], i[-1])
-                    self.groundspeed_display(data[0], i[-1])
-                    gps = data[0]
-                    self.gps_display(gps[0], gps[1], i[-1])
-                    self.mode_status_display(data[0], i[-1])
-                    self.vibe_display(data[0], i[-1])
-                    self.vtol_display(data[0], i[-1])
-                    wp = data[0]
-                    self.waypoint_display(wp[0], wp[1], i[-1])
-                    self.aircrafts_info.get("AC" + i[-1]).initial_time = data[0]
-            
-        # for i in aircrafts_flight_data:
-        #     if int(shutdown) == 0:
-        #         for i in aircrafts_flight_data:
-        #             if i[0:-1] == 'airspeed':
-        #                 arspd = float(aircrafts_flight_data.get(i))
-        #                 self.airspeed_display(arspd, i[-1])
-        #             elif i[0:-1] == 'altitude':
-        #                 alt = float(aircrafts_flight_data.get(i))
-        #                 self.altitude_display(alt, i[-1])
-        #             elif i[0:-1] == 'status':
-        #                 self.arm_status_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'battery':
-        #                 self.quad_batt_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'fuel':
-        #                 self.fuel_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'groundspeed':
-        #                 self.groundspeed_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'gps':
-        #                 gps = aircrafts_flight_data.get(i)
-        #                 self.gps_display(gps[0], gps[1], i[-1])
-        #             elif i[0:-1] == 'mode':
-        #                 self.mode_status_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'vibe':
-        #                 self.vibe_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'vtol':
-        #                 self.vtol_display(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'waypoint':
-        #                 wp = aircrafts_flight_data.get(i)
-        #                 self.waypoint_display(wp[0], wp[1], i[-1])
-        #             elif i[0:-1] == 'time':
-        #                 self.aircrafts_info.get("AC" + i[-1]).initial_time = aircrafts_flight_data.get(i)
-        #             elif i[0:-1] == 'mode_sitl':
-        #                 self.mode_status_display_sitl(aircrafts_flight_data.get(i), i[-1])
-        #             elif i[0:-1] == 'waypoint_sitl':
-        #                 wp = aircrafts_flight_data.get(i)
-        #                 self.waypoint_sitl_display(wp[0], wp[1], i[-1])
+        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        rospy.logwarn(data)
+        for i in data:
+            i = i[:-1]
+            if i == "None":
+                continue
+            else:
+                regpay = i.split(" ")
+                msg = regular.convert_to_rosmsg(regpay)
+                self.regular_payload(msg)
 
     # def trigger_configuration(self):
     #     Comment in to signal that the plugin has a way to configure
