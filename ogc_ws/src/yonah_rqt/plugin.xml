@@ -1,5 +1,5 @@
 <library path="src">
-  <class name="My Plugin" type="rqt_mypkg.main_window.MyPlugin" base_class_type="rqt_gui_py::Plugin">
+  <class name="My Plugin" type="yonah_rqt.main_window.MyPlugin" base_class_type="rqt_gui_py::Plugin">
     <description>
       An example Python GUI plugin to create a great user interface.
     </description>
@@ -14,7 +14,7 @@
       -->
       <label>Yonah</label>
       <icon type="file">Yonah_Logo_red.jpg</icon>
-      <statustip>Great user interface to provide real value.</statustip>
+      <statustip>A plugin by Yonah</statustip>
     </qtgui>
   </class>
 </library>

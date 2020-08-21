@@ -47,7 +47,7 @@ class MyPlugin(Plugin):
         context.add_widget(self._widget)
 
         # Get path to UI file and load it
-        ui_file = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "resource", "second_window.ui")
+        ui_file = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "resource", "second_window.ui")
         loadUi(ui_file, self._widget)
 
         # Show _widget.windowTitle on left-top of each plugin (when it's set in _widget). This is useful when you open multiple 
@@ -436,7 +436,7 @@ class MyPlugin(Plugin):
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
 
     def restore_settings(self, plugin_settings, instance_settings):
-        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src/rqt_mypkg", "demofile.txt")
+        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
         with open(path, 'r') as lines:
             data = lines.readlines()
         rospy.logwarn(data)

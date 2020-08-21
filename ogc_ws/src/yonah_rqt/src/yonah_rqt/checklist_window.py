@@ -34,8 +34,8 @@ class ChecklistWindow(QWidget):
         self.checklist_state = 0
 
         # Relative path for the default BPO and BTO checklist
-        BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BPO_checklist.csv')
-        BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'src/rqt_mypkg', 'BTO_checklist.csv')
+        BPO_checklist_file = os.path.join(rospkg.RosPack().get_path('yonah_rqt'), 'src/yonah_rqt', 'BPO_checklist.csv')
+        BTO_checklist_file = os.path.join(rospkg.RosPack().get_path('yonah_rqt'), 'src/yonah_rqt', 'BTO_checklist.csv')
         
         # Check whether checklist is present, if not print a error message to terminal
         try:
