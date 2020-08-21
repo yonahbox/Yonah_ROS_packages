@@ -130,7 +130,7 @@ class gnddespatcher():
     # check whether multi aircraft works
     def rqt_recovery_log(self, entries, aircraft_id):
         rospy.logerr(entries)
-        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
+        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src/rqt_mypkg", "demofile.txt")
         with open(path, 'r') as lines:
             data = lines.readlines()
         if len(data) < aircraft_id:

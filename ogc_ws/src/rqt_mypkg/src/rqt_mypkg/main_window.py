@@ -357,7 +357,6 @@ class MyPlugin(Plugin):
         status = status_text.split()
         time_stamp = int(status[-1])
         message_type = status[0]
-        is_air = status[1] # unused variable
         aircraft_id = status[2]
         info = status[3:-1]
         display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, text_displayed)
@@ -437,7 +436,7 @@ class MyPlugin(Plugin):
         instance_settings.set_value('proper_shutdown', self.proper_shutdown)
 
     def restore_settings(self, plugin_settings, instance_settings):
-        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src", "demofile.txt")
+        path = os.path.join(rospkg.RosPack().get_path("rqt_mypkg"), "src/rqt_mypkg", "demofile.txt")
         with open(path, 'r') as lines:
             data = lines.readlines()
         rospy.logwarn(data)
