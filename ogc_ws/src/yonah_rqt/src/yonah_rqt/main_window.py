@@ -258,14 +258,12 @@ class MyPlugin(Plugin):
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setStyleSheet("Color: rgb(255, 0, 0);")     
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
-        rospy.logdebug("[AC {} AIRSPEED display] {}".format(int(aircraft_id), airspeed))
 
     def altitude_display(self, altitude, aircraft_id):
         self.aircrafts_flight_data['altitude' + aircraft_id] = altitude
         altitude = str(round(altitude, 1)) + " m"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
-        rospy.logdebug("[AC {} ALTITUDE display] {}".format(int(aircraft_id), altitude))
 
     def arm_status_display(self, arm_status, aircraft_id):
         self.aircrafts_flight_data['status' + aircraft_id] = arm_status
@@ -283,50 +281,42 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data['battery' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftQuad Battery" + aircraft_id).setPlainText(data)
-        rospy.logdebug("[AC {} QUAD BATT display] {}".format(int(aircraft_id), data))
 
     def fuel_display(self, data, aircraft_id):
         self.aircrafts_flight_data['fuel' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFuel Level" + aircraft_id).setPlainText(data)
-        rospy.logdebug("[AC {} FUEL display] {}".format(int(aircraft_id), data))
 
     def groundspeed_display(self, gndspeed, aircraft_id):
         self.aircrafts_flight_data['groundspeed' + aircraft_id] = gndspeed
         data = str(round(gndspeed, 1)) + " m/s"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGroundspeed" + aircraft_id).setPlainText(data)
-        rospy.logdebug("[AC {} GNDSPEED display] {}".format(int(aircraft_id), data))
 
     def gps_display(self, lat, lon, aircraft_id):
         data = [lat, lon]
         self.aircrafts_flight_data['gps' + aircraft_id] = data
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftGPS" + aircraft_id).setPlainText(str(lat) +", " + str(lon))
-        rospy.logdebug("[AC {} GPS display] {}".format(int(aircraft_id), data))
 
     def mode_status_display(self, mode_status, aircraft_id):
         self.aircrafts_flight_data['mode' + aircraft_id] = mode_status
         mode = self.CommandWindow.decoder[mode_status] # Convert the integer to its mode
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
-        rospy.logdebug("[AC {} MODE display] {}".format(int(aircraft_id), mode_status))
     
     def throttle_display(self, data, aircraft_id):
         self.aircrafts_flight_data['throttle' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftThrottle" + aircraft_id).setPlainText(data)
-        rospy.logdebug( "[AC {} THROTTLE display] {}".format(int(aircraft_id), data))
     
     def vibe_display(self, data, aircraft_id):
         self.aircrafts_flight_data['vibe' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVibe Status" + aircraft_id).setPlainText(data)
-        rospy.logdebug("[AC {} VIBE display] {}".format(int(aircraft_id), data))
 
     def vtol_display(self, data, aircraft_id):
         self.aircrafts_flight_data['vtol' + aircraft_id] = data
         data = str(data)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftVTOL Status" + aircraft_id).setPlainText(data)
-        rospy.loginfo("[AC {} VTOL display] {}".format(int(aircraft_id), data))
 
     def waypoint_display(self, waypoint, total_waypoint, aircraft_id):
         self.aircrafts_flight_data['waypoint' + aircraft_id] = (waypoint, total_waypoint)
@@ -362,7 +352,6 @@ class MyPlugin(Plugin):
         display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, text_displayed)
         self.SummaryWindow.statustext.appendPlainText(display_text)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(display_text)
-        rospy.logdebug("[AC %d status_text] %s at %s", int(aircraft_id), display_text, time_stamp)
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
@@ -380,7 +369,6 @@ class MyPlugin(Plugin):
         text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)
-        rospy.logdebug("[AC %d on_demand] %s", int(aircraft_id), data)
     
     ####### SITL Display Functions (for developer testing only) #######
     def mode_status_display_sitl(self, mode_status, aircraft_id):
@@ -431,9 +419,14 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
-        rospy.logwarn("save settings is saved")
-        instance_settings.set_value('lastRegPay', self.aircrafts_flight_data)
-        instance_settings.set_value('proper_shutdown', self.proper_shutdown)
+        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        for i in range (len(data)):
+            data[i] = "None\n"
+        with open(path, 'w') as files:
+            files.writelines(data)
+            files.close()
 
     def restore_settings(self, plugin_settings, instance_settings):
         path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
