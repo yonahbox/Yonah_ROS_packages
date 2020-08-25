@@ -53,8 +53,6 @@ class CommandWindow(QWidget):
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
-
-        
         
         # Define the mode list as well as the decoder
         self.mode_list = ["MANUAL","CIRCLE","STABILIZE","TRAINING","ACRO","FBWA","FBWB","CRUISE","AUTOTUNE","AUTO","RTL",
@@ -86,6 +84,7 @@ class CommandWindow(QWidget):
         self.custom_ping_button.pressed.connect(self.custom_ping)
         self.ros_reader.pressed.connect(self.ros_log_parser)
         self.direct_sync.pressed.connect(self.direct_update)
+        self.full_menu.pressed.connect(self.full_window)
 
         # Publisher Command
         self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
@@ -117,15 +116,10 @@ class CommandWindow(QWidget):
     def create_layout(self, active_aircrafts):
         # Create the layout
         self.main_layout = QVBoxLayout()
-        self.secondary_layout = QVBoxLayout()
-        self.full_layout = QVBoxLayout()
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
         self.ping_row = QFormLayout()
-
-        # Set main_layout as the layout that occupies the entire widget
-        self.setLayout(self.main_layout) 
 
         # Create the widgets
         self.combo_box = QComboBox()
@@ -133,12 +127,9 @@ class CommandWindow(QWidget):
 
         self.create_combobox(active_aircrafts)
         # Use a for loop to add items inside the drop down menu
-        
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
 
-        self.scroll_area = QScrollArea()
-        self.frame1 = QFrame()
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
@@ -150,6 +141,7 @@ class CommandWindow(QWidget):
         self.custom_ping_button = QPushButton('Custom Ping Button')
         self.ros_reader = QPushButton('ROS log')
         self.direct_sync = QPushButton('Sync Aircraft')
+        self.full_menu = QPushButton('Full Menu')
 
         # Set UI properties of the buttons and layout
         top_row = 60        # Minimum height for the top row buttons
@@ -168,9 +160,10 @@ class CommandWindow(QWidget):
         self.custom_ping_combobox.setMinimumHeight(bottom_row)
         self.ros_reader.setMinimumHeight(bottom_row)
         self.direct_sync.setMinimumHeight(bottom_row)
+        self.full_menu.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
-        self.secondary_layout.addWidget(self.combo_box)
+        self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
         self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
@@ -181,20 +174,20 @@ class CommandWindow(QWidget):
         self.second_row.addWidget(self.ping_button)
         self.third_row.addWidget(self.ros_reader)
         self.third_row.addWidget(self.direct_sync)
+        self.third_row.addWidget(self.full_menu)
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
+        self.third_row.addLayout(self.ping_row)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
-        self.secondary_layout.addLayout(self.first_row)
-        self.secondary_layout.addLayout(self.second_row)
-        self.third_row.addLayout(self.ping_row)
-        
-        self.secondary_layout.addLayout(self.third_row)
-        self.frame1.setLayout(self.secondary_layout)
-        self.scroll_area.setWidget(self.frame1)
-        self.scroll_area.setMaximumHeight(500)
-        self.scroll_area.setMinimumWidth(600)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.main_layout.addWidget(self.scroll_area)
+        self.main_layout.addLayout(self.first_row)
+        self.main_layout.addLayout(self.second_row)
+        self.main_layout.addLayout(self.third_row)
+        self.setLayout(self.main_layout) 
+    
+    def full_window(self):
+        self.full_widget = QWidget()
+        self.full_widget.setWindowTitle("Full Menu List")
+        self.full_widget.show()
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):

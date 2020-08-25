@@ -101,7 +101,7 @@ class MyPlugin(Plugin):
         # Create the tab windows for the aircraft-specific information
         self.create_tab_windows()
         self.tab.currentChanged.connect(self.tab_change)
-
+        
         # Add all 3 layouts into the main layout
         self._widget.verticalLayout.addWidget(scroll)
         self._widget.verticalLayout2.addWidget(self.tab)
