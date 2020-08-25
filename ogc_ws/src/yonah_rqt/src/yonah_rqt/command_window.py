@@ -23,7 +23,7 @@ import time
 from functools import partial
 from os import listdir
 from os.path import expanduser
-from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox
+from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox, QGridLayout
 from PyQt5.QtWidgets import QScrollArea, QFrame, QPushButton, QDialog, QLabel, QLineEdit, QDialogButtonBox, QFileDialog
 from python_qt_binding.QtCore import Qt, Signal, Slot, QRegExp
 from python_qt_binding.QtGui import QFont, QRegExpValidator, QValidator
@@ -134,9 +134,10 @@ class CommandWindow(QWidget):
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
-        self.change_identifiers_button = QPushButton('Change Identifiers')
         self.mission_load_button = QPushButton('Load Mission')
+
         self.change_mode_button = QPushButton('Change Mode')
+        self.change_identifiers_button = QPushButton('Change Identifiers')
         self.ping_button = QPushButton('Ping')
         self.custom_ping_button = QPushButton('Custom Ping Button')
         self.ros_reader = QPushButton('ROS log')
@@ -150,10 +151,10 @@ class CommandWindow(QWidget):
         self.arm_button.setMinimumHeight(top_row)
         self.disarm_button.setMinimumHeight(top_row)
         self.go_button.setMinimumHeight(top_row)
-
-        self.change_identifiers_button.setMinimumHeight(bottom_row)
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
+
+        self.change_identifiers_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
         self.ping_button.setMinimumHeight(bottom_row)
         self.custom_ping_button.setMinimumHeight(bottom_row)
@@ -168,15 +169,8 @@ class CommandWindow(QWidget):
         self.first_row.addWidget(self.disarm_button)
         self.first_row.addWidget(self.go_button)
         self.second_row.addWidget(self.checklist_button)
-        self.second_row.addWidget(self.change_identifiers_button)
         self.second_row.addWidget(self.mission_load_button)
-        self.second_row.addWidget(self.change_mode_button)
-        self.second_row.addWidget(self.ping_button)
-        self.third_row.addWidget(self.ros_reader)
-        self.third_row.addWidget(self.direct_sync)
-        self.third_row.addWidget(self.full_menu)
-        self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
-        self.third_row.addLayout(self.ping_row)
+        self.second_row.addWidget(self.full_menu)
 
         # Add the sub-layouts (first_row and second_row) into the main_layout
         self.main_layout.addLayout(self.first_row)
@@ -187,6 +181,36 @@ class CommandWindow(QWidget):
     def full_window(self):
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
+        layout = QGridLayout()
+        group_titles = ["","Identifiers", "Sync", "Log", "Missions", "Ping"]
+
+        identifiers = group_titles.index("Identifiers")
+        sync = group_titles.index("Sync")
+        log = group_titles.index("Log")
+        mission = group_titles.index("Missions")
+        ping = group_titles.index("Ping")
+
+        for i in range(1, len(group_titles)):
+            label = QLabel(group_titles[i])
+            # label.setStyleSheet("border: 1px solid black;")
+            label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(label,0,i)
+        
+        # layout.addWidget(self.combo_box, 1, primary)
+        # layout.addWidget(self.arm_button, 2, primary)
+        # layout.addWidget(self.disarm_button,3, primary)
+        # layout.addWidget(self.go_button, 4, primary)
+        # layout.addWidget(self.checklist_button, 5, primary)
+        layout.addWidget(self.change_mode_button, 1, mission)
+        layout.addWidget(self.change_identifiers_button, 1, identifiers)
+        layout.addWidget(self.ros_reader, 1, log)
+        layout.addWidget(self.direct_sync, 1, sync)
+
+        layout.addWidget(self.ping_button, 1, ping)
+        self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
+        layout.addLayout(self.ping_row, 2, ping)
+        self.full_widget.setLayout(layout)
+
         self.full_widget.show()
 
     def create_combobox(self, active_aircrafts):
