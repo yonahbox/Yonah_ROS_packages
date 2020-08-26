@@ -143,6 +143,10 @@ class CommandWindow(QWidget):
         self.ros_reader = QPushButton('ROS log')
         self.direct_sync = QPushButton('Sync Aircraft')
         self.full_menu = QPushButton('Full Menu')
+        self.mission_next = QPushButton('Mission Next')
+        self.waypoint_load = QPushButton('Load Waypoint')
+        self.sync_pause = QPushButton('Pause Sync')
+        self.sync_resume = QPushButton('Resume Sync')
 
         # Set UI properties of the buttons and layout
         top_row = 60        # Minimum height for the top row buttons
@@ -154,6 +158,7 @@ class CommandWindow(QWidget):
         self.mission_load_button.setMinimumHeight(bottom_row)
         self.checklist_button.setMinimumHeight(bottom_row)
 
+        self.full_menu.setMinimumHeight(bottom_row)
         self.change_identifiers_button.setMinimumHeight(bottom_row)
         self.change_mode_button.setMinimumHeight(bottom_row)
         self.ping_button.setMinimumHeight(bottom_row)
@@ -161,7 +166,10 @@ class CommandWindow(QWidget):
         self.custom_ping_combobox.setMinimumHeight(bottom_row)
         self.ros_reader.setMinimumHeight(bottom_row)
         self.direct_sync.setMinimumHeight(bottom_row)
-        self.full_menu.setMinimumHeight(bottom_row)
+        self.mission_next.setMinimumHeight(bottom_row)
+        self.waypoint_load.setMinimumHeight(bottom_row)
+        self.sync_pause.setMinimumHeight(bottom_row)
+        self.sync_resume.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
@@ -201,10 +209,17 @@ class CommandWindow(QWidget):
         # layout.addWidget(self.disarm_button,3, primary)
         # layout.addWidget(self.go_button, 4, primary)
         # layout.addWidget(self.checklist_button, 5, primary)
-        layout.addWidget(self.change_mode_button, 1, mission)
+
+        layout.addWidget(self.mission_next, 1, mission)
+        layout.addWidget(self.waypoint_load, 2, mission)
+        layout.addWidget(self.change_mode_button, 3, mission)   
+        
         layout.addWidget(self.change_identifiers_button, 1, identifiers)
         layout.addWidget(self.ros_reader, 1, log)
+
         layout.addWidget(self.direct_sync, 1, sync)
+        layout.addWidget(self.sync_pause, 2, sync)
+        layout.addWidget(self.sync_resume, 3, sync)
 
         layout.addWidget(self.ping_button, 1, ping)
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
@@ -274,12 +289,11 @@ class CommandWindow(QWidget):
         elif self.PopupMessages.input_text[0] == "":
             statustext_message = "ERROR: Please input a valid waypoint file"
         else:
-            data = self.PopupMessages.input_text[0]
+            data = "wp load " + self.PopupMessages.input_text[0]
             load_destination_id = self.PopupMessages.input_text[1]
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.create_link_message(load_destination_id, data)
             rospy.logdebug("[AC %d Mission Load Button] %s", self.destination_id, statustext_message)
-
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
 
     def ping(self):
