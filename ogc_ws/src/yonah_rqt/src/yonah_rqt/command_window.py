@@ -85,6 +85,8 @@ class CommandWindow(QWidget):
         self.ros_reader.pressed.connect(self.ros_log_parser)
         self.direct_sync.pressed.connect(self.direct_update)
         self.full_menu.pressed.connect(self.full_window)
+        self.waypoint_load_button.pressed.connect(self.waypoint_load)
+        self.mission_next_button.pressed.connect(self.mission_next)
 
         # Publisher Command
         self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
@@ -143,8 +145,8 @@ class CommandWindow(QWidget):
         self.ros_reader = QPushButton('ROS log')
         self.direct_sync = QPushButton('Sync Aircraft')
         self.full_menu = QPushButton('Full Menu')
-        self.mission_next = QPushButton('Mission Next')
-        self.waypoint_load = QPushButton('Load Waypoint')
+        self.mission_next_button = QPushButton('Mission Next')
+        self.waypoint_load_button = QPushButton('Load Waypoint')
         self.sync_pause = QPushButton('Pause Sync')
         self.sync_resume = QPushButton('Resume Sync')
 
@@ -166,8 +168,8 @@ class CommandWindow(QWidget):
         self.custom_ping_combobox.setMinimumHeight(bottom_row)
         self.ros_reader.setMinimumHeight(bottom_row)
         self.direct_sync.setMinimumHeight(bottom_row)
-        self.mission_next.setMinimumHeight(bottom_row)
-        self.waypoint_load.setMinimumHeight(bottom_row)
+        self.mission_next_button.setMinimumHeight(bottom_row)
+        self.waypoint_load_button.setMinimumHeight(bottom_row)
         self.sync_pause.setMinimumHeight(bottom_row)
         self.sync_resume.setMinimumHeight(bottom_row)
 
@@ -210,8 +212,8 @@ class CommandWindow(QWidget):
         # layout.addWidget(self.go_button, 4, primary)
         # layout.addWidget(self.checklist_button, 5, primary)
 
-        layout.addWidget(self.mission_next, 1, mission)
-        layout.addWidget(self.waypoint_load, 2, mission)
+        layout.addWidget(self.mission_next_button, 1, mission)
+        layout.addWidget(self.waypoint_load_button, 2, mission)
         layout.addWidget(self.change_mode_button, 3, mission)   
         
         layout.addWidget(self.change_identifiers_button, 1, identifiers)
@@ -280,21 +282,37 @@ class CommandWindow(QWidget):
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
         self.create_link_message(self.destination_id, data)
-        rospy.logdebug("[AC %d go_button] %s", self.destination_id, statustext_message)
 
     def mission_load(self):
+        self.PopupMessages.user_input_textbox("Mission Load", "Load mission to Aircraft ", self.destination_id)
+        if self.PopupMessages.input_text == []:
+            return 0 # When else is clicked, return nothing
+        elif self.PopupMessages.input_text[0] == "":
+            statustext_message = "ERROR: Please input a valid mission file"
+        else:
+            data = "mission load " + self.PopupMessages.input_text[0]
+            load_destination_id = self.PopupMessages.input_text[1]
+            statustext_message = "Mission file: {} uploaded to Aircraft {}".format(data, load_destination_id)
+            self.create_link_message(load_destination_id, data)
+        self.SummaryWindow.statustext.appendPlainText(statustext_message)
+
+    def waypoint_load(self):
         self.PopupMessages.user_input_textbox("Waypoint Load", "Load waypoint to Aircraft ", self.destination_id)
         if self.PopupMessages.input_text == []:
             return 0 # When else is clicked, return nothing
         elif self.PopupMessages.input_text[0] == "":
             statustext_message = "ERROR: Please input a valid waypoint file"
         else:
-            data = "wp load " + self.PopupMessages.input_text[0]
+            data = "waypoint load " + self.PopupMessages.input_text[0]
             load_destination_id = self.PopupMessages.input_text[1]
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.create_link_message(load_destination_id, data)
-            rospy.logdebug("[AC %d Mission Load Button] %s", self.destination_id, statustext_message)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
+
+    def mission_next(self):
+        data = "mission next"
+        self.create_link_message(self.destination_id, data)
+        self.SummaryWindow.statustext.appendPlainText("Mission Next confirmed")
 
     def ping(self):
         data = 'ping'
@@ -604,7 +622,6 @@ class CommandWindow(QWidget):
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
         self.create_link_message(self.destination_id, data)
         self.change_mode_dialog.close()
-        rospy.logdebug("[AC %d Change Mode] %s", self.destination_id, statustext_message)
 
     def direct_update(self):
         rospy.logwarn('direct update pressed')
