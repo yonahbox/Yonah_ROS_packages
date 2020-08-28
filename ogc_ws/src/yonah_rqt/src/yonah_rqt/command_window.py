@@ -87,6 +87,8 @@ class CommandWindow(QWidget):
         self.full_menu.pressed.connect(self.full_window)
         self.waypoint_load_button.pressed.connect(self.waypoint_load)
         self.mission_next_button.pressed.connect(self.mission_next)
+        self.sync_pause_button.pressed.connect(self.sync_pause)
+        self.sync_resume_button.pressed.connect(self.sync_resume)
 
         # Publisher Command
         self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
@@ -147,8 +149,8 @@ class CommandWindow(QWidget):
         self.full_menu = QPushButton('Full Menu')
         self.mission_next_button = QPushButton('Mission Next')
         self.waypoint_load_button = QPushButton('Load Waypoint')
-        self.sync_pause = QPushButton('Pause Sync')
-        self.sync_resume = QPushButton('Resume Sync')
+        self.sync_pause_button = QPushButton('Pause Sync')
+        self.sync_resume_button = QPushButton('Resume Sync')
 
         # Set UI properties of the buttons and layout
         top_row = 60        # Minimum height for the top row buttons
@@ -170,8 +172,8 @@ class CommandWindow(QWidget):
         self.direct_sync.setMinimumHeight(bottom_row)
         self.mission_next_button.setMinimumHeight(bottom_row)
         self.waypoint_load_button.setMinimumHeight(bottom_row)
-        self.sync_pause.setMinimumHeight(bottom_row)
-        self.sync_resume.setMinimumHeight(bottom_row)
+        self.sync_pause_button.setMinimumHeight(bottom_row)
+        self.sync_resume_button.setMinimumHeight(bottom_row)
 
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
@@ -220,8 +222,8 @@ class CommandWindow(QWidget):
         layout.addWidget(self.ros_reader, 1, log)
 
         layout.addWidget(self.direct_sync, 1, sync)
-        layout.addWidget(self.sync_pause, 2, sync)
-        layout.addWidget(self.sync_resume, 3, sync)
+        layout.addWidget(self.sync_pause_button, 2, sync)
+        layout.addWidget(self.sync_resume_button, 3, sync)
 
         layout.addWidget(self.ping_button, 1, ping)
         self.ping_row.addRow(self.custom_ping_combobox, self.custom_ping_button)
@@ -320,6 +322,12 @@ class CommandWindow(QWidget):
 
     def checklist(self):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
+
+    def sync_resume(self):
+        pass
+    
+    def sync_pause(self):
+        pass
 
     def change_identifiers(self):
         if self.identifiers_error == 1:
