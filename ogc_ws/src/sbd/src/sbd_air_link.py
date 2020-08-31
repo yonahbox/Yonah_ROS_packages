@@ -64,6 +64,7 @@ class satcomms(rockBlockProtocol):
         self._thr_server = rospy.get_param("~thr_server", "1") # 1 = Comm through web server; 0 = Comm through gnd Rockblock
         self._portID = rospy.get_param("~portID", "/dev/ttyUSB0") # Serial Port that Rockblock is connected to
         self._count = 0 # Mailbox check counter
+        self._msg_send_success = 0 # Check if MO msg successsfully sent. 0 = pending/N.A, -1 = unsuccessful, 1 = successful
         self.interval = rospy.get_param("~interval", "0.5") # sleep interval between mailbox checks
         try:
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
@@ -129,9 +130,11 @@ class satcomms(rockBlockProtocol):
 
     def rockBlockTxFailed(self, momsg):
         rospy.logwarn("Rockblock msg not sent: " + momsg)
+        self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsn, momsg):
         rospy.loginfo("SBD message sent: " + momsg)
+        self._msg_send_success = 1
 
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("Mailbox check " + str(self._count) + " complete")
@@ -179,6 +182,7 @@ class satcomms(rockBlockProtocol):
         '''
         # If no MO msg, local MO buffer will be empty
         self._count = self._count + 1
+        self._msg_send_success = 0
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
         client_serial = self._get_serial(self._buffer.target_id).data

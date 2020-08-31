@@ -184,13 +184,16 @@ class satcommsgnd(satcomms):
         switch_cmd = LinkMessage()
         for i in air_ids:
             switch_cmd.id = i
+            rospy.loginfo("Sending to aircraft " + str(i))
             if self._thr_server:
                 switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 1 " + str(rospy.get_rostime().secs)
                 self._server_send_msg(switch_cmd)
             else:
-                switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 0 " + str(rospy.get_rostime().secs)
-                self.sbd_get_mo_msg(switch_cmd)
-                self.sbd_check_mailbox("")
+                # Sending from gnd Rockblock is likely to fail. We need to ensure that all switch cmds are sent
+                while not self._msg_send_success == 1:
+                    switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 0 " + str(rospy.get_rostime().secs)
+                    self.sbd_get_mo_msg(switch_cmd)
+                    self.sbd_check_mailbox("")
 
     def change_switch_state(self, data):
         '''Handle switching between server and RB-2-RB methods'''
