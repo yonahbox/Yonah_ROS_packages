@@ -137,9 +137,8 @@ class satcommsgnd(satcomms):
         # Message to Rock 7 needs to be hex encoded
         encoded_msg = data.data.encode()
         self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
-
         imei = self._get_imei(data.id)
-        if imei is None:
+        if not imei.data:
             rospy.logwarn("Invalid recipient")
             return True
         self._mt_cred['imei'] = imei.data
@@ -190,7 +189,8 @@ class satcommsgnd(satcomms):
                 self._server_send_msg(switch_cmd)
             else:
                 # Sending from gnd Rockblock is likely to fail. We need to ensure that all switch cmds are sent
-                while not self._msg_send_success == 1:
+                if True:
+                #while not self._msg_send_success == 1:
                     switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 0 " + str(rospy.get_rostime().secs)
                     self.sbd_get_mo_msg(switch_cmd)
                     self.sbd_check_mailbox("")

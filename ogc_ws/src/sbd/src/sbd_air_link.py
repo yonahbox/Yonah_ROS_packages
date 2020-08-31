@@ -186,9 +186,8 @@ class satcomms(rockBlockProtocol):
         mailchk_time = rospy.get_rostime().secs
         # Get RB serial number of client
         client_serial = self._get_serial(self._buffer.target_id).data
-        if client_serial is None:
-            rospy.logwarn("Invalid recipient")
-            return
+        if not client_serial:
+            rospy.logwarn("Invalid recipient. Proceeding with mailbox check without target receipient")
         # If buffer starts with "r ", it is a regular payload
         mo_is_regular = False
         if self._buffer.data.startswith("r "):

@@ -216,8 +216,8 @@ class rockBlock(object):
         msg = ""
         msglen = 0
 
-        # If communicating through gnd Rockblock, prepare client Rockblock prefix
-        if not thr_server:
+        # If communicating through gnd Rockblock and client_serial is valid, prepare client Rockblock prefix
+        if client_serial and not thr_server:
             if mo_is_regular:
                 # If it is a regular payload, compress the prefix
                 msg, msglen = self._packBinaryPrefix(client_serial)
