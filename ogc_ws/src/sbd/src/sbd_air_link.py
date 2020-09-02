@@ -145,11 +145,10 @@ class satcomms(rockBlockProtocol):
 
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
-        data = data[3:-1] # Strip out message headers
-        if data == "sbd switch 0":
+        if "sbd switch 0" in data:
             self._thr_server = 0
             return True
-        if data == "sbd switch 1":
+        if "sbd switch 1" in data:
             self._thr_server = 1
             return True
         return False
