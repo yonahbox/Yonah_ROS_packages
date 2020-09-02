@@ -189,8 +189,7 @@ class satcommsgnd(satcomms):
                 self._server_send_msg(switch_cmd)
             else:
                 # Sending from gnd Rockblock is likely to fail. We need to ensure that all switch cmds are sent
-                if True:
-                #while not self._msg_send_success == 1:
+                while not self._msg_send_success == 1:
                     switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 0 " + str(rospy.get_rostime().secs)
                     self.sbd_get_mo_msg(switch_cmd)
                     self.sbd_check_mailbox("")
