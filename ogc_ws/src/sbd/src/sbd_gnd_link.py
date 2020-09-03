@@ -225,11 +225,13 @@ class satcommsgnd(satcomms):
                 self._switch_state = True
                 self._thr_server = 0
         else:
-            self.sbd_check_mailbox("") # "" is placeholder for data variable
-            # If can contact server, switch to server method for next iteration
-            if self._ssh_conn(self._svr_ip, self._svr_hostname):
-                self._switch_state = True
-                self._thr_server = 1
+            # Make way for switch state if it is active
+            if not self._switch_state:
+                self.sbd_check_mailbox("") # "" is placeholder for data variable
+                # If can contact server, switch to server method for next iteration
+                if self._ssh_conn(self._svr_ip, self._svr_hostname):
+                    self._switch_state = True
+                    self._thr_server = 1
 
     ############################
     # "Main" function
