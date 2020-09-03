@@ -49,6 +49,7 @@ class satcomms(rockBlockProtocol):
 
         self._init_variables()
         self._is_air = 1 # We are an air node!
+        self._prev_switch_cmd_time = rospy.get_rostime().secs # Transmit time of previous incoming switch cmd
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
@@ -146,11 +147,17 @@ class satcomms(rockBlockProtocol):
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
         if "sbd switch 0" in data:
-            self._thr_server = 0
-            return True
+            switch_cmd_time = data.split()[-1]
+            if switch_cmd_time > self._prev_switch_cmd_time:
+                self._prev_switch_cmd_time = switch_cmd_time
+                self._thr_server = 0
+                return True
         if "sbd switch 1" in data:
-            self._thr_server = 1
-            return True
+            switch_cmd_time = data.split()[-1]
+            if switch_cmd_time > self._prev_switch_cmd_time:
+                self._prev_switch_cmd_time = switch_cmd_time
+                self._thr_server = 1
+                return True
         return False
 
     ############################
