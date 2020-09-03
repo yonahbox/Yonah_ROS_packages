@@ -125,10 +125,7 @@ class satcommsgnd(satcomms):
         else:
             # Everything else is non-regular-payload in ASCII form
             if len(response) > 9 and response.startswith(b'RB00'):
-                # Sometimes, msgs sent to another Rockblock also end up in the web server
-                # Hence, strip Rockblock 2 Rockblock prefix if present
                 response = response[9:]
-            # @TODO: Catch decode exceptions (e.g. accidental or malicious errors)
             return response.decode()
     
     def _server_send_msg(self, data):
@@ -139,7 +136,7 @@ class satcommsgnd(satcomms):
         self._mt_cred['data'] = binascii.hexlify(encoded_msg).decode()
         imei = self._get_imei(data.id)
         if not imei.data:
-            rospy.logwarn("Invalid recipient")
+            rospy.logwarn("SBD: Invalid recipient IMEI")
             return True
         self._mt_cred['imei'] = imei.data
         try:
@@ -157,20 +154,19 @@ class satcommsgnd(satcomms):
             _, stdout, _ = self._ssh.exec_command("cat /satcomms_server/buffer.txt", timeout = 5)
             reply_str = str(stdout.readlines())[2:-4] # Remove padding
         except:
-            rospy.logerr("SBD: Connection to AWS server lost")
+            rospy.logerr("SBD: Connection to Web Server lost")
             return False
         try:
             reply = ast.literal_eval(reply_str) # Convert string to dict
-            rospy.loginfo(reply)
             if self._server_is_new_msg(reply['transmit_time']): 
                 if self._is_valid_sender(link=2, details=reply['serial']): # ensure rb serial is valid
                     self._pub_to_despatcher.publish(self._server_decode_mo_msg(reply['data']))
                 else:
                     rospy.logwarn("Received unknown msg from Rockblock " + str(reply['serial']))
         except (SyntaxError):
-            rospy.logwarn("Web Server Syntax Error")
+            rospy.logwarn("SBD: Web Server Syntax Error")
         except (ValueError):
-            rospy.logwarn("Web Server Message Value Error")
+            rospy.logwarn("SBD: Web Server Message Value Error")
         return True
     
     ############################
@@ -183,7 +179,7 @@ class satcommsgnd(satcomms):
         switch_cmd = LinkMessage()
         for i in air_ids:
             switch_cmd.id = i
-            rospy.loginfo("Sending to aircraft " + str(i))
+            rospy.loginfo("SBD: Sending switch cmd to aircraft " + str(i))
             if self._thr_server:
                 switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 1 " + str(rospy.get_rostime().secs)
                 self._server_send_msg(switch_cmd)
@@ -201,9 +197,9 @@ class satcommsgnd(satcomms):
             rospy.loginfo("SBD: Entering switch state")
             self.message_handler.shutdown()
             self._switch_cmd_handler()
-            self.message_handler = rospy.Timer(rospy.Duration(self.interval), self.recv_msg)
             self._switch_state = False
             rospy.loginfo("SBD: Leaving switch state")
+            self.message_handler = rospy.Timer(rospy.Duration(self.interval), self.recv_msg)
     
     ############################
     # Main msg handlers

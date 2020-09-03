@@ -88,27 +88,27 @@ class satcomms(rockBlockProtocol):
     ################################
     
     def rockBlockConnected(self):
-        rospy.loginfo("Rockblock Connected")
+        rospy.loginfo("SBD: Rockblock Connected")
 
     #SIGNAL
     def rockBlockSignalUpdate(self,signal):
-        rospy.loginfo("Rockblock signal strength: " + str(signal))
+        rospy.loginfo("SBD: Iridium signal strength = " + str(signal))
 
     def rockBlockSignalPass(self):
-        rospy.loginfo("Rockblock signal strength good")
+        rospy.loginfo("SBD: Signal strength good")
 
     def rockBlockSignalFail(self):
-        rospy.logwarn("Mailbox check failed, signal strength low")
+        rospy.logwarn("SBD: Mailbox check failed, signal strength low")
     
     #MT
     def rockBlockRxStarted(self):
-        rospy.loginfo("Starting mailbox check attempt " + str(self._count))
+        rospy.loginfo("SBD: Starting mailbox check " + str(self._count))
 
     def rockBlockRxFailed(self, mo_msg):
         if mo_msg == " ":
-            rospy.logwarn("Mailbox check " + str(self._count) + " failed")
+            rospy.logwarn("SBD: Mailbox check " + str(self._count) + " failed")
         else:
-            rospy.logwarn("Mailbox check " + str(self._count) + " failed, message \'" +\
+            rospy.logwarn("SBD: Mailbox check " + str(self._count) + " failed, message \'" +\
                 mo_msg + "\' not delivered")
 
     def rockBlockRxReceived(self,mtmsn,data):
@@ -123,22 +123,22 @@ class satcomms(rockBlockProtocol):
                 self._pub_to_despatcher.publish(data)
 
     def rockBlockRxMessageQueue(self,count):
-        rospy.loginfo("Rockblock found " + str(count) + " queued incoming msgs")
+        rospy.loginfo("SBD: " + str(count) + " queued incoming msgs")
      
     #MO
     def rockBlockTxStarted(self):
-        rospy.loginfo("Rockblock ready to send msg")
+        rospy.loginfo("SBD: Rockblock Tx ready")
 
     def rockBlockTxFailed(self, momsg):
-        rospy.logwarn("Rockblock msg not sent: " + momsg)
+        rospy.logwarn("SBD: Msg not sent: " + momsg)
         self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsn, momsg):
-        rospy.loginfo("SBD message sent: " + momsg)
+        rospy.loginfo("SBD: Msg sent: " + momsg)
         self._msg_send_success = 1
 
     def rockBlockTxBlankMsg(self):
-        rospy.loginfo("Mailbox check " + str(self._count) + " complete")
+        rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
 
     ############################
     # Check for switch cmds
@@ -151,12 +151,14 @@ class satcomms(rockBlockProtocol):
             if switch_cmd_time > self._prev_switch_cmd_time:
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 0
+                rospy.loginfo("SBD: Switching to RB-2-RB comms")
                 return True
         if "sbd switch 1" in data:
             switch_cmd_time = int(data.split()[-1])
             if switch_cmd_time > self._prev_switch_cmd_time:
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 1
+                rospy.loginfo("SBD: Switching to Server comms")
                 return True
         return False
 
@@ -172,8 +174,8 @@ class satcomms(rockBlockProtocol):
         incoming_msgtype = data.data.split()[0]
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
-            rospy.logdebug("Reject incoming msg " + data.data)
-            rospy.loginfo("Existing msg in SBD local MO buffer is of higher priority: " + self._buffer.data)
+            rospy.loginfo("SBD: Reject incoming msg " + data.data)
+            rospy.loginfo("SBD: Existing msg in SBD local MO buffer is of higher priority: " + self._buffer.data)
             return
         self._buffer.data = data.data
         self._buffer.msgtype = incoming_msgtype
@@ -193,7 +195,7 @@ class satcomms(rockBlockProtocol):
         # Get RB serial number of client
         client_serial = self._get_serial(self._buffer.target_id).data
         if not client_serial:
-            rospy.logwarn("Invalid recipient. Proceeding with mailbox check without target receipient")
+            rospy.logwarn("SBD: Invalid receipient serial. Proceeding with mailbox check without target receipient")
         # If buffer starts with "r ", it is a regular payload
         mo_is_regular = False
         if self._buffer.data.startswith("r "):
