@@ -58,8 +58,9 @@ class ServiceHandler:
 		return GetSelfDetailsResponse(data=self._ids.get_self_serial())
 
 	def get_sbd_details(self, request):
-		username, password, url = self._ids.get_sbd_credentials()
-		return GetSBDDetailsResponse(username=username, password=password, url=url)
+		username, password, svr_hostname, svr_ip = self._ids.get_sbd_credentials()
+		return GetSBDDetailsResponse(username=username, password=password, svr_hostname=svr_hostname,\
+			svr_ip=svr_ip)
 
 	def add_new_device(self, request):
 		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)

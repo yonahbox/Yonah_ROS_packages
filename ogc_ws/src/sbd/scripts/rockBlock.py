@@ -211,13 +211,13 @@ class rockBlock(object):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
-        rospy.loginfo("Inserting MO msg: " + self.mo_msg)
+        rospy.loginfo("SBD: Inserting MO msg: " + self.mo_msg)
 
         msg = ""
         msglen = 0
 
-        # If communicating through gnd Rockblock, prepare client Rockblock prefix
-        if not thr_server:
+        # If communicating through gnd Rockblock and client_serial is valid, prepare client Rockblock prefix
+        if client_serial and not thr_server:
             if mo_is_regular:
                 # If it is a regular payload, compress the prefix
                 msg, msglen = self._packBinaryPrefix(client_serial)
@@ -266,14 +266,14 @@ class rockBlock(object):
                 result = False
                 queuestatus = self.s.readline().strip().decode()
                 if queuestatus == "0":
-                    rospy.loginfo("MO msg queue success")
+                    rospy.loginfo("SBD: MO msg queue success")
                     result = True
                 elif queuestatus == "1":
-                    rospy.logwarn("MO msg write timeout")
+                    rospy.logwarn("SBD: MO msg write timeout")
                 elif queuestatus == "2":
-                    rospy.logwarn("MO msg corrupted")
+                    rospy.logwarn("SBD: MO msg corrupted")
                 elif queuestatus == "3":
-                    rospy.logwarn("MO msg too big")
+                    rospy.logwarn("SBD: MO msg too big")
                 self.s.readline().strip()  #BLANK
                 self.s.readline().strip() #OK
                 return result
@@ -403,7 +403,7 @@ class rockBlock(object):
         # Wait for valid Network Time
         while True:
             if(TIME_ATTEMPTS == 0):
-                rospy.logerr("No Iridium Network Service!")
+                rospy.logerr("SBD: No Iridium Network Service!")
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
                     self.callback.rockBlockSignalFail()
                 return False
@@ -419,7 +419,7 @@ class rockBlock(object):
                 raise rockBlockException("Signal read error; the pySerial readline order may have messed up!")
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
                 if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
-                    rospy.logwarn("Low signal: " + str(signal))
+                    rospy.logwarn("SBD: Low signal: " + str(signal))
                     self.callback.rockBlockSignalFail()
                 return False
             self.callback.rockBlockSignalUpdate( signal )
@@ -442,7 +442,7 @@ class rockBlock(object):
 
         if(response == b'OK'):
             # Blank msg
-            rospy.logwarn("No message content... strange!")
+            rospy.logwarn("SBD: No message content... strange!")
             if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                 self.callback.rockBlockRxReceived(mtMsn, "")
             # Return early. Otherwise it will hit the last while statement and enter an infinite loop
@@ -473,13 +473,13 @@ class rockBlock(object):
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                     self.callback.rockBlockRxReceived(mtMsn, content)
         except struct.error:
-            rospy.logerr("Error when unpacking binary msg")
+            rospy.logerr("SBD: Error when unpacking binary msg")
             rospy.logerr(response)
         except IndexError:
-            rospy.logerr("Binary msg is too short")
+            rospy.logerr("SBD: Binary msg is too short")
             rospy.logerr(response)
         except UnicodeDecodeError:
-            rospy.logerr("Error in decoding msg")
+            rospy.logerr("SBD: Error in decoding msg")
             rospy.logerr(response)
         
         while True:
