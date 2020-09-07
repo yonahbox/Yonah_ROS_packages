@@ -1,0 +1,4 @@
+string number
+int64 telegram_id
+---
+bool success

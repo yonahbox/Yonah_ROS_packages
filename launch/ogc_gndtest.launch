@@ -1,0 +1,70 @@
+<launch>
+
+	<!-- Common OGC args -->
+	<arg name="log_output" default="screen" />
+	<arg name="interval_1" default="10"/>
+	<arg name="interval_2" default="60"/>
+	<arg name="interval_3" default="5"/>
+	<arg name="router_username" default="root" />
+	<arg name="router_ip" default="192.168.1.1" />
+	<arg name="link_select" default="0" />
+
+	<!-- identifiers args -->
+	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+	<arg name="air_ids" default="[1]" />
+	<arg name="self_id" default="1" />
+	<arg name="is_air" default="False" />
+	
+	<!-- tele args -->
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
+
+	<!-- sbd args -->
+	<arg name="portID" default="/dev/ttyUSB0"/>
+
+	<!-- tele link node -->
+	<node pkg="telegram" type="telegram_link" name="telegram_link" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	</node>
+
+	<!-- sms_link node -->
+	<node pkg="sms" type="sms_link.py" name="sms_link"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="router_username" value="$(arg router_username)" />
+		<param name="router_ip" value="$(arg router_ip)" />
+	</node>
+	
+	<!-- sbd link node -->
+	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="interval" value="$(arg interval_3)" />
+        <param name="portID" value="$(arg portID)" />
+		<param name="self_id" value="$(arg self_id)" />
+	</node>
+
+	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+		<param name="identifiers_file" value="$(arg identifiers_file)" />
+		<param name="is_air" value="$(arg is_air)" />
+		<param name="self_id" value="$(arg self_id)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	</node>
+
+	<!-- gnd despatcher node -->
+	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="self_id" value="$(arg self_id)" />
+		<param name="link_select" value="$(arg link_select)" />
+	</node>
+
+	<!-- gnd statustext handler node -->
+	<node pkg="statustext" type="gnd_statustext.py" name="gnd_statustext" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node>
+
+	<!-- rqt node -->
+	<node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node>
+
+</launch>

@@ -4,11 +4,14 @@
 **/build
 **/devel
 **/.catkin_workspace
-CMakeLists.txt
-package.xml
+**/install
 
 # vscode files
 **/.vscode
+
+# rosbag and log files
+*.bag
+*.log
 
 #SSH private key files (for obvious reasons)
 *.pem
@@ -17,3 +20,6 @@ package.xml
 *.tlog
 *.tlog.raw
 *.parm
+
+# Other auto-generated files
+**/__pycache__

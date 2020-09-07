@@ -1,0 +1,5 @@
+---
+string username
+string password
+string svr_hostname
+string svr_ip

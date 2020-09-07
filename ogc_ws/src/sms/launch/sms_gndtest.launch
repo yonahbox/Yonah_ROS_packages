@@ -1,0 +1,48 @@
+<!-- launch file for Yonah main SMS Telemetry Node on GCS as a standalone (for testing purposes)-->
+
+<launch>
+    <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
+    <arg name="log_output" default="screen"/>
+
+    <!-- hostname and IP of onboard cellular router -->
+    <arg name="router_username" default="root" />
+    <arg name="router_ip" default="192.168.1.1" />
+
+
+    <!-- Identifiers -->
+    <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+    <arg name="air_ids" default="1" />
+    <arg name="self_id" default="3" />
+    <arg name="is_air" default="False" />
+
+    <!-- despatcher arguments -->
+    <arg name="link_select" default="0" />
+
+
+    <!-- sms_link node -->
+    <node pkg="sms" type="sms_link.py" name="sms_link"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="router_username" value="$(arg router_username)" />
+        <param name="router_ip" value="$(arg router_ip)" />
+    </node>
+
+    <node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
+        <param name="identifiers_file" value="$(arg identifiers_file)" />
+        <param name="is_air" value="$(arg is_air)" />
+        <param name="self_id" value="$(arg self_id)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+    </node>
+
+    <!-- ground_despatcher node -->
+    <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+        <param name="self_id" value="$(arg self_id)" />
+        <param name="link_select" value="$(arg link_select)" />
+    </node>
+
+    <!-- ground test node -->
+    <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+    respawn="true" respawn_delay="3" output="$(arg log_output)">
+    </node>
+
+</launch>

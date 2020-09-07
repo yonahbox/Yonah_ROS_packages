@@ -1,17 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# Copyright (C) 2019, 2020 Seah Shao Xuan, Lau Yan Han, and Yonah (yonahbox@gmail.com)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 File Name: air_data.py
-
-Date Modified: 30/07/2019
-
 Required Scripts: air_ssh_connection.sh, air_netcat_init.sh
-
 Launched by ROS under air_data.launch, which performs the initialisation of a SSH connection from the companion computer to a web server.
-
 Includes SSH connection, NETCAT initialisation and periodic tests of connection with the web server.
-
-Pending development: interaction with the SMS Link for information exchange.
 """
 
 #Imports critical python modules
@@ -58,11 +66,18 @@ class SSH:
 	def ssh_attempt_connection(self):	
 		
 		rospy.loginfo("Attempting connection...")		
-		print "\r"
+		print ("\r")
+
+		svr_name = rospy.get_param('svr_name')
+		svr_ip = rospy.get_param('svr_ip')
 
 		#Usage of python subprocessing to maintain an open SSH connection
-		#Remarks: Let's get the $find function to work, so that we don't have to keep specifying the absolute path!
-		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh'], stdout=PIPE, stderr=PIPE)
+		
+		port_1 = (10 * rospy.get_param('aircraft')) + 4000
+		port_2 = port_1 + 1
+		port_3 = port_1 + 2
+		self.ssh_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_ssh_connection.sh', \
+			svr_name, svr_ip, str(port_1), str(port_2), str(port_3)], stdout=PIPE, stderr=PIPE)
 		
 		time.sleep(5)	
 
@@ -77,9 +92,9 @@ class SSH:
 		try:
 			self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.client.connect(('localhost', 4000))
-			self.client.send("AIR")
+			self.client.send("AIR".encode())
 			#Receives a status message from the web server
-			self.from_server = self.client.recv(4096)
+			self.from_server = self.client.recv(4096).decode()
 			self.client.close()
 			
 			if ("NETCAT" in self.from_server):
@@ -89,13 +104,13 @@ class SSH:
 
 			if ("AIR" in self.from_server) and ("GROUND" in self.from_server):	
 				rospy.loginfo("Air-Server-Ground Established")
-				print "\r"	
+				print ("\r")	
 				self.air_link = True
 				self.ground_link = True
 				return True	
 			elif ("AIR" in self.from_server) and not ("GROUND" in self.from_server):
 				rospy.logwarn("Air-Server Established, Server-Ground Connection Down, Please Reconnect")
-				print "\r"
+				print("\r")
 				self.air_link = True
 				self.ground_link = False
 				self.netcat_link = False
@@ -104,7 +119,7 @@ class SSH:
 
 		except: 
 			rospy.logerr("Air-Server Disconnected")
-			print "\r"
+			print("\r")
 			self.air_link = False
 			self.ground_link = False
 			self.netcat_link = False
@@ -119,21 +134,20 @@ class SSH:
 		
 		#Kills any existing NETCAT processes prior to opening a new one, to prevent the hogging of critical ports
 		self.netcat_list = subprocess.Popen(['pidof', 'netcat'], stdout=PIPE).stdout.read()
-		self.arg = 'kill -9 ' + self.netcat_list
+		self.arg = 'kill -9 ' + self.netcat_list.decode()
 		subprocess.Popen([self.arg], shell=True, stdout=PIPE, stderr=PIPE)
 		rospy.loginfo("NETCAT Reset")
-		print "\r"
+		print("\r")
 		#Usage of python subprocessing to open a NETCAT process	
-		#Remarks: Let's get the $find function to work, so that we don't have to keep specifying the absolute path!
 		self.netcat_linkage = subprocess.Popen(['bash', '/home/ubuntu/Yonah_ROS_packages/bonedata_ws/src/air_data/src/air_netcat_init.sh'], stdout=PIPE, stderr=PIPE)
 		self.netcat_link = True
 		rospy.loginfo("NETCAT Initialised")
-		print "\r"
+		print("\r")
 
 	def ssh_terminate(self):
 	
 		rospy.loginfo("Program Terminating...")
-		print "\r"
+		print("\r")
 		self.air_link = False
 		self.netcat_link = False
 		self.ssh_linkage.kill()
@@ -155,12 +169,14 @@ if __name__ == "__main__":
 
 			ros.clear_receipt()
 
-			print ssh.netcat_link
-			print ssh.ground_netcat
+			print (ssh.netcat_link)
+			print (ssh.ground_netcat)
 		
 			if (ssh.netcat_link == False) and (ssh.ground_netcat == True):
 				ssh.netcat_init()
 
+			# Notify the SMS Tech node about its status
+			# @TODO: Receive info about SMS Tech Node's status
 			if (ssh.air_link == True) and (ssh.ground_link == True):
 				ros.publish("SVC")
 			elif (ssh.air_link == True) and (ssh.ground_link == False):
