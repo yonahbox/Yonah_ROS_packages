@@ -35,7 +35,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
-from std_msgs.msg import String
+from std_msgs.msg import UInt8, String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
@@ -76,10 +76,11 @@ class airdespatcher():
         self.ground_id = rospy.get_param("~ground_ids")[0]
 
         # Intervals btwn msgs
-        self._interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
-        self._interval_2 = rospy.get_param("~interval_2") # Long time interval (seconds) for regular payload
-        self._tele_interval = self._interval_1 # Interval (seconds) for regular payload over telegrams
-        self._sms_interval = self._interval_2 # Interval (seconds) for regular payload over sms
+        self._interval_1 = rospy.get_param("~interval_1")
+        self._interval_2 = rospy.get_param("~interval_2")
+        self._interval_3 = rospy.get_param("~interval_3")
+        self._tele_interval = self._interval_1
+        self._sms_interval = self._interval_2
         # Note that there is no sbd interval. This interval is controlled by sbd link node
       
         # Mission params
@@ -148,27 +149,6 @@ class airdespatcher():
         '''Attach message headers (prefixes and suffixes'''
         self._msg = severity + " " + str(self._is_air) + " " + str(self._id) + " " + \
             self._msg + " " + str(rospy.get_rostime().secs)
-
-    def _send_regular_payload_sms(self):
-        '''Send regular payload over sms link'''
-        message = LinkMessage()
-        message.data = self._msg
-        message.id = self.ground_id
-        self.pub_to_sms.publish(message)
-    
-    def _send_regular_payload_sbd(self):
-        '''Send regular payload over SBD Satcomms link'''
-        message = LinkMessage()
-        message.data = self._msg
-        message.id = self.ground_id
-        self.pub_to_sbd.publish(message)
-
-    def _send_regular_payload_tele(self):
-        '''Send regular payload over Telegram link'''
-        message = LinkMessage()
-        message.data = self._msg
-        message.id = self.ground_id
-        self.pub_to_telegram.publish(message)
     
     def sendmsg(self, severity):
         '''Send any msg that's not a regular payload'''
@@ -183,7 +163,6 @@ class airdespatcher():
             self.pub_to_sms.publish(message)
         else:
             self.pub_to_sbd.publish(message)
-        
 
     def check_alerts(self, data):
         '''Check for special alerts'''
@@ -209,22 +188,61 @@ class airdespatcher():
             self._msg = statustextmsg
             self.sendmsg("s")
     
-    def send_regular_payload(self, data):
+    def _prep_regular_payload(self):
+        '''Update the regular payload with latest data'''
         if self._regular_payload_flag == False:
             return
-        '''Send regular payload over one of the three links: SMS, SBD or Telegram'''
         self._msg = self.payloads.truncate_regular_payload()
         self._attach_headers("r")
-        if self.link_select == 0:
-            self._send_regular_payload_tele()
-            rospy.sleep(self._tele_interval)
-        elif self.link_select == 1:
-            self._send_regular_payload_sms()
-            rospy.sleep(self._sms_interval)
-        else:
-            self._send_regular_payload_sbd()
-            # The sleep interval is controlled by sbd link node
+        return self._msg, self.ground_id
 
+    def send_regular_payload_sms(self):
+        '''Send regular payload over sms link'''
+        message = LinkMessage()
+        message.data, message.id = self._prep_regular_payload()
+        self.pub_to_sms.publish(message)
+        rospy.sleep(self._sms_interval)
+    
+    def send_regular_payload_sbd(self):
+        '''Send regular payload over SBD Satcomms link'''
+        message = LinkMessage()
+        message.data, message.id = self._prep_regular_payload()
+        self.pub_to_sbd.publish(message)
+        # The sleep interval is controlled by sbd link node
+
+    def send_regular_payload_tele(self):
+        '''Send regular payload over Telegram link'''
+        message = LinkMessage()
+        message.data, message.id = self._prep_regular_payload()
+        self.pub_to_telegram.publish(message)
+        rospy.sleep(self._tele_interval)
+
+    #########################################
+    # Handle Misc (e.g. switcher) messages
+    #########################################
+
+    def check_switcher(self, data):
+        '''Obtain updates from switcher node'''
+        self.link_select = data.data
+        if self.link_select == 2:
+            self._tele_interval = self._interval_2
+            self._sms_interval = self._interval_3
+            self.sbd_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sbd)
+        elif self.link_select == 1:
+            self._tele_interval = self._interval_2
+            self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sms)
+            try:
+                self.sbd_sender.shutdown()
+            except:
+                pass
+        elif self.link_select == 0:
+            self._tele_interval = self._interval_1
+            try:
+                self.sms_sender.shutdown()
+                self.sbd_sender.shutdown()
+            except:
+                pass
+    
     ############################
     # "Main" function
     ############################
@@ -240,11 +258,12 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
-        message_sender = rospy.Timer(rospy.Duration(1), self.send_regular_payload)
+        self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()
         alerts.shutdown()
-        message_sender.shutdown()
+        self.tele_sender.shutdown()
 
 if __name__=='__main__':
     run = airdespatcher()
