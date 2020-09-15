@@ -66,29 +66,17 @@ class CommandWindow(QWidget):
         self.custom_ping_list.sort()
 
         self.create_layout(active_aircrafts)
-
         self.PopupMessages = PopupMessages()
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
 
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
-        self.custom_ping_combobox.currentIndexChanged.connect(self.custom_ping_change)
 
         self.arm_button.pressed.connect(self.arm)
         self.disarm_button.pressed.connect(self.disarm)
         self.go_button.pressed.connect(self.go)
         self.mission_load_button.pressed.connect(self.mission_load)
         self.checklist_button.pressed.connect(self.checklist)
-        self.change_mode_button.pressed.connect(self.change_mode)
-        self.change_identifiers_button.pressed.connect(self.change_identifiers)
-        self.ping_button.pressed.connect(self.ping)
-        self.custom_ping_button.pressed.connect(self.custom_ping)
-        self.ros_reader.pressed.connect(self.ros_log_parser)
-        self.direct_sync.pressed.connect(self.direct_update)
         self.full_menu.pressed.connect(self.full_window)
-        self.waypoint_load_button.pressed.connect(self.waypoint_load)
-        self.mission_next_button.pressed.connect(self.mission_next)
-        self.sync_pause_button.pressed.connect(self.sync_pause)
-        self.sync_resume_button.pressed.connect(self.sync_resume)
 
         # Publisher Command
         self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
@@ -123,34 +111,20 @@ class CommandWindow(QWidget):
         self.first_row = QHBoxLayout()
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
-        self.ping_row = QFormLayout()
+        
 
         # Create the widgets
         self.combo_box = QComboBox()
-        self.custom_ping_combobox = QComboBox()
 
         self.create_combobox(active_aircrafts)
-        # Use a for loop to add items inside the drop down menu
-        for i in (self.custom_ping_list):
-            self.custom_ping_combobox.addItem(i)
-
+        
+        
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
         self.go_button = QPushButton('GO / RETURN')
         self.checklist_button = QPushButton('Checklist')
         self.mission_load_button = QPushButton('Load Mission')
-
-        self.change_mode_button = QPushButton('Change Mode')
-        self.change_identifiers_button = QPushButton('Change Identifiers')
-        self.ping_button = QPushButton('Ping')
-        self.custom_ping_button = QPushButton('Custom Ping Button')
-        self.ros_reader = QPushButton('ROS log')
-        self.direct_sync = QPushButton('Sync Aircraft')
         self.full_menu = QPushButton('Full Menu')
-        self.mission_next_button = QPushButton('Mission Next')
-        self.waypoint_load_button = QPushButton('Load Waypoint')
-        self.sync_pause_button = QPushButton('Pause Sync')
-        self.sync_resume_button = QPushButton('Resume Sync')
 
         # Set UI properties of the buttons and layout
         top_row = 60        # Minimum height for the top row buttons
@@ -163,18 +137,6 @@ class CommandWindow(QWidget):
         self.checklist_button.setMinimumHeight(bottom_row)
 
         self.full_menu.setMinimumHeight(bottom_row)
-        self.change_identifiers_button.setMinimumHeight(bottom_row)
-        self.change_mode_button.setMinimumHeight(bottom_row)
-        self.ping_button.setMinimumHeight(bottom_row)
-        self.custom_ping_button.setMinimumHeight(bottom_row)
-        self.custom_ping_combobox.setMinimumHeight(bottom_row)
-        self.ros_reader.setMinimumHeight(bottom_row)
-        self.direct_sync.setMinimumHeight(bottom_row)
-        self.mission_next_button.setMinimumHeight(bottom_row)
-        self.waypoint_load_button.setMinimumHeight(bottom_row)
-        self.sync_pause_button.setMinimumHeight(bottom_row)
-        self.sync_resume_button.setMinimumHeight(bottom_row)
-
         # Add the widgets into the layouts
         self.main_layout.addWidget(self.combo_box)
         self.first_row.addWidget(self.arm_button)
@@ -194,7 +156,52 @@ class CommandWindow(QWidget):
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
         layout = QGridLayout()
+        self.ping_row = QFormLayout()
         group_titles = ["","Identifiers", "Sync", "Log", "Missions", "Ping"]
+
+        self.custom_ping_combobox = QComboBox()
+
+        
+        # Use a for loop to add items inside the drop down menu
+        for i in (self.custom_ping_list):
+            self.custom_ping_combobox.addItem(i)
+        self.change_mode_button = QPushButton('Change Mode')
+        self.change_identifiers_button = QPushButton('Change Identifiers')
+        self.ping_button = QPushButton('Ping')
+        self.custom_ping_button = QPushButton('Custom Ping Button')
+        self.ros_reader = QPushButton('ROS log')
+        self.direct_sync = QPushButton('Sync Aircraft')
+        
+        self.mission_next_button = QPushButton('Mission Next')
+        self.waypoint_load_button = QPushButton('Load Waypoint')
+        self.sync_pause_button = QPushButton('Pause Sync')
+        self.sync_resume_button = QPushButton('Resume Sync')
+        top_row = 60        # Minimum height for the top row buttons
+        bottom_row = 40     # Minimum height for the bottom row buttons
+
+        self.change_identifiers_button.setMinimumHeight(bottom_row)
+        self.change_mode_button.setMinimumHeight(bottom_row)
+        self.ping_button.setMinimumHeight(bottom_row)
+        self.custom_ping_button.setMinimumHeight(bottom_row)
+        self.custom_ping_combobox.setMinimumHeight(bottom_row)
+        self.ros_reader.setMinimumHeight(bottom_row)
+        self.direct_sync.setMinimumHeight(bottom_row)
+        self.mission_next_button.setMinimumHeight(bottom_row)
+        self.waypoint_load_button.setMinimumHeight(bottom_row)
+        self.sync_pause_button.setMinimumHeight(bottom_row)
+        self.sync_resume_button.setMinimumHeight(bottom_row)
+
+        self.change_mode_button.pressed.connect(self.change_mode)
+        self.change_identifiers_button.pressed.connect(self.change_identifiers)
+        self.ping_button.pressed.connect(self.ping)
+        self.custom_ping_button.pressed.connect(self.custom_ping)
+        self.ros_reader.pressed.connect(self.ros_log_parser)
+        self.direct_sync.pressed.connect(self.direct_update)
+        self.waypoint_load_button.pressed.connect(self.waypoint_load)
+        self.mission_next_button.pressed.connect(self.mission_next)
+        self.sync_pause_button.pressed.connect(self.sync_pause)
+        self.sync_resume_button.pressed.connect(self.sync_resume)
+        self.custom_ping_combobox.currentIndexChanged.connect(self.custom_ping_change)
 
         identifiers = group_titles.index("Identifiers")
         sync = group_titles.index("Sync")
@@ -207,12 +214,6 @@ class CommandWindow(QWidget):
             # label.setStyleSheet("border: 1px solid black;")
             label.setAlignment(Qt.AlignCenter)
             layout.addWidget(label,0,i)
-        
-        # layout.addWidget(self.combo_box, 1, primary)
-        # layout.addWidget(self.arm_button, 2, primary)
-        # layout.addWidget(self.disarm_button,3, primary)
-        # layout.addWidget(self.go_button, 4, primary)
-        # layout.addWidget(self.checklist_button, 5, primary)
 
         layout.addWidget(self.mission_next_button, 1, mission)
         layout.addWidget(self.waypoint_load_button, 2, mission)
