@@ -35,10 +35,10 @@ class switcher():
         rospy.init_node('switcher', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
         self._link = TELE
-        self._max_time = list() # Starting time in seconds
+        self._max_time = [0,0,0] # Starting time in seconds
         self._max_time[TELE] = 10
         self._max_time[SMS] = 20
-        self._watchdog = self._max_time # Watchdog timer. When timer expires, link switch will trigger
+        self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
     
     ###########################
     # Watchdog handlers
@@ -50,12 +50,13 @@ class switcher():
     def _switch(self, target_link):
         '''Perform the link-switch action and notify despatcher'''
         self._link = target_link
-        self._watchdog = self._max_time
+        self._watchdog[target_link] = self._max_time[target_link]
+        rospy.logwarn("Switching to link " + str(target_link))
         self.pub_to_despatcher.publish(self._link)
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
-        if self._link >= 2:
+        if self._link >= SBD:
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
         if self._watchdog[self._link] <= 0:
