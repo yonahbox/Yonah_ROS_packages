@@ -67,4 +67,10 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node>
 
+	<!-- linkswitch -->
+	<node name="switcher" type="switcher.py" pkg="despatcher"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	</node>
+
+
 </launch>

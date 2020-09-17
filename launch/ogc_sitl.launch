@@ -57,6 +57,7 @@
         <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="interval 3" value="$(arg interval_3)" />
 		<param name="self_id" value="$(arg self_id)" />
 		<param name="link_select" value="$(arg link_select)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
@@ -72,6 +73,11 @@
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
+	</node>
+
+	<!-- linkswitch -->
+	<node name="switcher" type="switcher.py" pkg="despatcher"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node>
 
 </launch>
