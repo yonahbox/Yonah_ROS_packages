@@ -196,21 +196,21 @@ class airdespatcher():
         self._attach_headers("r")
         return self._msg, self.ground_id
 
-    def send_regular_payload_sms(self):
+    def send_regular_payload_sms(self, data):
         '''Send regular payload over sms link'''
         message = LinkMessage()
         message.data, message.id = self._prep_regular_payload()
         self.pub_to_sms.publish(message)
         rospy.sleep(self._sms_interval)
     
-    def send_regular_payload_sbd(self):
+    def send_regular_payload_sbd(self, data):
         '''Send regular payload over SBD Satcomms link'''
         message = LinkMessage()
         message.data, message.id = self._prep_regular_payload()
         self.pub_to_sbd.publish(message)
         # The sleep interval is controlled by sbd link node
 
-    def send_regular_payload_tele(self):
+    def send_regular_payload_tele(self, data):
         '''Send regular payload over Telegram link'''
         message = LinkMessage()
         message.data, message.id = self._prep_regular_payload()
