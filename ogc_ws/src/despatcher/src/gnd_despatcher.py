@@ -50,9 +50,17 @@ class gnddespatcher():
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         self._id = rospy.get_param("~self_id") # Our GCS ID
         self._severity = "i" # Outgoing msg severity level
+        self._valid_ids = rospy.get_param("~valid_ids")
 
         # Used to handle incoming msgs
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
+
+        # Intervals btwn heartbeat msgs
+        self._interval_1 = rospy.get_param("~interval_1")
+        self._interval_2 = rospy.get_param("~interval_2")
+        self._interval_3 = rospy.get_param("~interval_3")
+        self._tele_interval = self._interval_1
+        self._sms_interval = self._interval_2
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -123,6 +131,46 @@ class gnddespatcher():
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
     
+    #########################################
+    # Handle Misc (e.g. switcher) messages
+    #########################################
+
+    def _prep_heartbeat(self):
+        return "h " + str(self._is_air) + " " + str(self._id) + \
+            " HB " + str(rospy.get_rostime().secs)
+    
+    def send_heartbeat_tele(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        for ids in self._valid_ids:
+            msg.id = ids
+            self.pub_to_telegram.publish(msg)
+        rospy.sleep(self._tele_interval)
+
+    def send_heartbeat_sms(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        for ids in self._valid_ids:
+            msg.id = ids
+            self.pub_to_sms.publish(msg)
+        rospy.sleep(self._sms_interval)
+
+    def check_switcher(self, data):
+        '''Obtain updates from switcher node'''
+        self.link_select = data.data
+        if self.link_select == 2:
+            self._tele_interval = self._interval_2
+            self._sms_interval = self._interval_3
+        elif self.link_select == 1:
+            self._tele_interval = self._interval_2
+            self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_sms)
+        elif self.link_select == 0:
+            self._tele_interval = self._interval_1
+            try:
+                self.sms_sender.shutdown()
+            except:
+                pass
+
     ############################
     # "Main" function
     ############################
@@ -132,7 +180,9 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
+        self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_tele)
         rospy.spin()
+        self.tele_sender.shutdown()
 
 if __name__=='__main__':
     run = gnddespatcher()

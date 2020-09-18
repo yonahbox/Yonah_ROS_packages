@@ -74,13 +74,14 @@ class satcomms(rockBlockProtocol):
         
         # Msg Type Prioritization. Higher number means higher priority
         self._msg_priority = {
-            "r": 0,
-            "a": 1,
-            "m": 2,
-            "s": 3,
-            "i": 4,
-            "w": 5,
-            "e": 6
+            "h": 0,
+            "r": 1,
+            "a": 2,
+            "m": 3,
+            "s": 4,
+            "i": 5,
+            "w": 6,
+            "e": 7
         }
 
     ################################
