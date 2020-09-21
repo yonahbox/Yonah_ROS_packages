@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ROS/Third-Party
 import rospy
 
-from std_msgs.msg import String
+from std_msgs.msg import UInt8, String
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
 
@@ -159,10 +159,11 @@ class gnddespatcher():
         '''Obtain updates from switcher node'''
         self.link_select = data.data
         if self.link_select == 2:
-            self._tele_interval = self._interval_2
+            self._tele_interval = self._interval_3
             self._sms_interval = self._interval_3
         elif self.link_select == 1:
             self._tele_interval = self._interval_2
+            self._sms_interval = self._interval_2
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_sms)
         elif self.link_select == 0:
             self._tele_interval = self._interval_1
@@ -180,6 +181,7 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
+        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_tele)
         rospy.spin()
         self.tele_sender.shutdown()

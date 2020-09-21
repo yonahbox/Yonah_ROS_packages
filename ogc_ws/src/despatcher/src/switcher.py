@@ -36,7 +36,7 @@ class switcher():
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
-        self._max_time[TELE] = 10
+        self._max_time[TELE] = 20
         self._max_time[SMS] = 20
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
     

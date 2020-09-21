@@ -225,11 +225,12 @@ class airdespatcher():
         '''Obtain updates from switcher node'''
         self.link_select = data.data
         if self.link_select == 2:
-            self._tele_interval = self._interval_2
+            self._tele_interval = self._interval_3
             self._sms_interval = self._interval_3
             self.sbd_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sbd)
         elif self.link_select == 1:
             self._tele_interval = self._interval_2
+            self._sms_interval = self._interval_2
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sms)
             try:
                 self.sbd_sender.shutdown()
