@@ -43,6 +43,7 @@ from despatcher.msg import LinkMessage
 from regular import air_payload
 import waypoint
 import g2a
+from headers import headerhandler
 
 
 class airdespatcher():
@@ -67,6 +68,7 @@ class airdespatcher():
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
+        self._header = headerhandler()
 
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
@@ -111,14 +113,13 @@ class airdespatcher():
         try:
             rospy.loginfo("Received \"" + data.data + "\"")
             # Handle msg headers
-            self._recv_msg = data.data.split()
-            sender_timestamp = int(self._recv_msg[-1])
-            if not self._is_new_msg(sender_timestamp):
+            msgtype, devicetype, sysid, timestamp, self._recv_msg \
+                = self._header.split_headers(data.data)
+            if not self._header.is_new_msg(timestamp):
                 return
             self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
-                # self._check_ping()
                 g2a.check_ping(self)
             elif "sms" in self._recv_msg:
                 g2a.check_sms(self)
@@ -145,18 +146,17 @@ class airdespatcher():
         self._msg = ' '.join(self._recv_msg)
         self.sendmsg("a")
     
-    def _attach_headers(self, severity):
+    def _attach_headers(self, msgtype):
         '''Attach message headers (prefixes and suffixes'''
-        self._msg = severity + " " + str(self._is_air) + " " + str(self._id) + " " + \
-            self._msg + " " + str(rospy.get_rostime().secs)
+        prefixes = [msgtype, self._is_air, self._id]
+        self._msg = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
     
-    def sendmsg(self, severity):
+    def sendmsg(self, msgtype):
         '''Send any msg that's not a regular payload'''
-        self._attach_headers(severity)
+        self._attach_headers(msgtype)
         message = LinkMessage()
         message.id = self.ground_id
         message.data = self._msg
-        print(message.data)
         if self.link_select == 0:
             self.pub_to_telegram.publish(message)
         elif self.link_select == 1:
