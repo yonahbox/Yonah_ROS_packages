@@ -132,7 +132,7 @@ class airdespatcher():
                 g2a.check_mission(self)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             rospy.logerr("Invalid message format")
 
 

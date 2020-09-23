@@ -29,6 +29,7 @@ from despatcher.msg import LinkMessage
 # Local
 import regular
 from g2a import recognised_commands
+from headers import headerhandler
 
 class gnddespatcher():
 
@@ -49,11 +50,10 @@ class gnddespatcher():
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         self._id = rospy.get_param("~self_id") # Our GCS ID
-        self._severity = "i" # Outgoing msg severity level
         self._valid_ids = rospy.get_param("~valid_ids")
 
-        # Used to handle incoming msgs
-        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
+        # Msg header handling
+        self._header = headerhandler()
 
         # Intervals btwn heartbeat msgs
         self._interval_1 = rospy.get_param("~interval_1")
@@ -74,8 +74,8 @@ class gnddespatcher():
             msg = LinkMessage()
             msg.id = data.id
             # Add msg headers
-            msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
-                " " + data.data + " " + str(rospy.get_rostime().secs)
+            prefixes = ["i", self._is_air, self._id]
+            msg.data = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
             if self.link_select == 0:
                 self.pub_to_telegram.publish(msg)
             elif self.link_select == 1:
@@ -87,48 +87,37 @@ class gnddespatcher():
     ###########################################
     # Handle Air-to-Ground (A2G) messages
     ###########################################
-
-    def _is_new_msg(self, timestamp):
-        '''Return true is incoming msg is a new msg'''
-        if timestamp < self._prev_transmit_time:
-            return False
-        else:
-            self._prev_transmit_time = timestamp
-            return True
     
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             # Handle msg prefixes
-            entries = data.data.split()
-            sender_timestamp = int(entries[-1])
-            sender_msgtype = str(entries[0])
-            sender_id = int(entries[2])
-            if not self._is_new_msg(sender_timestamp):
+            msgtype, devicetype, sysid, timestamp, entries \
+                = self._header.split_headers(data.data)
+            if not self._header.is_new_msg(timestamp):
                 # Check if it is new msg
                 return
-            if regular.is_regular(sender_msgtype, len(entries)):
+            if regular.is_regular(msgtype, len(entries)):
                 # Check if it is regular payload
                 msg = regular.convert_to_rosmsg(entries)
                 self.pub_to_rqt_regular.publish(msg)
             else:
-                if sender_msgtype == 's':
+                if msgtype == 's':
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
-                elif sender_msgtype == 'm':
+                elif msgtype == 'm':
                     # Check if it is mission update message
-                    mission_files = data.data.split()[3:-1]
                     reqFile = LinkMessage()
-                    reqFile.id = sender_id
-                    if mission_files == ["No", "update", "required"]:
+                    reqFile.id = sysid
+                    if entries == ["No", "update", "required"]:
                         return
-                    for i in mission_files:
+                    for i in entries:
                         reqFile.data = i
                         self.file_to_telegram.publish(reqFile)
                         rospy.sleep(1)
                 else:
                     self.pub_to_rqt_ondemand.publish(data.data)
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             rospy.logerr("Invalid message format!")
     
     #########################################
@@ -136,8 +125,9 @@ class gnddespatcher():
     #########################################
 
     def _prep_heartbeat(self):
-        return "h " + str(self._is_air) + " " + str(self._id) + \
-            " HB " + str(rospy.get_rostime().secs)
+        '''Prepare a heartbeat msg'''
+        prefixes = ["h", self._is_air, self._id]
+        return self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
     
     def send_heartbeat_tele(self, data):
         msg = LinkMessage()

@@ -27,13 +27,13 @@ SUFFIX_COUNT = 1
 class headerhandler():
     
     def __init__(self):
-        self._prev_transmit_time = rospy.get_rostime().secs
+        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
     
     ######################
     # Handle incoming msgs
     ######################
     
-    def _is_new_msg(self, timestamp):
+    def is_new_msg(self, timestamp):
         '''Return true is incoming msg is a new msg'''
         if timestamp < self._prev_transmit_time:
             return False
@@ -69,6 +69,6 @@ class headerhandler():
         '''
         if len(prefixes) != PREFIX_COUNT or len(suffixes) != SUFFIX_COUNT:
             return None
-        prefix_string = "".join(str(i) for i in prefixes)
-        suffix_string = "".join(str(i) for i in suffixes)
+        prefix_string = " ".join(str(i) for i in prefixes)
+        suffix_string = " ".join(str(i) for i in suffixes)
         return prefix_string + " " + msg + " " + suffix_string
