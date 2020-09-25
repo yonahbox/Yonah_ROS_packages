@@ -22,6 +22,8 @@ switcher.py: Handle intelligent link-switching logic
 import rospy
 from std_msgs.msg import UInt8, String
 
+from headers import headerhandler
+
 TELE = 0
 SMS = 1
 SBD = 2
@@ -34,6 +36,7 @@ class switcher():
     def __init__(self):
         rospy.init_node('switcher', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
+        self._header = headerhandler()
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
         self._max_time[TELE] = 20
@@ -66,6 +69,18 @@ class switcher():
     # Link Monitors
     ###########################
     
+    def _is_valid_msg(self, msg):
+        '''Takes in a string msg. Return true if msg is valid'''
+        try:
+            msgtype, devicetype, sysid, timestamp, entries \
+                = self._header.split_headers(msg)
+            if not self._header.is_new_msg(timestamp):
+                return False
+            else:
+                return True
+        except (ValueError, IndexError, TypeError):
+            False
+    
     def _monitor_common(self, link):
         # If active link is downstream of current link, trigger link switch to current link
         # Otherwise, simply reset the watchdog of the current link
@@ -77,12 +92,14 @@ class switcher():
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
         # Add optiimization methods here
-        self._monitor_common(TELE)
+        if self._is_valid_msg(data.data):
+            self._monitor_common(TELE)
 
     def monitor_sms(self, data):
         '''Monitor sms link for incoming msgs'''
         # Add optiimization methods here
-        self._monitor_common(SMS)
+        if self._is_valid_msg(data.data):
+            self._monitor_common(SMS)
     
     ###########################
     # "Main" function
