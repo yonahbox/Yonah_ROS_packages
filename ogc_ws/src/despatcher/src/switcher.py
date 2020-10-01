@@ -36,7 +36,8 @@ class switcher():
     def __init__(self):
         rospy.init_node('switcher', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
-        self._header = headerhandler()
+        _valid_ids = rospy.get_param("~valid_ids")
+        self._header = headerhandler(max(_valid_ids))
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
         self._max_time[TELE] = 20
@@ -74,7 +75,7 @@ class switcher():
         try:
             msgtype, devicetype, sysid, timestamp, entries \
                 = self._header.split_headers(msg)
-            if not self._header.is_new_msg(timestamp):
+            if not self._header.is_new_msg(timestamp, sysid):
                 return False
             else:
                 return True

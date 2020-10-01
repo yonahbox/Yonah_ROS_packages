@@ -53,7 +53,7 @@ class gnddespatcher():
         self._valid_ids = rospy.get_param("~valid_ids")
 
         # Msg header handling
-        self._header = headerhandler()
+        self._header = headerhandler(max(self._valid_ids))
 
         # Intervals btwn heartbeat msgs
         self._interval_1 = rospy.get_param("~interval_1")
@@ -94,7 +94,7 @@ class gnddespatcher():
             # Handle msg prefixes
             msgtype, devicetype, sysid, timestamp, entries \
                 = self._header.split_headers(data.data)
-            if not self._header.is_new_msg(timestamp):
+            if not self._header.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
                 return
             if regular.is_regular(msgtype, len(entries)):

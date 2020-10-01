@@ -100,14 +100,6 @@ class airdespatcher():
     # Handle Ground-to-Air (G2A) messages
     ###########################################
 
-    def _is_new_msg(self, timestamp):
-        '''Return true is incoming msg is a new msg'''
-        if timestamp < self._prev_transmit_time:
-            return False
-        else:
-            self._prev_transmit_time = timestamp
-            return True
-    
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
@@ -115,9 +107,8 @@ class airdespatcher():
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
                 = self._header.split_headers(data.data)
-            if not self._header.is_new_msg(timestamp):
+            if not self._header.is_new_msg(timestamp, sysid):
                 return
-            self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
                 g2a.check_ping(self)

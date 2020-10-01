@@ -26,19 +26,25 @@ SUFFIX_COUNT = 1
 
 class headerhandler():
     
-    def __init__(self):
-        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
+    def __init__(self, max_valid_id):
+        self._prev_transmit_time = list() # Transmit times of previous incoming msgs
+        i = 0
+        while i < max_valid_id:
+            self._prev_transmit_time.append(rospy.get_rostime().secs)
+            i = i + 1
     
     ######################
     # Handle incoming msgs
     ######################
     
-    def is_new_msg(self, timestamp):
-        '''Return true is incoming msg is a new msg'''
-        if timestamp < self._prev_transmit_time:
+    def is_new_msg(self, timestamp, sysid):
+        '''Return true is incoming msg is a new msg from sysid. sysid assumed to start from 1'''
+        if sysid > len(self._prev_transmit_time):
+            return False
+        if timestamp < self._prev_transmit_time[sysid - 1]:
             return False
         else:
-            self._prev_transmit_time = timestamp
+            self._prev_transmit_time[sysid - 1] = timestamp
             return True
     
     def split_headers(self, msg):
