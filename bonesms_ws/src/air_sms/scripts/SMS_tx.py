@@ -274,7 +274,7 @@ class SMStx():
     # "Main" function
     ############################
     
-    def prepare(self):
+    def client(self):
         '''
         Main function to subscribe to all mavros topics and send SMS messages (if requested by SMS_rx node)
         If regular payload is activated, messages are sent with a time interval (seconds) specified by self.interval

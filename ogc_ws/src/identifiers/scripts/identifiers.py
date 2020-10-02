@@ -63,7 +63,8 @@ class Identifiers:
 
 		self.rock7_un = ""					# username for rockblock
 		self.rock7_pw = ""					# password for rockblock
-		self.aws_url = ""					# url to AWS instance
+		self.svr_hostname = ""				# hostname of hosted web server
+		self.svr_ip = ""					# ip address of hosted web server
 
 		# instance of the class to keep track of subscribers to a topic
 		topic_cb = TopicSubscriberNotification(self.request_telegram_id)
@@ -120,7 +121,8 @@ class Identifiers:
 		# Get remaining information for SBD link
 		self.rock7_un = self.json_obj["sbd_details"]["rock7_username"]
 		self.rock7_pw = self.json_obj["sbd_details"]["rock7_password"]
-		self.aws_url = self.json_obj["sbd_details"]["aws_url"]
+		self.svr_hostname = self.json_obj["sbd_details"]["svr_hostname"]
+		self.svr_ip = self.json_obj["sbd_details"]["svr_ip"]
 
 	# callback function for the topic subscriber class
 	# used to add contacts to telegram after the telegram node has subscribed to the topic
@@ -181,7 +183,7 @@ class Identifiers:
 
 	# return credentials needed for sbd link
 	def get_sbd_credentials(self):
-		return self.rock7_un, self.rock7_pw, self.aws_url
+		return self.rock7_un, self.rock7_pw, self.svr_hostname, self.svr_ip
 	
 	# return the whitelisted phone numbers
 	def get_whitelist(self):

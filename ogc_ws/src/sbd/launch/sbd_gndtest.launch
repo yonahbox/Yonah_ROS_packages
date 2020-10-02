@@ -19,8 +19,8 @@
 
     <!-- Identifiers -->
     <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-    <arg name="air_ids" default="[1]" />
-    <arg name="self_id" default="1" />)
+    <arg name="air_ids" default="[1,2]" />
+    <arg name="self_id" default="1" />
     <arg name="is_air" default="False" />
 
     <!-- sbd link node -->
@@ -29,6 +29,7 @@
         <param name="interval" value="$(arg interval_3)" />
         <param name="portID" value="$(arg portID)" />
         <param name="thr_server" value="$(arg thr_server)" />
+        <param name="self_id" value="$(arg self_id)" />
     </node>
 
     <!-- identifiers service -->
@@ -53,13 +54,17 @@
 	</node>
 
     <!-- ground test node -->
-    <!-- <node pkg="despatcher" type="gndtest.py" name="gnd_test"
+    <node pkg="despatcher" type="gndtest.py" name="gnd_test"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
-    </node> -->
+    </node>
 
     <!-- rqt node -->
+<<<<<<< HEAD
 	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui"
+=======
+	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+>>>>>>> origin/dev
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-	</node>
+	</node> -->
 
 </launch>

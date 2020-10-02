@@ -2,31 +2,6 @@
 Changelog for package air_sms
 =============================
 
-1.0
-------------------
-
-- Initial Release
-- Messages sent from aircraft during regular SMS updates (name displayed in SMS, units):
-    - Airspeed ("AS", m/s)
-    - Altitude ("alt", m)
-    - Arm status ("Arm", bool)
-    - AWS Data Link Telemetry Status ("AWS", bool)
-    - Climb Rate ("cmb", m/s)
-    - GPS Lat-Lon ("lat" and "lon", lat-lon)
-    - Groundspeed ("GS", m/s)
-    - Heading ("yaw", deg)
-    - Mode ("mode", string)
-- Available commands (name of command): 
-    - Arm/Disarm aircraft ("arm" or "disarm")
-    - Change flight mode ("mode <flight mode>")
-    - Activate/Deactivate regular SMS updates from aircraft ("sms true" or "sms false")
-    - Command aircraft to send a single SMS update ("ping")
-    - Request regular SMS updates to be done in long/short intervals ("sms long" or "sms short")
-- Other features:
-    - List of whitelisted phone numbers is stored in "whitelist.txt", located in the same folder as SMS nodes
-    - Ground Operator phone number is specified in launch file
-
-
 2.0
 ------------------
 
@@ -52,6 +27,7 @@ Redefine SMS 2.0 as SMS(Tech) 2.0; this package will be used to handle SMS Telem
 - Compact regular payload length
 - Timestamp is now added to all A2G messages
 - Remove requirement to have a newline at the end of the whitelist.txt file
+- Use paramiko instead of subprocess to interact with RutOS
 
 - New Regular A2G Payload format (name displayed in SMS, units):
     - Arm status ("Arm", bool)
@@ -69,3 +45,27 @@ Redefine SMS 2.0 as SMS(Tech) 2.0; this package will be used to handle SMS Telem
     - Status Text Messages ("msg", String)
     - Vibration levels ("vibe", m/s/s)
     - Clipping Events ("clipping", integer)
+
+1.0
+------------------
+
+- Initial Release
+- Messages sent from aircraft during regular SMS updates (name displayed in SMS, units):
+    - Airspeed ("AS", m/s)
+    - Altitude ("alt", m)
+    - Arm status ("Arm", bool)
+    - AWS Data Link Telemetry Status ("AWS", bool)
+    - Climb Rate ("cmb", m/s)
+    - GPS Lat-Lon ("lat" and "lon", lat-lon)
+    - Groundspeed ("GS", m/s)
+    - Heading ("yaw", deg)
+    - Mode ("mode", string)
+- Available commands (name of command): 
+    - Arm/Disarm aircraft ("arm" or "disarm")
+    - Change flight mode ("mode <flight mode>")
+    - Activate/Deactivate regular SMS updates from aircraft ("sms true" or "sms false")
+    - Command aircraft to send a single SMS update ("ping")
+    - Request regular SMS updates to be done in long/short intervals ("sms long" or "sms short")
+- Other features:
+    - List of whitelisted phone numbers is stored in "whitelist.txt", located in the same folder as SMS nodes
+    - Ground Operator phone number is specified in launch file
