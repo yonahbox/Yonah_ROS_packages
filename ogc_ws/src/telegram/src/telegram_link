@@ -37,9 +37,19 @@ def tdlib_topic_cb(msg, args):
 
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
-	else:
+		return
+
+	# args[2] contains the type of message to send
+	#	0: text
+	#	1: file
+	if args[2] == 0:
 		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
+	elif args[2] == 1:
+		rospy.loginfo("SENDING FILE")
+		home_dir = str(Path.home())
+		file_path = home_dir + "/Sync/" + msg.data
+		td.send_file(tele_id.data_int, file_path, msg.data)
 
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
@@ -52,32 +62,21 @@ def tdlib_add_contact_cb(contact, td):
 		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
 	td.get_contacts()									# refresh contacts to get the user ids
 
-def tdlib_file_cb(msg, args):
-	td = args[0]
-	id_service = args[1]
-	tele_id = id_service(msg.id)
-
-	if tele_id.data_int == 0:
-		rospy.logwarn("Invalid user id")
-		return
-
-	rospy.loginfo("SENDING FILE")
-	home_dir = str(Path.home())
-	file_path = home_dir + "/Waypoints/" + msg.data
-	td.send_file(tele_id.data_int, file_path)
-
 # Function to receive all messages from telegram
 # runs in a seperate thread
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
 	identifiers_add_tele_id = rospy.ServiceProxy("identifiers/add/telegram_id", AddTelegramId)
 	is_valid_sender_service = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
-	# Loop runs indefinitely, checking for any updates in telegram
 	boot_time = rospy.get_rostime().secs
 
+	file_locations = {}
+
+	# Loop runs indefinitely, checking for any updates in telegram
 	while True: 
 		event = td.receive()
 		if event:
+			# print(event)
 			rospy.logdebug(event)
 			# log details if there is an error
 			if event['@type'] == 'error':
@@ -87,11 +86,22 @@ def tdlib_recv():
 			if event['@type'] == 'updateFile':
 				# Check if the file has finished downloading
 				if event['file']['local']['is_downloading_completed']:
+					print(json.dumps(event))
 					local_path = event['file']['local']['path']
+					file_id = event['file']['id']
+
+					rospy.logwarn(file_locations.get(file_id, "NOT THERE"))
 
 					# Currenly only supports sending waypoint files
-					home_dir = str(Path.home())
-					final_path = home_dir + "/Waypoints/" + os.path.basename(local_path)
+					base_dir = str(Path.home()) + "/Sync/"
+					try:
+						final_dir = file_locations[file_id]
+					except KeyError:
+						continue
+
+					final_path = base_dir + final_dir
+					final_dir_path = Path(os.path.dirname(final_path))
+					final_dir_path.mkdir(parents=True, exist_ok=True)
 					
 					# Move the file
 					os.rename(local_path, final_path)
@@ -99,7 +109,6 @@ def tdlib_recv():
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
-				# print(event)
 				result = identifiers_add_tele_id(event["phone_number"], event["id"])
 
 			# new message received 
@@ -112,8 +121,6 @@ def tdlib_recv():
 				is_valid_sender = is_valid_sender_service(0, str(event["message"]["sender_user_id"]))
 				if not is_valid_sender.result:
 					continue
-
-				# rospy.loginfo(json.dumps(event))
 
 				message_type = event['message']['content']['@type']
 				if message_type == 'messageText':
@@ -128,10 +135,12 @@ def tdlib_recv():
 				elif message_type == 'messageDocument':
 					file_id = event['message']['content']['document']['document']['id']
 					local_path = event['message']['content']['document']['document']['local']['path']
+					final_path = event['message']['content']['caption']['text']
 
 					# download the file
 					if local_path != 1:
 						td.download_file(file_id)
+						file_locations[file_id] = final_path
 
 if __name__ == '__main__':
 	try:
@@ -160,8 +169,8 @@ if __name__ == '__main__':
 		recv_thread.daemon = True
 		recv_thread.start()
 
-		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id))
-		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
+		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
+		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
 
 		# inform all valid nodes that the link is up
