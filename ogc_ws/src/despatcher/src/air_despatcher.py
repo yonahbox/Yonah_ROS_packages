@@ -134,15 +134,15 @@ class airdespatcher():
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
                 g2a.check_mission(self)
             elif "syncthing" in self._recv_msg:
-                g2a.handle_syncthing()
+                g2a.handle_syncthing(self)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
 
-    # def resume_syncthing(self, data):
-    #     if int(data.armed) == 0 and self.hop == False: 
-    #         self.syncthing_control.publish("resume")
+    def resume_syncthing(self, data):
+        if int(data.armed) == 0 and self.hop == False: 
+            self.syncthing_control.publish("resume")
 
 
     #########################################
@@ -250,7 +250,7 @@ class airdespatcher():
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
-        # rospy.Subscriber("mavros/state", State, self.resume_syncthing)
+        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)

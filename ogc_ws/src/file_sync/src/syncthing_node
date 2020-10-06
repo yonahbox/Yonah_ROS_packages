@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
 			if event[1][0] == "IN_MOVED_TO":
 				if ".sync-conflict-" in event[3]:
-					rospy.loginfo("File conflic found " + event[3])
+					rospy.loginfo("File conflict found " + event[3])
 					filename= re.sub("sync-conflict-[0-9]{8}-[0-9]{6}-[A-Z0-9]{7}[.]", "", event[3])
 					file_conflict_pub.publish(filename)
 				elif event[3] in modified_list:
