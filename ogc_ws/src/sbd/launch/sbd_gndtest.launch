@@ -59,12 +59,8 @@
     </node>
 
     <!-- rqt node -->
-<<<<<<< HEAD
 	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui"
-=======
-	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
->>>>>>> origin/dev
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-	</node> -->
+	</node>
 
 </launch>

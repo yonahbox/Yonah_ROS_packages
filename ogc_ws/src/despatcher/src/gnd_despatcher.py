@@ -127,10 +127,9 @@ class gnddespatcher():
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
 
-    # check whether multi aircraft works
     def rqt_recovery_log(self, entries, aircraft_id):
-        rospy.logerr(entries)
-        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
+        filename = "demofile.txt"
+        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
         with open(path, 'r') as lines:
             data = lines.readlines()
         if len(data) < aircraft_id:

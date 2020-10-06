@@ -45,6 +45,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="link_select" value="$(arg link_select)" />
 	</node>
 	
-  <node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">
+	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">
+		</node>
+
+	<node name="timeout" pkg="despatcher" type="timeout.py" respawn="true" respawn_delay="3" output="log">
     </node>
 </launch>
