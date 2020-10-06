@@ -419,28 +419,34 @@ class MyPlugin(Plugin):
         self.SummaryWindow.shutdown()
 
     def save_settings(self, plugin_settings, instance_settings):
-        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
-        with open(path, 'r') as lines:
+        with open(self.path, 'r') as lines:
             data = lines.readlines()
         for i in range (len(data)):
             data[i] = "None\n"
-        with open(path, 'w') as files:
+        with open(self.path, 'w') as files:
             files.writelines(data)
             files.close()
 
     def restore_settings(self, plugin_settings, instance_settings):
-        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", "demofile.txt")
-        with open(path, 'r') as lines:
-            data = lines.readlines()
-        rospy.logwarn(data)
-        for i in data:
-            i = i[:-1]
-            if i == "None":
-                continue
-            else:
-                regpay = i.split(" ")
-                msg = regular.convert_to_rosmsg(regpay)
-                self.regular_payload(msg)
+        filename = "rqt_log.txt"
+        self.path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
+        file_exists = os.path.isfile(self.path) 
+        print(file_exists)
+        if file_exists:
+            with open(self.path, 'r') as lines:
+                data = lines.readlines()
+            for i in data:
+                i = i[:-1]
+                if i == "None":
+                    continue
+                else:
+                    regpay = i.split(" ")
+                    msg = regular.convert_to_rosmsg(regpay)
+                    self.regular_payload(msg)
+        else:
+            rospy.loginfo("rqt_log file doesn't exist, creating new rqt_log file")
+            f = open(self.path, "w+")
+            f.write("None")
 
     # def trigger_configuration(self):
     #     Comment in to signal that the plugin has a way to configure

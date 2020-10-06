@@ -128,7 +128,7 @@ class gnddespatcher():
             rospy.logerr("Invalid message format!")
 
     def rqt_recovery_log(self, entries, aircraft_id):
-        filename = "demofile.txt"
+        filename = "rqt_log.txt"
         path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
         with open(path, 'r') as lines:
             data = lines.readlines()
