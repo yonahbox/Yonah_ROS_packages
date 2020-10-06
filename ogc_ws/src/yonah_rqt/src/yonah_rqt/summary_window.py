@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QLabel, QHBoxLayout, QWidget
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QFont
 
@@ -30,24 +30,24 @@ class SummaryWindow(QWidget):
 
         # Dictionary to store the textedit names
         self.waypoint_plaintext_dict = {} 
-
         # Declare the layouts
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
-        # Set main_layout as the layout that occupies the entire widget
-        self.setLayout(self.main_layout)
+        self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
 
-        # Declare the widgets
-        summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
-        for i in range(1, active_aircrafts + 1):
-            self.create_summary(i, summarised_fields)
+        self.create_layout(active_aircrafts)
         self.statustext = QPlainTextEdit()
         self.statustext.setReadOnly(True)
-
         # add the widgets into the layouts
         self.main_layout.addWidget(self.statustext)
         self.main_layout.addLayout(self.summary_layout)
+        self.statustext.appendPlainText("in init")
 
+    def create_layout(self, active_aircrafts):
+        # Declare the widgets
+        summarised_fields = ['Mode', 'Status', 'Airspeed', 'Altitude']
+        for i in active_aircrafts:
+            self.create_summary(i, summarised_fields)
 
     def create_summary(self, aircraft_no, summarised_fields):
         self.styling()
@@ -58,7 +58,6 @@ class SummaryWindow(QWidget):
         self.summary_details_layout.addWidget(self.aircraft_label)
         
         for i in summarised_fields:
-            # 
             self.summary_fields_layout = QHBoxLayout()
             self.subfield_label_mode = QLabel(i)
             self.subfield_label_mode.setFixedSize(80,20)
@@ -77,5 +76,16 @@ class SummaryWindow(QWidget):
     def styling(self):
         self.h2 = QFont("Ubuntu", 12, QFont.Bold) 
 
+    def open(self):
+        self.show()
+
+    def remove(self, layout):
+        for i in reversed(range(layout.count())):
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+            if child.layout():
+                self.remove(child.layout())
+    
     def shutdown(self):
         self.close()

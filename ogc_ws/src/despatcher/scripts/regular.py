@@ -125,7 +125,7 @@ def convert_to_rosmsg(entries):
     rosmsg.is_aircraft = int(entries[1])
     rosmsg.vehicle_no = int(entries[2])
     rosmsg.airspeed = int(entries[3])
-    rosmsg.alt = int(entries[4]) # can be negative
+    rosmsg.alt = int(entries[4]) 
     rosmsg.armed = int(entries[5])
     rosmsg.batt = int(entries[6])
     rosmsg.fuel = int(entries[7])

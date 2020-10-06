@@ -35,7 +35,7 @@ $ rqt
 ```
 Alternatively, you can directly run the rqt plugin without needing to access the main rqt page using
 ```
-rqt --standalone rqt_mypkg
+rqt --standalone yonah_rqt
 ```
 
 ## Built With

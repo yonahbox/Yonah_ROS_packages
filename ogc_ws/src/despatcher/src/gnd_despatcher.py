@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # ROS/Third-Party
 import rospy
+import os
+import rospkg
 
 from std_msgs.msg import String
 from despatcher.msg import RegularPayload
@@ -100,8 +102,10 @@ class gnddespatcher():
                 # Check if it is new msg
                 return
             if regular.is_regular(sender_msgtype, len(entries)):
+                self.rqt_recovery_log(entries, sender_id)
                 # Check if it is regular payload
                 msg = regular.convert_to_rosmsg(entries)
+                
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if sender_msgtype == 's':
@@ -122,7 +126,24 @@ class gnddespatcher():
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format!")
-    
+
+    def rqt_recovery_log(self, entries, aircraft_id):
+        filename = "rqt_log.txt"
+        path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        if len(data) < aircraft_id:
+            log = open(path, 'a')
+            for i in range (aircraft_id - len(data)):
+                log.write("None\n")
+            log.close()
+        with open(path, 'r') as lines:
+            data = lines.readlines()
+        data[aircraft_id - 1] = " ".join(entries) +"\n"
+        with open(path, 'w') as files:
+            files.writelines(data)
+            files.close()
+
     ############################
     # "Main" function
     ############################
