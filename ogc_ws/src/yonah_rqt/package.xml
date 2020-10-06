@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>rqt_mypkg</name>
+  <name>yonah_rqt</name>
   <version>0.0.0</version>
-  <description>The rqt_mypkg package</description>
+  <description>Yonah's rqt package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

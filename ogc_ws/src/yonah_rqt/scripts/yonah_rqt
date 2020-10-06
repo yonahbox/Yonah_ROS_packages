@@ -17,9 +17,9 @@
 
 import sys
 
-from '../src/rqt_mypkg.my_module' import MyPlugin
+from '../src/yonah_rqt.main_window' import MyPlugin
 from rqt_gui.main import Main
 
-plugin = 'rqt_mypkg'
+plugin = 'yonah_rqt.main_window.MyPlugin'
 main = Main(filename=plugin)
 sys.exit(main.main(standalone=plugin))

@@ -1,2 +1,3 @@
 #remove pyc files
 *.pyc
+*.cph

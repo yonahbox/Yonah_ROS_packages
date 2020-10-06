@@ -32,6 +32,7 @@ class PopupMessages(QWidget):
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
+        '''Create a custom Link Message'''
         message = LinkMessage()
         message.id = destination_id
         message.data = data
@@ -49,7 +50,7 @@ class PopupMessages(QWidget):
         if ok:
             data = "disarm"
             if num == 0:
-                print("\033[91mERROR: Invalid Aircraft ID, Please input a valid Aircraft ID")
+                rospy.logerr("Invalid Aircraft ID, Please input a valid Aircraft ID")
                 return 0
             self.create_link_message(num, data)
             rospy.logdebug("[AC %d EMERGENCY DISARM]", num)
@@ -72,7 +73,6 @@ class PopupMessages(QWidget):
         elif message_type[0] == "DISARM":
             self.message.buttonClicked.connect(self.disarm_message)
 
-    # Determines what happens after dialog_window pops up from ok_button
     def arm_message(self, i):
         if i.text() == '&Yes':
             data = "arm"
@@ -90,3 +90,13 @@ class PopupMessages(QWidget):
             rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
+    
+    def warning_message(self, heading, text):
+        self.warning = QMessageBox()
+        self.warning.setIcon(QMessageBox.Warning)
+        self.warning.setText(heading)
+        self.warning.setInformativeText(text)
+        self.warning.setWindowTitle("Error Message")
+        self.warning.setStandardButtons(QMessageBox.Ok)
+        self.warning.buttonClicked.connect(self.warning.close)
+        self.warning.show()
