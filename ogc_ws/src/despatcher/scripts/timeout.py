@@ -13,35 +13,13 @@ class MessageTimer():
         self.status = 0 # status: 0 pending, 1 sent through links, 2 acknowledged
         self._watchdog = self.timeout
 
-    def advance(self):
-        self.reset_timer()
-        self.client()
-
-    def reset_timer(self):
-        self._watchdog = self.timeout
-
     def countdown(self, data):
+        # rospy.loginfo("COUNTDOWN STARTING")
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] <= 0:
-            rospy.logwarn("TIMER HAS RUN OUT")
-            rospy.logwarn(self.status_checker())
             self.status = -1
-            self.stop_timer()
-
     def stop_timer(self):
         self.watcher.shutdown()
-            
-    def status_checker(self):
-        if self.status == 0:
-            return "PENDING"
-        elif self.status == 1:
-            return "SINGLE TICK"
-        elif self.status == 2:
-            return "DOUBLE TICK"
-        elif self.status == -1:
-            return "MESSAGE EXPIRED"
-        else:
-            return "STATUS UNDEFINED"
 
     '''Main Function'''
     def client(self):
@@ -59,11 +37,19 @@ class Manager():
     
     def sent_commands(self, data):
         if data.id not in self.messages:
+            # rospy.logwarn("CREATING NEW FIELD")
             self.messages[data.id] = MessageTimer(data.data, data.id)
             self.messages[data.id].client()
+        elif self.messages[data.id].status == -1:
+            rospy.logwarn("DROPPED MESSAGE")
+            return 0
         else:
+            # rospy.logwarn("MODIFYING OLD FIELD")
             self.messages[data.id].status += 1
             self.messages[data.id].stop_timer()
+            if self.messages[data.id].status == 2:
+                rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
+                return 0
             self.messages[data.id].client()
 
 if __name__=='__main__':

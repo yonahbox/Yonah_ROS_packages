@@ -284,7 +284,7 @@ class CommandWindow(QWidget):
     def go(self):
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
-        self.create_link_message(self.destination_id, data)
+        self.create_link_message(3, data)
 
     def mission_load(self):
         self.PopupMessages.user_input_textbox("Mission Load", "Load mission to Aircraft ", self.destination_id)
