@@ -20,6 +20,7 @@ switcher.py: Handle intelligent link-switching logic
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
+import RuTOS
 from std_msgs.msg import UInt8, String
 
 from headers import headerhandler
@@ -37,6 +38,8 @@ class switcher():
         rospy.init_node('switcher', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
         _valid_ids = rospy.get_param("~valid_ids")
+        self._username = rospy.get_param("~router_username","root")
+		self._ip = rospy.get_param("~router_ip","192.168.1.1")
         self._header = headerhandler(max(_valid_ids))
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
@@ -101,6 +104,20 @@ class switcher():
         # Add optiimization methods here
         if self._is_valid_msg(data.data):
             self._monitor_common(SMS)
+
+    def monitor_router(self, data):
+        ssh = RuTOS.start_client(self._ip, self._username)
+        connection = RuTOS.get_conntype(ssh)
+        rssi = RuTOS.get_rssi(ssh)
+        if connection == "NOSERVICE":
+            self._switch(2) # Switch to SBD immediately
+        elif connection == "GSM":
+            if self._link == 1:
+                return # Should not reset timer if link is already on SMS
+            else:
+                self._switch(1) # Switch to SMS
+        elif rssi <= -85: # To include RSRQ, RSRP, SINR in the future
+            self._switch(self._link + 1) # In 4G mode, switch at low rssi
     
     ###########################
     # "Main" function
@@ -110,8 +127,10 @@ class switcher():
         rospy.Subscriber("ogc/from_sms", String, self.monitor_sms)
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
         watchdog = rospy.Timer(rospy.Duration(1), self.countdown)
+        router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
         watchdog.shutdown()
+        router_monitor.shutdown()
 
 if __name__=='__main__':
     run = switcher()
