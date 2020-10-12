@@ -9,50 +9,61 @@ class MessageTimer():
     def __init__(self, message, id):
         self.id = id
         self.message = message
-        self.timeout = [10, 20]
-        self.status = "Not Sent"
+        self.timeout = [5, 10]
+        self.status = 0 # status: 0 pending, 1 sent through links, 2 acknowledged
         self._watchdog = self.timeout
 
     def advance(self):
+        self.reset_timer()
+        self.client()
         pass
 
-    def incoming_message(self, data):
-        print(data)
-        print("Test")
-        pass
+    def reset_timer(self):
+        self._watchdog = self.timeout
 
     def countdown(self, data):
-        pass
-
-    def start_first_timer(self):
-        pass
+        self._watchdog[self.status] -= 1
+        if self._watchdog[self.status] <= 0:
+            rospy.logwarn("TIMER HAS RUN OUT")
+            rospy.logwarn(self.status_checker())
+            self.status = -1
+            self.watcher.shutdown()
+            
+    def status_checker(self):
+        if self.status == 0:
+            return "PENDING"
+        elif self.status == 1:
+            return "SINGLE TICK"
+        elif self.status == 2:
+            return "DOUBLE TICK"
+        else:
+            return "STATUS UNDEFINED"
 
     '''Main Function'''
     def client(self):
-        watchdog = rospy.Timer(rospy.Duration(1), self.countdown)
-        rospy.spin()
-        watchdog.shutdown()
-
-def incoming_message(data):
-    print(data)
+        rospy.logwarn("client ongoing")
+        self.watcher = rospy.Timer(rospy.Duration(1), self.countdown)
+        rospy.logerr("SLEEPING FINISHED")
 
 class Manager():
     def __init__(self):
         rospy.init_node('timeout', anonymous=False)
-        self.registered_id = []
+        self.messages = {}
     
     def watcher(self):
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.incoming_message)
+        # Put another subscriber in that listens to messages sent to rqt
         rospy.spin()
     
     def incoming_message(self, data):
-        if data.id not in self.registered_id:
-            self.registered_id.append(data.id)
-            msg = MessageTimer(data.message, data.id)
-            msg.client()
-
-        print(self.registered_id)
-        print(data)
+        if data.id not in self.messages:
+            rospy.loginfo("ADDING NEW ENTRY")
+            self.messages[data.id] = MessageTimer(data.data, data.id)
+            self.messages[data.id].client()
+        else:
+            rospy.loginfo("LAME LA ALRDY RUNNING")
+            self.messages[data.id].status += 1
+            self.messages[data.id].advance()
 
 if __name__=='__main__':
     run = Manager()
