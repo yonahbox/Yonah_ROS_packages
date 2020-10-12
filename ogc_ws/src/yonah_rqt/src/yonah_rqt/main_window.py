@@ -80,6 +80,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
+        rospy.Subscriber("ogc/feedback_to_rqt", LinkMessage, self.feedback_message)
 
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.ondemand_sitl)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
@@ -138,37 +139,17 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(i)))
             self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(i))
         self.tab.setMinimumHeight(500)
-    
-    '''Commented out function for dynamic UI'''
-    # def update_active_aircrafts(self, active_aircrafts):
-    #     self.SummaryWindow.remove(self.SummaryWindow.summary_layout)
-    #     self.SummaryWindow.create_layout(active_aircrafts)
-        # self.CommandWindow.create_combobox(active_aircrafts)
-        # self.WaypointWindow.remove(self.WaypointWindow.progressbar_layout)
-        # self.WaypointWindow.create_layout(active_aircrafts)
-
-        # # remove all the tabs
-        # for i in range(self.tab.count(), 0, -1):
-        #     self.tab.removeTab(i)
-        # # add back all the tabs
-        # for j in active_aircrafts:
-        #     if self.aircrafts_info.get(self.key) == None:
-        #         self.aircrafts_info["AC" + str(j)] = AircraftInfo(j)
-        #         self.checklist_info["AC" + str(j)] = ChecklistWindow(j)
-
-        #         self.aircrafts_info[self.key] = QScrollArea()
-        #         self.aircrafts_info.get(self.key).setMinimumHeight(500)
-        #         self.aircrafts_info.get(self.key).setMinimumWidth(600)
-        #         self.aircrafts_info.get(self.key).setWidgetResizable(True)
-        #         self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(j)))
-            
-        #     self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(j))
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
         self.CommandWindow.combo_box.setCurrentIndex(i - 1)
+
+    def feedback_message(self, data):
+        message = data.data
+        self.PopupMessages.warning_message("Command failed to send", str(message))
+        rospy.logerr(data.data)
 
     ################################
     # Create Signal Slot functions #

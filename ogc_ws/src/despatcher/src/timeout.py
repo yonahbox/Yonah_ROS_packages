@@ -6,18 +6,21 @@ from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 
 class MessageTimer():
-    def __init__(self, message, id):
-        self.id = id
+    def __init__(self, message, message_id):
+        self.message_id = message_id
         self.message = message
         self.timeout = [5, 10]
         self.status = 0 # status: 0 pending, 1 sent through links, 2 acknowledged
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        # rospy.loginfo("COUNTDOWN STARTING")
+        rospy.loginfo("COUNTDOWN STARTING")
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] <= 0:
+            self.stop_timer()
+            send_to_rqt(self.message_id, "Your message: [" + self.message + "] with message ID " + str(self.message_id) + " has failed to send. Last status: " + str(self.status))
             self.status = -1
+
     def stop_timer(self):
         self.watcher.shutdown()
 
@@ -37,12 +40,14 @@ class Manager():
     
     def sent_commands(self, data):
         if data.id not in self.messages:
-            # rospy.logwarn("CREATING NEW FIELD")
+            rospy.logwarn("CREATING NEW FIELD")
             self.messages[data.id] = MessageTimer(data.data, data.id)
             self.messages[data.id].client()
+
         elif self.messages[data.id].status == -1:
             rospy.logwarn("DROPPED MESSAGE")
             return 0
+
         else:
             # rospy.logwarn("MODIFYING OLD FIELD")
             self.messages[data.id].status += 1
@@ -52,6 +57,13 @@ class Manager():
                 return 0
             self.messages[data.id].client()
 
+def send_to_rqt(message_id, data):
+    message = LinkMessage()
+    message.id = message_id
+    message.data = data
+    pub_to_rqt.publish(message)
+
 if __name__=='__main__':
     run = Manager()
+    pub_to_rqt = rospy.Publisher("ogc/feedback_to_rqt", LinkMessage, queue_size = 5)
     run.watcher()

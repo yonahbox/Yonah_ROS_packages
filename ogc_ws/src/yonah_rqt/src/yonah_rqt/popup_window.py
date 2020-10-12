@@ -78,7 +78,6 @@ class PopupMessages(QWidget):
             data = "arm"
             statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
             self.create_link_message(self.destination_id, data)
-            rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
 
@@ -87,7 +86,6 @@ class PopupMessages(QWidget):
             data = "disarm"
             statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
             self.create_link_message(self.destination_id, data)
-            rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
     
