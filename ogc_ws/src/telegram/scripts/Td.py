@@ -21,7 +21,7 @@ import json
 class Td():
 	def __init__(self, tdlib_dir):
 		# Creates interface for libtdjson. This is a C library so it requires some initial setup
-		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
+		tdjson_path = '/usr/local/lib/libtdjson.so'
 		tdjson = CDLL(tdjson_path)
 
 		client_create = tdjson.td_json_client_create
