@@ -21,45 +21,34 @@ switcher.py: Handle intelligent link-switching logic
 
 import rospy
 import RuTOS
-from std_msgs.msg import UInt8, String
+from std_msgs.msg import String
 
-from headers import headerhandler
+import headers
 
 TELE = 0
 SMS = 1
 SBD = 2
 
-# @TODO: Add logic for sending pings from G2A
-# Add logic for sending pings at lower intervals on upstream links
-
-class switcher():
-
-    def __init__(self):
-        rospy.init_node('switcher', anonymous=False)
-        self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', UInt8, queue_size=5)
-        _valid_ids = rospy.get_param("~valid_ids")
-        self._username = rospy.get_param("~router_username","root")
-		self._ip = rospy.get_param("~router_ip","192.168.1.1")
-        self._header = headerhandler(max(_valid_ids))
+class watchdog():
+    '''An instance of watchdog should be created for each client'''
+    def __init__(self, air_id):
+        self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
+        self._air_id = air_id
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
         self._max_time[TELE] = 20
         self._max_time[SMS] = 20
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
-        self._timeout_counter = 0
-    
-    ###########################
-    # Watchdog handlers
-    ###########################
-    
-    def _reset_watchdog(self, link):
+        self.countdown_handler = rospy.Timer(rospy.Duration(0.5), self.countdown)
+
+    def reset_watchdog(self, link):
         self._watchdog[link] = self._max_time[link]
     
-    def _switch(self, target_link):
+    def switch(self, target_link):
         '''Perform the link-switch action and notify despatcher'''
         self._link = target_link
         self._watchdog[target_link] = self._max_time[target_link]
-        rospy.logwarn("Switching to link " + str(target_link))
+        rospy.logwarn("Aircraft " + str(self._air_id) +  " switching to link " + str(target_link))
         self.pub_to_despatcher.publish(self._link)
     
     def countdown(self, data):
@@ -68,57 +57,86 @@ class switcher():
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
         if self._watchdog[self._link] <= 0:
-            self._switch(self._link + 1)
+            self.switch(self._link + 1)
+    
+    def link_status(self):
+        return self._link
+
+class switcher():
+
+    def __init__(self):
+        rospy.init_node('switcher', anonymous=False)
+        self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
+        self._valid_ids = rospy.get_param("~valid_ids")
+        self._username = rospy.get_param("~router_username","root")
+        self._ip = rospy.get_param("~router_ip","192.168.1.1")
+        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
+        self._timeout_counter = 0
+        self._watchdogs = dict()
+        for i in self._valid_ids:
+            self._watchdogs[i] = watchdog(i)
+
+    ###########################
+    # Watchdog handlers
+    ###########################
+    
+    def _switch_all(self, link):
+        '''Command ALL clients to switch to the target link (if not already on that link)'''
+        for i in self._valid_ids:
+            if not (self._watchdogs[i].link_status() == link):
+                self._watchdogs[i].switch(link)
 
     ###########################
     # Link Monitors
     ###########################
     
     def _is_valid_msg(self, msg):
-        '''Takes in a string msg. Return true if msg is valid'''
+        '''Takes in a string msg. Return true + sender's sysid if msg is valid'''
         try:
             msgtype, devicetype, sysid, timestamp, entries \
-                = self._header.split_headers(msg)
-            if not self._header.is_new_msg(timestamp, sysid):
-                return False
+                = headers.split_headers(msg)
+            if not self._new_msg_chk.is_new_msg(timestamp, sysid):
+                return False, 0
             else:
-                return True
+                return True, sysid
         except (ValueError, IndexError, TypeError):
-            False
+            False, 0
     
-    def _monitor_common(self, link):
+    def _monitor_common(self, sysid, link):
+        '''Manage link status of the client with the specified sysid'''
         # If active link is downstream of current link, trigger link switch to current link
         # Otherwise, simply reset the watchdog of the current link
-        if self._link > link:
-            self._switch(link)
+        if self._watchdogs[sysid].link_status() > link:
+            self._watchdogs[sysid].switch(link)
         else:
-            self._reset_watchdog(link)
+            self._watchdogs[sysid].reset_watchdog(link)
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
         # Add optiimization methods here
-        if self._is_valid_msg(data.data):
-            self._monitor_common(TELE)
+        valid, sender_sysid = self._is_valid_msg(data.data)
+        if valid:
+            self._monitor_common(sender_sysid, TELE)
 
     def monitor_sms(self, data):
         '''Monitor sms link for incoming msgs'''
         # Add optiimization methods here
-        if self._is_valid_msg(data.data):
-            self._monitor_common(SMS)
+        valid, sender_sysid = self._is_valid_msg(data.data)
+        if valid:
+            self._monitor_common(sender_sysid, SMS)
 
     def monitor_router(self, data):
         ssh = RuTOS.start_client(self._ip, self._username)
         connection = RuTOS.get_conntype(ssh)
         rssi = RuTOS.get_rssi(ssh)
         if connection == "NOSERVICE":
-            self._switch(2) # Switch to SBD immediately
+            self._switch_all(SBD) # Switch to SBD immediately
         elif connection == "GSM":
-            if self._link == 1:
-                return # Should not reset timer if link is already on SMS
-            else:
-                self._switch(1) # Switch to SMS
+            self._switch_all(SMS) # Switch to SMS
         elif rssi <= -85: # To include RSRQ, RSRP, SINR in the future
-            self._switch(self._link + 1) # In 4G mode, switch at low rssi
+            for i in self._valid_ids:
+                old_link = self._watchdogs[i].link_status()
+                self._watchdogs[i].switch(old_link + 1) # In 4G mode, switch at low rssi
     
     def monitor_smsout(self, data):
         if data.data == "Timeout":
@@ -126,7 +144,7 @@ class switcher():
         elif data.data == "Success":
             self._timeout_counter = 0
         if self._timeout_counter == 3:
-            self._switch(2)
+            self._switch_all(SMS)
 
     ###########################
     # "Main" function
@@ -136,10 +154,8 @@ class switcher():
         rospy.Subscriber("ogc/from_sms", String, self.monitor_sms)
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
         rospy.Subscriber('ogc/to_switcher', String, self.monitor_smsout)
-        watchdog = rospy.Timer(rospy.Duration(1), self.countdown)
         router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
-        watchdog.shutdown()
         router_monitor.shutdown()
 
 if __name__=='__main__':

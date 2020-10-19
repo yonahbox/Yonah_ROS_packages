@@ -24,14 +24,68 @@ import rospy
 import os
 import rospkg
 
-from std_msgs.msg import UInt8, String
+from std_msgs.msg import String
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
 
 # Local
 import regular
+import headers
 from g2a import recognised_commands
-from headers import headerhandler
+
+TELE = 0
+SMS = 1
+SBD = 2
+
+class aircraft():
+    '''Monitor link status and heartbeat for each aircraft'''
+    
+    def __init__(self, air_id):
+        self._air_id = air_id
+        self._link = TELE
+        self._tele_interval = rospy.get_param("~interval_1")
+        self._sms_interval = rospy.get_param("~interval_2")
+        self._pub_to_telegram = rospy.Publisher('ogc/to_telegram', LinkMessage, queue_size = 5)
+        self._pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5)
+        self.tele_sender = rospy.Timer(rospy.Duration(0.5), self._send_heartbeat_tele)
+
+    def _prep_heartbeat(self):
+        '''Prepare a heartbeat msg'''
+        prefixes = ["h", 0, rospy.get_param("~self_id")]
+        return headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
+    
+    def _send_heartbeat_tele(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        msg.id = rospy.get_param("~self_id")
+        self._pub_to_telegram.publish(msg)
+        rospy.sleep(self._tele_interval)
+
+    def _send_heartbeat_sms(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        msg.id = rospy.get_param("~self_id")
+        self._pub_to_sms.publish(msg)
+        rospy.sleep(self._sms_interval)
+
+    def switch_link(self, link):
+        self._link = link
+        if self._link == SBD:
+            self._tele_interval = rospy.get_param("~interval_3")
+            self._sms_interval = rospy.get_param("~interval_3")
+        elif self._link == SMS:
+            self._tele_interval = rospy.get_param("~interval_2")
+            self._sms_interval = rospy.get_param("~interval_2")
+            self.sms_sender = rospy.Timer(rospy.Duration(0.5), self._send_heartbeat_sms)
+        elif self._link == TELE:
+            self._tele_interval = rospy.get_param("~interval_1")
+            try:
+                self.sms_sender.shutdown()
+            except:
+                pass
+    
+    def link_status(self):
+        return self._link
 
 class gnddespatcher():
 
@@ -46,23 +100,16 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
 
-        # Link switching
-        self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
-
-        # Gnd Identifiers and msg headers (attached to outgoing msgs)
+        # Gnd Identifiers
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         self._id = rospy.get_param("~self_id") # Our GCS ID
+
+        # Msg headers and valid aircrafts to send to
         self._valid_ids = rospy.get_param("~valid_ids")
-
-        # Msg header handling
-        self._header = headerhandler(max(self._valid_ids))
-
-        # Intervals btwn heartbeat msgs
-        self._interval_1 = rospy.get_param("~interval_1")
-        self._interval_2 = rospy.get_param("~interval_2")
-        self._interval_3 = rospy.get_param("~interval_3")
-        self._tele_interval = self._interval_1
-        self._sms_interval = self._interval_2
+        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
+        self._aircrafts = dict()
+        for i in self._valid_ids:
+            self._aircrafts[i] = aircraft(i)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -77,10 +124,11 @@ class gnddespatcher():
             msg.id = data.id
             # Add msg headers
             prefixes = ["i", self._is_air, self._id]
-            msg.data = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
-            if self.link_select == 0:
+            msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
+            link = self._aircrafts[data.id].link_status
+            if link == 0:
                 self.pub_to_telegram.publish(msg)
-            elif self.link_select == 1:
+            elif link == 1:
                 self.pub_to_sms.publish(msg)
             else:
                 self.pub_to_sbd.publish(msg)
@@ -95,15 +143,14 @@ class gnddespatcher():
         try:
             # Handle msg prefixes
             msgtype, devicetype, sysid, timestamp, entries \
-                = self._header.split_headers(data.data)
-            if not self._header.is_new_msg(timestamp, sysid):
+                = headers.split_headers(data.data)
+            if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
                 return
             if regular.is_regular(msgtype, len(entries)):
-                self.rqt_recovery_log(entries, sysid)
                 # Check if it is regular payload
                 msg = regular.convert_to_rosmsg(entries)
-                
+                self.rqt_recovery_log(entries, sysid)
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 if msgtype == 's':
@@ -128,43 +175,15 @@ class gnddespatcher():
     # Handle Misc (e.g. switcher, rqt recovery) messages
     ####################################################
 
-    def _prep_heartbeat(self):
-        '''Prepare a heartbeat msg'''
-        prefixes = ["h", self._is_air, self._id]
-        return self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
-    
-    def send_heartbeat_tele(self, data):
-        msg = LinkMessage()
-        msg.data = self._prep_heartbeat()
-        for ids in self._valid_ids:
-            msg.id = ids
-            self.pub_to_telegram.publish(msg)
-        rospy.sleep(self._tele_interval)
-
-    def send_heartbeat_sms(self, data):
-        msg = LinkMessage()
-        msg.data = self._prep_heartbeat()
-        for ids in self._valid_ids:
-            msg.id = ids
-            self.pub_to_sms.publish(msg)
-        rospy.sleep(self._sms_interval)
-
     def check_switcher(self, data):
         '''Obtain updates from switcher node'''
-        self.link_select = data.data
-        if self.link_select == 2:
-            self._tele_interval = self._interval_3
-            self._sms_interval = self._interval_3
-        elif self.link_select == 1:
-            self._tele_interval = self._interval_2
-            self._sms_interval = self._interval_2
-            self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_sms)
-        elif self.link_select == 0:
-            self._tele_interval = self._interval_1
-            try:
-                self.sms_sender.shutdown()
-            except:
-                pass
+        try:
+            msglist = data.data.split()
+            id = int(msglist[0]) # Msg format: aircraft id + link no
+            link = int(msglist[1])
+            self._aircrafts[id].change_link(link)
+        except:
+            rospy.logerr("Switcher: Invalid msg")
 
     def rqt_recovery_log(self, entries, aircraft_id):
         filename = "rqt_log.txt"
@@ -192,10 +211,8 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
-        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
-        self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_tele)
+        rospy.Subscriber("ogc/from_switcher", String, self.check_switcher)
         rospy.spin()
-        self.tele_sender.shutdown()
 
 if __name__=='__main__':
     run = gnddespatcher()
