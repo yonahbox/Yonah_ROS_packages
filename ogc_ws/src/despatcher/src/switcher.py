@@ -46,6 +46,7 @@ class switcher():
         self._max_time[TELE] = 20
         self._max_time[SMS] = 20
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
+        self._timeout_counter = 0
     
     ###########################
     # Watchdog handlers
@@ -119,6 +120,14 @@ class switcher():
         elif rssi <= -85: # To include RSRQ, RSRP, SINR in the future
             self._switch(self._link + 1) # In 4G mode, switch at low rssi
     
+    def monitor_smsout(self, data):
+        if data.data == "Timeout":
+            self._timeout_counter += 1
+        elif data.data == "Success":
+            self._timeout_counter = 0
+        if self._timeout_counter == 3:
+            self._switch(2)
+
     ###########################
     # "Main" function
     ###########################
@@ -126,6 +135,7 @@ class switcher():
     def client(self):
         rospy.Subscriber("ogc/from_sms", String, self.monitor_sms)
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
+        rospy.Subscriber('ogc/to_switcher', String, self.monitor_smsout)
         watchdog = rospy.Timer(rospy.Duration(1), self.countdown)
         router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
