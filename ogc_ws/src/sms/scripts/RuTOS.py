@@ -87,29 +87,29 @@ def get_gps_speed(ssh):
 def get_conntype(ssh):
     '''Get type of connection'''
     _, stdout, _ = ssh.exec_command("gpsctl -t")
-    conntype = stdout.readlines()
+    conntype = stdout.readlines()[0]
     return conntype
 
 def get_rssi(ssh):
     '''Get RSSI'''
     _, stdout, _ = ssh.exec_command("gpsctl -q")
-    rssi = int(stdout.readlines())
+    rssi = int(stdout.readlines()[0])
     return rssi
 
 def get_rsrp(ssh):
     '''Get RSRP'''
     _, stdout, _ = ssh.exec_command("gpsctl -W")
-    rsrp = int(stdout.readlines())
+    rsrp = int(stdout.readlines()[0])
     return rsrp
 
 def get_rsrq(ssh):
     '''Get RSRQ'''
     _, stdout, _ = ssh.exec_command("gpsctl -M")
-    rsrq = int(stdout.readlines())
+    rsrq = int(stdout.readlines()[0])
     return rsrq
 
 def get_sinr(ssh):
     '''Get SINR'''
     _, stdout, _ = ssh.exec_command("gpsctl -Z")
-    sinr = int(stdout.readlines())
+    sinr = int(stdout.readlines()[0])
     return sinr
