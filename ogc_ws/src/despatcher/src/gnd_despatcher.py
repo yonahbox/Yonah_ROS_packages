@@ -42,6 +42,7 @@ class aircraft():
     
     def __init__(self, air_id):
         self._air_id = air_id
+        self._valid_ids = rospy.get_param("~valid_ids")
         self._link = TELE
         self._tele_interval = rospy.get_param("~interval_1")
         self._sms_interval = rospy.get_param("~interval_2")
@@ -57,14 +58,14 @@ class aircraft():
     def _send_heartbeat_tele(self, data):
         msg = LinkMessage()
         msg.data = self._prep_heartbeat()
-        msg.id = rospy.get_param("~self_id")
+        msg.id = self._air_id
         self._pub_to_telegram.publish(msg)
         rospy.sleep(self._tele_interval)
 
     def _send_heartbeat_sms(self, data):
         msg = LinkMessage()
         msg.data = self._prep_heartbeat()
-        msg.id = rospy.get_param("~self_id")
+        msg.id = self._air_id
         self._pub_to_sms.publish(msg)
         rospy.sleep(self._sms_interval)
 
@@ -181,7 +182,7 @@ class gnddespatcher():
             msglist = data.data.split()
             id = int(msglist[0]) # Msg format: aircraft id + link no
             link = int(msglist[1])
-            self._aircrafts[id].change_link(link)
+            self._aircrafts[id].switch_link(link)
         except:
             rospy.logerr("Switcher: Invalid msg")
 

@@ -47,7 +47,7 @@ class new_msg_chk():
 # Handle incoming msgs
 ######################
 
-def split_headers(self, msg):
+def split_headers(msg):
     '''
     Take in a msg + headers
     Return the headers along with a list of the words in the msg (split according to spaces)
@@ -67,7 +67,7 @@ def split_headers(self, msg):
 # Handle outgoing msgs
 ######################
 
-def attach_headers(self, prefixes, suffixes, msg):
+def attach_headers(prefixes, suffixes, msg):
     '''
     Take in a list of prefixes, list of suffixes, and the msg
     Return the msg with the attached prefixes/suffixes

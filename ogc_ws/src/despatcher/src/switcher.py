@@ -49,7 +49,7 @@ class watchdog():
         self._link = target_link
         self._watchdog[target_link] = self._max_time[target_link]
         rospy.logwarn("Aircraft " + str(self._air_id) +  " switching to link " + str(target_link))
-        self.pub_to_despatcher.publish(self._link)
+        self.pub_to_despatcher.publish(str(self._air_id) + " " + str(self._link))
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
