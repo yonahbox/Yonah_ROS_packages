@@ -18,7 +18,7 @@ class MessageTimer():
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] <= 0:
             self.stop_timer()
-            send_to_rqt(self.message_id, "Your message: [" + self.message + "] with message ID " + str(self.message_id) + " has failed to send. Last status: " + str(self.status))
+            send_to_rqt(self.message_id, "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status))
             self.status = -1
 
     def stop_timer(self):
@@ -49,11 +49,11 @@ class Manager():
             return 0
 
         else:
-            # rospy.logwarn("MODIFYING OLD FIELD")
             self.messages[data.id].status += 1
             self.messages[data.id].stop_timer()
             if self.messages[data.id].status == 2:
                 rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
+                self.messages[data.id].status == 3
                 return 0
             self.messages[data.id].client()
 

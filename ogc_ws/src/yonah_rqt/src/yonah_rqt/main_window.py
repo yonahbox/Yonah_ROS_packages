@@ -147,9 +147,14 @@ class MyPlugin(Plugin):
         self.CommandWindow.combo_box.setCurrentIndex(i - 1)
 
     def feedback_message(self, data):
-        message = data.data
-        self.PopupMessages.warning_message("Command failed to send", str(message))
-        rospy.logerr(data.data)
+        status = Communicate()
+        status.feedback_message_signal.connect(self.feedback_message_display)
+        status.feedback_message_signal.emit(data.data)
+
+    def feedback_message_display(self, data):
+        print(data)
+        self.PopupMessages.warning_message("Command failed to send", data)
+
 
     ################################
     # Create Signal Slot functions #
@@ -453,6 +458,8 @@ class Communicate (QObject):
     status_text_signal = Signal(str)
     ondemand_signal = Signal(str, str)
     syncthing_signal = Signal(str)
+
+    feedback_message_signal = Signal(str)
     # SITL specific signals
     waypoint_list_signal = Signal(list, int, str)
     mode_sitl_signal = Signal(str, str)
