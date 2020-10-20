@@ -41,6 +41,9 @@ class Manager():
     def sent_commands(self, data):
         if data.id not in self.messages:
             rospy.logwarn("CREATING NEW FIELD")
+            if len(self.messages) > 50:
+                first_item = [x for x in self.messages.entries.keys()][0]
+                self.messages.pop(first_item, "No Key Found")
             self.messages[data.id] = MessageTimer(data.data, data.id)
             self.messages[data.id].client()
 
