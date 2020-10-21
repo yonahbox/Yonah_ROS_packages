@@ -38,7 +38,9 @@ def tdlib_topic_cb(msg, args):
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
 	else:
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
+		# rospy.loginfo("sending message to " + str(tele_id.data_int))
+		rospy.loginfo(f"sending message to {tele_id.data_int}")
+
 		td.send_message(tele_id.data_int, msg.data)
 
 # callback function run to add a contact to the telegram account
@@ -65,6 +67,12 @@ def tdlib_file_cb(msg, args):
 	home_dir = str(Path.home())
 	file_path = home_dir + "/Waypoints/" + msg.data
 	td.send_file(tele_id.data_int, file_path)
+
+def tdlib_admin_cb(msg, td):
+	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
+	admin_id = get_admin_id()
+	td.send_message(admin_id.data_int, msg.data)
+
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -146,6 +154,7 @@ if __name__ == '__main__':
 		rospy.wait_for_service("identifiers/get/telegram_id")
 		rospy.wait_for_service("identifiers/add/telegram_id")
 		rospy.wait_for_service("identifiers/check/proper")
+		rospy.wait_for_service("identifiers/get/admin_id")
 
 		# Service to get the telegram user id from identifiers
 		identifiers_get_telegram_id = rospy.ServiceProxy("identifiers/get/telegram_id", GetDetails)
@@ -166,7 +175,7 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
-
+		rospy.Subscriber('ogc/to_telegram/admin', String, tdlib_admin_cb, td)
 		# inform all valid nodes that the link is up
 		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 

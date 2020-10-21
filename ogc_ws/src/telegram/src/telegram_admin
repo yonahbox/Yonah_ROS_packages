@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from threading import Thread
+from pathlib import Path
+import json
+
+from Td import Td
+from identifiers import Identifiers
+
+home_dir = str(Path.home())
+tdlib_dir = home_dir + '/.tdlib_air'
+identifiers_file = home_dir + '/Sync/identifiers.json'
+self_id = 0
+valid_ids = []
+
+if __name__ == '__main__':
+	td = Td(tdlib_dir)
+	ids = Identifiers(identifiers_file, False, self_id, valid_ids)
+
+
+	while True:
+		event = td.receive()
+		if event:
+			if event['@type'] == 'error':
+				print(f"[ERROR] {json.dumps(event)}")
+				td.get_chats()
+
+			if event['@type'] == 'updateNewMessage':
+				if event['message']['is_outgoing']:
+					continue
+
+				is_valid_sender = ids.is_valid_sender(0, str(event['message']['sender_user_id']))
+				if not is_valid_sender:
+					print("message from invalid user")
+					continue
+
+				msg = event['message']['content']['text']['text']
+				print(f"New Message: {msg}")
+				td.set_read(event['message']['chat_id'], event['message']['id'])
+				try:
+					msg_json = json.loads(msg)
+					print(msg_json)
+					print("----")
+					print(f'label: {msg_json["label"]}')
+					# print(f'id: {msg_json["id"]}')
+					print(f'number: {msg_json["number"]}')
+					print(f'imei: {msg_json["imei"]}')
+					print(f'rb_serial: {msg_json["rb_serial"]}')
+				except json.JSONDecodeError:
+					print('invalid message format')
+					continue

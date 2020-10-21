@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import rospy
+# import rospy
 
-from telegram.msg import ContactInfo
+# from telegram.msg import ContactInfo
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
@@ -32,20 +32,20 @@ class Device:
 		self.telegram_id = telegram_id
 
 # Class to keep track of subscriptions to any topic when publishing
-class TopicSubscriberNotification:
-	def __init__(self, callback):
-		self.callback = callback	# the callback function that will be called when the subscriber count is 1
-		self.subscriber_count = 0
+# class TopicSubscriberNotification:
+# 	def __init__(self, callback):
+# 		self.callback = callback	# the callback function that will be called when the subscriber count is 1
+# 		self.subscriber_count = 0
 
-	def peer_subscribe(self, topic_name, topic_publish, peer_publish):
-		rospy.loginfo("SUBSCRIBED to %s", topic_name)
-		self.subscriber_count += 1
-		if self.subscriber_count == 1:
-			self.callback()
+# 	def peer_subscribe(self, topic_name, topic_publish, peer_publish):
+# 		rospy.loginfo("SUBSCRIBED to %s", topic_name)
+# 		self.subscriber_count += 1
+# 		if self.subscriber_count == 1:
+# 			self.callback()
 
-	def peer_unsubscribe(self, topic_name, num_peers):
-		rospy.loginfo("UNSUBSCRIBED from %s", topic_name)
-		self.subscriber_count -= 1
+# 	def peer_unsubscribe(self, topic_name, num_peers):
+# 		rospy.loginfo("UNSUBSCRIBED from %s", topic_name)
+# 		self.subscriber_count -= 1
 
 
 class Identifiers:
@@ -65,12 +65,13 @@ class Identifiers:
 		self.rock7_pw = ""					# password for rockblock
 		self.svr_hostname = ""				# hostname of hosted web server
 		self.svr_ip = ""					# ip address of hosted web server
+		self.admin_id = 0
 
 		# instance of the class to keep track of subscribers to a topic
-		topic_cb = TopicSubscriberNotification(self.request_telegram_id)
+		# topic_cb = TopicSubscriberNotification(self.request_telegram_id)
 
 		# topic publisher to the telegram node to add contacts
-		self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10, subscriber_listener=topic_cb)
+		# self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10, subscriber_listener=topic_cb)
 		self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
 
 		# parse the identifiers file
@@ -82,7 +83,7 @@ class Identifiers:
 			try:
 				# read the file as a json object
 				self.json_obj = json.load(file)
-			except JSONDecodeError:
+			except json.JSONDecodeError:
 				# file does not contain valid json
 				print("invalid identifier file")
 				exit()
@@ -114,6 +115,12 @@ class Identifiers:
 				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None))
 				break
 
+		# Runs on admin instance
+		if self.self_id == 0:
+			for obj in self.json_obj["ground"]:
+				# self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
+				if "telegram_id" in obj.keys():
+					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
 		# for standalone numbers (not currently in use)
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
@@ -124,10 +131,13 @@ class Identifiers:
 		self.svr_hostname = self.json_obj["sbd_details"]["svr_hostname"]
 		self.svr_ip = self.json_obj["sbd_details"]["svr_ip"]
 
+		self.admin_id = self.json_obj["admin"]["telegram_id"]
+
 	# callback function for the topic subscriber class
 	# used to add contacts to telegram after the telegram node has subscribed to the topic
 	def request_telegram_id(self):
-		rospy.loginfo("Telegram link has subscribed to contact topic")
+		# rospy.loginfo("Telegram link has subscribed to contact topic")
+		print("Telegram link has subscribed to contact topic")
 		# loop through list of unknown devices
 		while self.telegram_unknown_ids:
 			contact = self.telegram_unknown_ids.pop(0)		# removed item from list as it wont be needed anymore
@@ -169,6 +179,9 @@ class Identifiers:
 
 		return telegram_id
 
+	def get_admin_id(self):
+		return self.admin_id
+
 	# return the serial number associated with an id if it is whitelisted
 	def get_sbd_serial(self, id_n):
 		device = self.get_device(id_n)
@@ -206,18 +219,40 @@ class Identifiers:
 		ground_ids = [dev["id"] for dev in self.json_obj["ground"]]
 		return (air_ids, ground_ids)
 
-	# add new device to the identifiers file
-	def add_new_device(self, is_air, label, number, imei, rb_serial):
-		# get the correct array in the json object
-		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+	def _format_device_message(self, device):
+		pass
 
-		# Check if there is space for more devices
-		if len(edit_list) > 9:
-			return False
+	# request adding a new device to admin
+	def new_device_request(self, is_air, label, number, imei, rb_serial):
+		device = {
+			"request": "add",
+			"label": label,
+			"number": number,
+			"imei": imei,
+			"rb_serial": rb_serial
+		}
+		return json.dumps(device)
+
+	# request edit for a device to admin
+	def edit_device_request(self, id_n, is_air, label="", number="", imei="", rb_serial=""):
+		device = {
+			"request": "edit",
+			"label": label,
+			"id": id_n,
+			"number": number,
+			"imei": imei,
+			"rb_serial": rb_serial
+		}
+		return json.dumps(device)
+
+	# add new device to the identifiers file
+	def add_new_device(self, device):
+		# get the correct array in the json object
+		edit_list = self.json_obj["air"] if device["is_air"] else self.json_obj["ground"]
 
 		# find an available id number
 		selected_id = -1
-		for i in range(1,10):
+		for i in range(1,256):
 			if i not in [obj["id"] for obj in edit_list]:
 				selected_id = i
 				break
@@ -227,11 +262,12 @@ class Identifiers:
 			return False
 
 		edit_list.append({
-			"label": label,
-			"id": selected_id,
-			"number": number,
-			"imei": imei,
-			"rb_serial": rb_serial
+			"label": device["label"],
+			"id": device["selected_id"],
+			"number": device["number"],
+			"imei": device["imei"],
+			"rb_serial": device["rb_serial"],
+			"telegram_id": device["telegram_id"]
 		})
 
 		# write details to file
@@ -244,16 +280,17 @@ class Identifiers:
 		self.update_telegram_id(label, number)
 		return True
 
+
 	# edit an existing device in the identifiers file
-	def edit_device(self, id_n, is_air, label="", number="", imei="", rb_serial=""):
+	def edit_device(self, device):	
 		# get the correct array in the json object
-		edit_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+		edit_list = self.json_obj["air"] if device["is_air"] else self.json_obj["ground"]
 
 		# find the correct object for the id
 		selected_device = None
-		for device in edit_list:
-			if device["id"] == id_n:
-				selected_device = device
+		for dev in edit_list:
+			if dev["id"] == id_n:
+				selected_device = dev
 				break
 
 		# id does not exist
@@ -261,10 +298,11 @@ class Identifiers:
 			return False
 
 		# edit the fields specified, keep old info if no new information provided
-		selected_device["label"] = label if label != "" else selected_device["label"]
-		selected_device["number"] = number if number != "" else selected_device["number"]
-		selected_device["imei"] = imei if imei != ""else selected_device["imei"]
-		selected_device["rb_serial"] = rb_serial if rb_serial != "" else selected_device["rb_serial"]
+		selected_device["label"] = device["label"] if device["label"] != "" else selected_device["label"]
+		selected_device["number"] = device["number"] if device["number"] != "" else selected_device["number"]
+		selected_device["imei"] = device["imei"] if device["imei"] != ""else selected_device["imei"]
+		selected_device["rb_serial"] = device["rb_serial"] if device["rb_serial"] != "" else selected_device["rb_serial"]
+		selected_device["telegram_id"] = device["telegram_id"] if device["telegram_id"] != "" else selected_device["telegram_id"]
 
 		#write details to file
 		with open(self.json_file, "w") as f:
@@ -273,54 +311,56 @@ class Identifiers:
 		self._parse_file()
 
 		# add the new number to telegram if number changed
-		if number != "":
-			self.update_telegram_id(selected_device["label"], selected_device["number"])
+		# if number != "":
+			# self.update_telegram_id(selected_device["label"], selected_device["number"])
 		return True
 
 	# write the telegram user id for a device into the identifiers file
-	def add_telegram_id(self, number, telegram_id):
-		# edit objects in both air and ground if it exists in both (mainly needed in testing, unlikely to be needed in ops)
-		obj_edited = False
-		for device in self.json_obj["air"]:
-			if device["number"] == number:
-				if device.get("telegram_id", 0) != telegram_id:
-					device["telegram_id"] = telegram_id
-					obj_edited = True
-					break
+	# def add_telegram_id(self, number, telegram_id):
+	# 	# edit objects in both air and ground if it exists in both (mainly needed in testing, unlikely to be needed in ops)
+	# 	obj_edited = False
+	# 	for device in self.json_obj["air"]:
+	# 		if device["number"] == number:
+	# 			if device.get("telegram_id", 0) != telegram_id:
+	# 				device["telegram_id"] = telegram_id
+	# 				obj_edited = True
+	# 				break
 
-		for device in self.json_obj["ground"]:
-			if device["number"] == number:
-				if device.get("telegram_id", 0) != telegram_id:
-					device["telegram_id"] = telegram_id
-					obj_edited = True
-					break
+	# 	for device in self.json_obj["ground"]:
+	# 		if device["number"] == number:
+	# 			if device.get("telegram_id", 0) != telegram_id:
+	# 				device["telegram_id"] = telegram_id
+	# 				obj_edited = True
+	# 				break
 
-		if not obj_edited:
-			return False
+	# 	if not obj_edited:
+	# 		return False
 
-		rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
+	# 	# rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
+	# 	print(f"Adding telegram id {telegram_id} to number {number}")
 
-		with open(self.json_file, "w") as f:
-			json.dump(self.json_obj, f)
+	# 	with open(self.json_file, "w") as f:
+	# 		json.dump(self.json_obj, f)
 
-		self._parse_file()
-		return True
+	# 	self._parse_file()
+	# 	return True
 
 	# request telegram to add contact and get the user id
-	def update_telegram_id(self, label, number):
-		rospy.loginfo("requesting telegram_id for %s (%s)", label, number)
-		contact = ContactInfo()
-		contact.label = label
-		contact.number = number
+	# def update_telegram_id(self, label, number):
+	# 	# rospy.loginfo("requesting telegram_id for %s (%s)", label, number)
+	# 	print(f"requesting telegram_id for {label} ({number})", label, number)
+	# 	# contact = ContactInfo()
+	# 	contact.label = label
+	# 	contact.number = number
 		
-		# check if the number is for the telegram account itself
-		# it is not possible to add a contact of yourself in telegram
-		if number == self.self_device.number:
-			contact.me = True
-		else:
-			contact.me = False
+	# 	# check if the number is for the telegram account itself
+	# 	# it is not possible to add a contact of yourself in telegram
+	# 	if number == self.self_device.number:
+	# 		contact.me = True
+	# 	else:
+	# 		contact.me = False
 
-		self.telegram_add_contact.publish(contact)
+	# 	self.telegram_add_contact.publish(contact)
 
 
 	# Does a lazy check to see if the received message is from a valid sender

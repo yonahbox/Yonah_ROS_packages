@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
+from std_msgs.msg import String
 
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
@@ -31,6 +32,7 @@ from identifiers.srv import GetIds, GetIdsResponse
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
+		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin', String, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -43,6 +45,9 @@ class ServiceHandler:
 
 	def get_telegram_id(self, request):
 		return GetDetailsResponse(data_int=self._ids.get_telegram_id(request.id))
+
+	def get_admin_id(self, request):
+		return GetDetailsResponse(data_int=self._ids.get_admin_id())
 
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
@@ -63,18 +68,16 @@ class ServiceHandler:
 			svr_ip=svr_ip)
 
 	def add_new_device(self, request):
-		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to add information to identifiers file")
+		device= self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
 
-		return AddNewDeviceResponse(result)
+		return AddNewDeviceResponse(True)
 
 	def edit_device(self, request):
-		result = self._ids.edit_device(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to edit device in identifiers_file")
+		device= self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
 
-		return EditDeviceResponse(result)
+		return EditDeviceResponse(True)
 
 	def add_telegram_id(self, request):
 		return AddTelegramIdResponse(self._ids.add_telegram_id(request.number, request.telegram_id))
@@ -108,6 +111,7 @@ if __name__ == '__main__':
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	admin_id_service = rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
 
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
