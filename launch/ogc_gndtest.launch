@@ -7,7 +7,6 @@
 	<arg name="interval_3" default="20"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
-	<arg name="link_select" default="0" />
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
@@ -57,7 +56,6 @@
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="interval_3" value="$(arg interval_3)" />
 		<param name="self_id" value="$(arg self_id)" />
-		<param name="link_select" value="$(arg link_select)" />
 		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
