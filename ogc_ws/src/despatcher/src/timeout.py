@@ -39,11 +39,11 @@ class Manager():
         rospy.spin()
     
     def sent_commands(self, data):
+        if data.id > 50:
+            data.id -= 50
+        
         if data.id not in self.messages:
             rospy.logwarn("CREATING NEW FIELD")
-            if len(self.messages) > 50:
-                first_item = [x for x in self.messages.entries.keys()][0]
-                self.messages.pop(first_item, "No Key Found")
             self.messages[data.id] = MessageTimer(data.data, data.id)
             self.messages[data.id].client()
 
@@ -64,7 +64,27 @@ def send_to_rqt(message_id, data):
     message = LinkMessage()
     message.id = message_id
     message.data = data
+    message.guid = 0 # 0 is for guid for non-A2G message
     pub_to_rqt.publish(message)
+
+def convert_ack2 (data):
+    data = data.split(" ")
+    message = LinkMessage()
+    message.id = data[0]
+    message.data = data[1]
+    return message
+
+# call using func.counter to get a number
+def count(func):
+    def wrapper(*args, **kwargs):
+        wrapper.counter += 1    # executed every time the wrapped function is called
+        return func(*args, **kwargs)
+    wrapper.counter = 1         # executed only once in decorator definition time
+    return wrapper
+
+@count
+def func():
+    pass
 
 if __name__=='__main__':
     run = Manager()
