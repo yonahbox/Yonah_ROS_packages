@@ -177,6 +177,7 @@ class satcommsgnd(satcomms):
         '''Send cmds to all aircraft, telling them to switch between server and RB-2-RB methods'''
         air_ids = self._get_ids().air_ids
         switch_cmd = LinkMessage()
+        switch_cmd.uuid = 0
         for i in air_ids:
             switch_cmd.id = i
             rospy.loginfo("SBD: Sending switch cmd to aircraft " + str(i))

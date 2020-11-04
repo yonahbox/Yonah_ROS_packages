@@ -34,6 +34,7 @@ class PopupMessages(QWidget):
     def create_link_message(self, destination_id, data):
         '''Create a custom Link Message'''
         message = LinkMessage()
+        message.uuid = 0
         message.id = destination_id
         message.data = data
         self.command_publisher.publish(message)

@@ -21,6 +21,7 @@ class mission_updater():
 			update_time = g.readlines()[-1].rstrip().split()[-1]
 			mission_msg.append(str(i) + " " + str(update_time))
 		update = LinkMessage()
+		update.uuid = 0
 		update.id = 4
 		update.data = "mission update " + " ".join(mission_msg)
 		time.sleep(1)

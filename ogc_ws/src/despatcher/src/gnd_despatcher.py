@@ -74,6 +74,7 @@ class gnddespatcher():
             self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
         else:
             msg = LinkMessage()
+            msg.uuid = data.uuid
             msg.id = data.id
             # Add msg headers
             prefixes = ["i", self._is_air, self._id]
