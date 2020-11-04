@@ -22,6 +22,7 @@ from std_msgs.msg import String
 
 from despatcher.msg import LinkMessage
 
+uuid = 0
 
 class MessageTimer():
     def __init__(self, message, message_id):
@@ -95,12 +96,10 @@ def convert_ack2 (data):
     return message
 
 def increment():
-    rospy.logerr("increment is called")
     global uuid
-    uuid = 0
     uuid += 1
-    print(uuid)
-    return "UUID added"
+    rospy.loginfo("increment is called, UUID " + str(uuid))
+    return uuid
     
 # call using func.counter to get a number
 def count(func):

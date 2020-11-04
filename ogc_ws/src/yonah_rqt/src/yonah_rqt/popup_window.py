@@ -29,12 +29,13 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
+        self.CommandWindow = CommandWindow()
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
         '''Create a custom Link Message'''
         message = LinkMessage()
-        message.uuid = 0
+        message.uuid = increment()
         message.id = destination_id
         message.data = data
         self.command_publisher.publish(message)
@@ -78,7 +79,7 @@ class PopupMessages(QWidget):
         if i.text() == '&Yes':
             data = "arm"
             statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
-            self.create_link_message(self.destination_id, data)
+            CommandWindow.create_link_message(self.destination_id, data)
         else:
             self.message.close()
 
@@ -86,7 +87,7 @@ class PopupMessages(QWidget):
         if i.text() == '&Yes':
             data = "disarm"
             statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
-            self.create_link_message(self.destination_id, data)
+            CommandWindow.create_link_message(self.destination_id, data)
         else:
             self.message.close()
     

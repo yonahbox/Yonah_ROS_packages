@@ -57,6 +57,7 @@ class aircraft():
     
     def _send_heartbeat_tele(self, data):
         msg = LinkMessage()
+        msg.uuid = 0
         msg.data = self._prep_heartbeat()
         msg.id = self._air_id
         self._pub_to_telegram.publish(msg)
@@ -64,6 +65,7 @@ class aircraft():
 
     def _send_heartbeat_sms(self, data):
         msg = LinkMessage()
+        msg.uuid = 0
         msg.data = self._prep_heartbeat()
         msg.id = self._air_id
         self._pub_to_sms.publish(msg)
@@ -162,6 +164,7 @@ class gnddespatcher():
                 elif msgtype == 'm':
                     # Check if it is mission update message
                     reqFile = LinkMessage()
+                    reqFile.uuid = 0
                     reqFile.id = sysid
                     if entries == ["No", "update", "required"]:
                         return
