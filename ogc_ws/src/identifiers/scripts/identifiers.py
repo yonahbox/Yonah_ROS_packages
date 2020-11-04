@@ -280,7 +280,7 @@ class Identifiers:
 
 		# get the telegram user id
 		# self.update_telegram_id(label, number)
-		return True
+		return selected_id
 
 
 	# edit an existing device in the identifiers file

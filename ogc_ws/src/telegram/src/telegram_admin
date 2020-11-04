@@ -76,8 +76,16 @@ if __name__ == '__main__':
 				print(f"Got id {event['id']} for {event['phone_number']}")
 				dev['telegram_id'] = event['id']
 
-				if dev['request'] == 'add':
-					ids.add_new_device(dev)
-				elif dev['request'] == 'edit':
+				dev_id = 0
+				if dev.get('request') == 'add':
+					dev_id = ids.add_new_device(dev)
+				elif dev.get('request') == 'edit':
 					ids.edit_device(dev)
-					
+					dev_id = dev['id']
+
+				if dev['is_air']:
+					msg = {
+						"action": "set_device_id",
+						"device_id": dev_id
+					}
+					td.send_message(event['id'], json.dumps(msg))
