@@ -227,6 +227,7 @@ class Identifiers:
 		device = {
 			"request": "add",
 			"label": label,
+			"is_air": is_air,
 			"number": number,
 			"imei": imei,
 			"rb_serial": rb_serial
@@ -239,6 +240,7 @@ class Identifiers:
 			"request": "edit",
 			"label": label,
 			"id": id_n,
+			"is_air": is_air,
 			"number": number,
 			"imei": imei,
 			"rb_serial": rb_serial
@@ -263,7 +265,7 @@ class Identifiers:
 
 		edit_list.append({
 			"label": device["label"],
-			"id": device["selected_id"],
+			"id": selected_id,
 			"number": device["number"],
 			"imei": device["imei"],
 			"rb_serial": device["rb_serial"],
@@ -277,7 +279,7 @@ class Identifiers:
 		self._parse_file()
 
 		# get the telegram user id
-		self.update_telegram_id(label, number)
+		# self.update_telegram_id(label, number)
 		return True
 
 
@@ -289,7 +291,7 @@ class Identifiers:
 		# find the correct object for the id
 		selected_device = None
 		for dev in edit_list:
-			if dev["id"] == id_n:
+			if dev["id"] == device['id']:
 				selected_device = dev
 				break
 
