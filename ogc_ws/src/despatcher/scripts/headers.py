@@ -24,18 +24,14 @@ import rospy
 PREFIX_COUNT = 3
 SUFFIX_COUNT = 1
 
-class headerhandler():
-    
+class new_msg_chk():
+    '''Check whether incoming msgs are new'''
     def __init__(self, max_valid_id):
         self._prev_transmit_time = list() # Transmit times of previous incoming msgs
         i = 0
         while i < max_valid_id:
             self._prev_transmit_time.append(rospy.get_rostime().secs)
             i = i + 1
-    
-    ######################
-    # Handle incoming msgs
-    ######################
     
     def is_new_msg(self, timestamp, sysid):
         '''Return true is incoming msg is a new msg from sysid. sysid assumed to start from 1'''
@@ -46,35 +42,39 @@ class headerhandler():
         else:
             self._prev_transmit_time[sysid - 1] = timestamp
             return True
-    
-    def split_headers(self, msg):
-        '''
-        Take in a msg + headers
-        Return the headers along with a list of the words in the msg (split according to spaces)
-        If the msg is in invalid format, return None
-        '''
-        try:
-            msglist = msg.split()
-            msgtype = str(msglist[0])
-            devicetype = int(msglist[1])
-            sysid = int(msglist[2])
-            timestamp = int(msglist[-1])
-            return msgtype, devicetype, sysid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
-        except:
-            return None
-    
-    ######################
-    # Handle outgoing msgs
-    ######################
 
-    def attach_headers(self, prefixes, suffixes, msg):
-        '''
-        Take in a list of prefixes, list of suffixes, and the msg
-        Return the msg with the attached prefixes/suffixes
-        If prefixes/suffixes are invalid, return None
-        '''
-        if len(prefixes) != PREFIX_COUNT or len(suffixes) != SUFFIX_COUNT:
-            return None
-        prefix_string = " ".join(str(i) for i in prefixes)
-        suffix_string = " ".join(str(i) for i in suffixes)
-        return prefix_string + " " + msg + " " + suffix_string
+######################
+# Handle incoming msgs
+######################
+
+def split_headers(msg):
+    '''
+    Take in a msg + headers
+    Return the headers along with a list of the words in the msg (split according to spaces)
+    If the msg is in invalid format, return None
+    '''
+    try:
+        msglist = msg.split()
+        msgtype = str(msglist[0])
+        devicetype = int(msglist[1])
+        sysid = int(msglist[2])
+        timestamp = int(msglist[-1])
+        return msgtype, devicetype, sysid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
+    except:
+        return None
+    
+######################
+# Handle outgoing msgs
+######################
+
+def attach_headers(prefixes, suffixes, msg):
+    '''
+    Take in a list of prefixes, list of suffixes, and the msg
+    Return the msg with the attached prefixes/suffixes
+    If prefixes/suffixes are invalid, return None
+    '''
+    if len(prefixes) != PREFIX_COUNT or len(suffixes) != SUFFIX_COUNT:
+        return None
+    prefix_string = " ".join(str(i) for i in prefixes)
+    suffix_string = " ".join(str(i) for i in suffixes)
+    return prefix_string + " " + msg + " " + suffix_string
