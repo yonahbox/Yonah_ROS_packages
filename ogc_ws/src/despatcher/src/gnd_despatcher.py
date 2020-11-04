@@ -24,13 +24,14 @@ import rospy
 import os
 import rospkg
 
-from std_msgs.msg import String
+from std_msgs.msg import UInt8, String
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
 
 # Local
 import regular
 from g2a import recognised_commands
+from headers import headerhandler
 
 class gnddespatcher():
 
@@ -51,10 +52,17 @@ class gnddespatcher():
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         self._id = rospy.get_param("~self_id") # Our GCS ID
-        self._severity = "i" # Outgoing msg severity level
+        self._valid_ids = rospy.get_param("~valid_ids")
 
-        # Used to handle incoming msgs
-        self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous recv msg (incoming msg)
+        # Msg header handling
+        self._header = headerhandler(max(self._valid_ids))
+
+        # Intervals btwn heartbeat msgs
+        self._interval_1 = rospy.get_param("~interval_1")
+        self._interval_2 = rospy.get_param("~interval_2")
+        self._interval_3 = rospy.get_param("~interval_3")
+        self._tele_interval = self._interval_1
+        self._sms_interval = self._interval_2
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -68,8 +76,8 @@ class gnddespatcher():
             msg = LinkMessage()
             msg.id = data.id
             # Add msg headers
-            msg.data = self._severity + " " + str(self._is_air) + " " + str(self._id) + \
-                " " + data.data + " " + str(rospy.get_rostime().secs)
+            prefixes = ["i", self._is_air, self._id]
+            msg.data = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
             if self.link_select == 0:
                 self.pub_to_telegram.publish(msg)
             elif self.link_select == 1:
@@ -81,50 +89,39 @@ class gnddespatcher():
     ###########################################
     # Handle Air-to-Ground (A2G) messages
     ###########################################
-
-    def _is_new_msg(self, timestamp):
-        '''Return true is incoming msg is a new msg'''
-        if timestamp < self._prev_transmit_time:
-            return False
-        else:
-            self._prev_transmit_time = timestamp
-            return True
     
     def check_incoming_msgs(self, data):
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             # Handle msg prefixes
-            entries = data.data.split()
-            sender_timestamp = int(entries[-1])
-            sender_msgtype = str(entries[0])
-            sender_id = int(entries[2])
-            if not self._is_new_msg(sender_timestamp):
+            msgtype, devicetype, sysid, timestamp, entries \
+                = self._header.split_headers(data.data)
+            if not self._header.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
                 return
-            if regular.is_regular(sender_msgtype, len(entries)):
+            if regular.is_regular(msgtype, len(entries)):
                 self.rqt_recovery_log(entries, sender_id)
                 # Check if it is regular payload
                 msg = regular.convert_to_rosmsg(entries)
                 
                 self.pub_to_rqt_regular.publish(msg)
             else:
-                if sender_msgtype == 's':
+                if msgtype == 's':
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
-                elif sender_msgtype == 'm':
+                elif msgtype == 'm':
                     # Check if it is mission update message
-                    mission_files = data.data.split()[3:-1]
                     reqFile = LinkMessage()
-                    reqFile.id = sender_id
-                    if mission_files == ["No", "update", "required"]:
+                    reqFile.id = sysid
+                    if entries == ["No", "update", "required"]:
                         return
-                    for i in mission_files:
+                    for i in entries:
                         reqFile.data = i
                         self.file_to_telegram.publish(reqFile)
                         rospy.sleep(1)
                 else:
                     self.pub_to_rqt_ondemand.publish(data.data)
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             rospy.logerr("Invalid message format!")
 
     def rqt_recovery_log(self, entries, aircraft_id):
@@ -143,6 +140,48 @@ class gnddespatcher():
         with open(path, 'w') as files:
             files.writelines(data)
             files.close()
+    
+    #########################################
+    # Handle Misc (e.g. switcher) messages
+    #########################################
+
+    def _prep_heartbeat(self):
+        '''Prepare a heartbeat msg'''
+        prefixes = ["h", self._is_air, self._id]
+        return self._header.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
+    
+    def send_heartbeat_tele(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        for ids in self._valid_ids:
+            msg.id = ids
+            self.pub_to_telegram.publish(msg)
+        rospy.sleep(self._tele_interval)
+
+    def send_heartbeat_sms(self, data):
+        msg = LinkMessage()
+        msg.data = self._prep_heartbeat()
+        for ids in self._valid_ids:
+            msg.id = ids
+            self.pub_to_sms.publish(msg)
+        rospy.sleep(self._sms_interval)
+
+    def check_switcher(self, data):
+        '''Obtain updates from switcher node'''
+        self.link_select = data.data
+        if self.link_select == 2:
+            self._tele_interval = self._interval_3
+            self._sms_interval = self._interval_3
+        elif self.link_select == 1:
+            self._tele_interval = self._interval_2
+            self._sms_interval = self._interval_2
+            self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_sms)
+        elif self.link_select == 0:
+            self._tele_interval = self._interval_1
+            try:
+                self.sms_sender.shutdown()
+            except:
+                pass
 
     ############################
     # "Main" function
@@ -153,7 +192,10 @@ class gnddespatcher():
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.handle_outgoing_msgs)
+        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
+        self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_heartbeat_tele)
         rospy.spin()
+        self.tele_sender.shutdown()
 
 if __name__=='__main__':
     run = gnddespatcher()
