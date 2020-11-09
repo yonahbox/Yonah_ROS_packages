@@ -30,6 +30,10 @@ from identifiers.srv import CheckSender, GetDetails
 
 # Local
 import RuTOS
+import sys
+sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
+from timeout import ack_converter
+
 
 
 class SMSrx():
@@ -59,6 +63,9 @@ class SMSrx():
         
         # Publish to switcher
         self.pub_to_switcher = rospy.Publisher('ogc/to_switcher', String, queue_size=5)
+
+        # Publish to timeout module
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 
         # identifiers work
         rospy.wait_for_service("identifiers/check/proper")
@@ -101,6 +108,11 @@ class SMSrx():
             return
 
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
+        
+        # Send acknowledgment to timeout module
+        ack = ack_converter(data, 1)
+        self.pub_to_timeout.publish(ack)
+
         if "Timeout\n" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
