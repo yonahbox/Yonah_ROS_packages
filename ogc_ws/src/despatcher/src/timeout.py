@@ -57,7 +57,7 @@ class Manager():
         rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
         # Put another subscriber in that listens to messages sent to rqt
         rospy.spin()
-        
+
     def sent_commands(self, data):
         if data.uuid > 255:
             data.uuid -= 255
@@ -84,7 +84,7 @@ class Manager():
                 rospy.loginfo("MESSAGE IS SUCCESSFULLY SENT")
                 
             else:
-                rospy.logerr("Unknown message received: " + str(data)
+                rospy.logerr("Unknown message received: " + str(data))
 
 def send_to_rqt(message_id, data):
     message = LinkMessage()
@@ -100,9 +100,9 @@ def ack_converter(data, state):
         message = LinkMessage()
         message.uuid = data.uuid
         message.id = 0 #@TODO change the message id to the supposed value
-        if state = 1:
+        if state == 1:
             message.data = "single tick"
-        elif state = 2:
+        elif state == 2:
             message.data = "double tick"
     return message
 

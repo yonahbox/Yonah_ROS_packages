@@ -18,6 +18,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
+import sys
+sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
+from timeout import increment
+
 import threading
 from despatcher.msg import LinkMessage
 from PyQt5.QtWidgets import *
@@ -29,7 +33,7 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
-        self.CommandWindow = CommandWindow()
+        # self.CommandWindow = CommandWindow()
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
@@ -79,7 +83,7 @@ class PopupMessages(QWidget):
         if i.text() == '&Yes':
             data = "arm"
             statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
-            CommandWindow.create_link_message(self.destination_id, data)
+            self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
 
@@ -87,7 +91,7 @@ class PopupMessages(QWidget):
         if i.text() == '&Yes':
             data = "disarm"
             statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
-            CommandWindow.create_link_message(self.destination_id, data)
+            self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
     
