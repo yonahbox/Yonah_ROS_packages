@@ -33,7 +33,6 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        print(func.counter)
         rospy.loginfo("COUNTDOWN STARTING")
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] <= 0:
@@ -55,30 +54,44 @@ class Manager():
     
     def watcher(self):
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.sent_commands)
+        rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
         # Put another subscriber in that listens to messages sent to rqt
         rospy.spin()
     
+    def acknowledgment(self, data):
+        identifier = data.id
+        uuid = data.uuid
+        data = data.data
+        if data = 
+        pass
+
     def sent_commands(self, data):
-        if data.id > 255:
-            data.id -= 255
+        if data.uuid > 255:
+            data.uuid -= 255
         
         if data.id not in self.messages:
             rospy.logwarn("CREATING NEW FIELD")
-            self.messages[data.id] = MessageTimer(data.data, data.id)
-            self.messages[data.id].client()
+            self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
+            self.messages[data.uuid].client()
 
-        elif self.messages[data.id].status == -1:
+        elif self.messages[data.uuid].status == -1:
             rospy.logwarn("DROPPED MESSAGE")
             return 0
 
         else:
-            self.messages[data.id].status += 1
-            self.messages[data.id].stop_timer()
-            if self.messages[data.id].status == 2:
-                rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
-                self.messages[data.id].status == 3
-                return 0
-            self.messages[data.id].client()
+            if data.data == "single tick":
+                self.messages[data.uuid].status = 1
+                self.messages[data.uuid].stop_timer()
+                self.messages[data.uuid].client()
+
+            elif data.data == "double tick":
+                self.messages[data.uuid].status = 2
+                self.messages[data.uuid].stop_timer()
+                self.messages[data.uuid].client()
+                rospy.loginfo("MESSAGE IS SUCCESSFULLY SENT")
+                
+            else:
+                rospy.logerr("Unknown message received: " + str(data)
 
 def send_to_rqt(message_id, data):
     message = LinkMessage()
@@ -87,12 +100,17 @@ def send_to_rqt(message_id, data):
     message.uuid = 0 # 0 is for uuid for non-A2G message
     pub_to_rqt.publish(message)
 
-def convert_ack2 (data):
-    data = data.split(" ")
-    message = LinkMessage()
-    message.uuid = 0
-    message.id = data[0]
-    message.data = data[1]
+def ack_converter(data, state):
+    if data.uuid == 0:
+        return None
+    else:
+        message = LinkMessage()
+        message.uuid = data.uuid
+        message.id = 0 #@TODO change the message id to the supposed value
+        if state = 1:
+            message.data = "single tick"
+        elif state = 2:
+            message.data = "double tick"
     return message
 
 def increment():
@@ -100,22 +118,9 @@ def increment():
     uuid += 1
     rospy.loginfo("increment is called, UUID " + str(uuid))
     return uuid
-    
-# call using func.counter to get a number
-def count(func):
-    def wrapper(*args, **kwargs):
-        wrapper.counter += 1    # executed every time the wrapped function is called
-        return func(*args, **kwargs)
-    wrapper.counter = 1         # executed only once in decorator definition time
-    return wrapper
-
-@count
-def func():
-    pass
 
 if __name__=='__main__':
     rospy.logerr("name is called")
-    uuid = 0
     run = Manager()
     pub_to_rqt = rospy.Publisher("ogc/feedback_to_rqt", LinkMessage, queue_size = 5)
     run.watcher()

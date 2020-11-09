@@ -22,6 +22,9 @@ from identifiers.srv import GetDetails, AddTelegramId, CheckSender
 from telegram.msg import ContactInfo
 
 import sys
+sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
+from timeout import ack_converter
+
 import os
 from pathlib import Path
 from threading import Thread
@@ -38,6 +41,8 @@ def tdlib_topic_cb(msg, args):
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
 	else:
+		ack = ack_converter(msg, 1)
+		pub_to_timeout.publish(ack)
 		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 
@@ -163,7 +168,8 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
-
+		
+		pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 		# inform all valid nodes that the link is up
 		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 
