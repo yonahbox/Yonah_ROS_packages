@@ -57,14 +57,7 @@ class Manager():
         rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
         # Put another subscriber in that listens to messages sent to rqt
         rospy.spin()
-    
-    def acknowledgment(self, data):
-        identifier = data.id
-        uuid = data.uuid
-        data = data.data
-        if data = 
-        pass
-
+        
     def sent_commands(self, data):
         if data.uuid > 255:
             data.uuid -= 255
