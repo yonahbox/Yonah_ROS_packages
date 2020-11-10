@@ -35,7 +35,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
-from std_msgs.msg import UInt8, String
+from std_msgs.msg import String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
@@ -45,6 +45,9 @@ import waypoint
 import g2a
 from headers import headerhandler
 
+TELE = 0
+SMS = 1
+SBD = 2
 
 class airdespatcher():
 
@@ -214,12 +217,14 @@ class airdespatcher():
 
     def check_switcher(self, data):
         '''Obtain updates from switcher node'''
-        self.link_select = data.data
-        if self.link_select == 2:
+        msglist = data.data.split()
+        id = int(msglist[0]) # Msg format: aircraft id + link no. For now, id is not used
+        self.link_select = int(msglist[1])
+        if self.link_select == SBD:
             self._tele_interval = self._interval_3
             self._sms_interval = self._interval_3
             self.sbd_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sbd)
-        elif self.link_select == 1:
+        elif self.link_select == SMS:
             self._tele_interval = self._interval_2
             self._sms_interval = self._interval_2
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sms)
@@ -227,7 +232,7 @@ class airdespatcher():
                 self.sbd_sender.shutdown()
             except:
                 pass
-        elif self.link_select == 0:
+        elif self.link_select == TELE:
             self._tele_interval = self._interval_1
             try:
                 self.sms_sender.shutdown()
@@ -250,7 +255,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
-        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
+        rospy.Subscriber("ogc/from_switcher", String, self.check_switcher)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()
