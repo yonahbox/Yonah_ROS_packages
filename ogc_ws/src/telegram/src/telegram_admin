@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from threading import Thread
 from pathlib import Path
 import json
 import time
@@ -24,7 +23,7 @@ from Td import Td
 from identifiers import Identifiers
 
 home_dir = str(Path.home())
-tdlib_dir = home_dir + '/.tdlib_air'
+tdlib_dir = home_dir + '/.tdlib_gnd'
 identifiers_file = home_dir + '/Sync/identifiers.json'
 self_id = 0
 valid_ids = []
@@ -44,11 +43,13 @@ if __name__ == '__main__':
 				td.get_chats()
 
 			if event['@type'] == 'updateNewMessage':
+				print("message received")
 				if event['message']['is_outgoing'] or event['message']['date'] < boot_time:
 					continue
 
 				is_valid_sender = ids.is_valid_sender(0, str(event['message']['sender_user_id']))
 				if not is_valid_sender:
+					print(f"invalid sender: {event['message']['sender_user_id']}")
 					print("message from invalid user")
 					continue
 
@@ -58,12 +59,22 @@ if __name__ == '__main__':
 				try:
 					msg_json = json.loads(msg)
 
-					print(msg_json)
-					print(f"adding contact {msg_json['number']} {msg_json['label']} ")
+					if msg_json['request'] == 'set_gcs':
+						for air_id in msg_json['air_ids']:
+							telegram_id = ids.get_air_telegram_id(air_id)
+							command_msg = {
+								'request': 'set_gcs_id',
+								'ground_ids': msg_json['ground_ids']
+							}
+							print(json.dumps(command_msg))
+							td.send_message(telegram_id, json.dumps(command_msg))
+					elif msg_json['request'] in ['add','edit']:
+						print(msg_json)
+						print(f"adding contact {msg_json['number']} {msg_json['label']} ")
 
-					id_waitlist[msg_json['number']] = msg_json
-					td.add_contact(msg_json['number'], msg_json['label'])
-					td.get_contacts()
+						id_waitlist[msg_json['number']] = msg_json
+						td.add_contact(msg_json['number'], msg_json['label'])
+						td.get_contacts()
 				except json.JSONDecodeError:
 					print('invalid message format')
 					continue

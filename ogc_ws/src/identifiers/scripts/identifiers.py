@@ -67,6 +67,8 @@ class Identifiers:
 		self.svr_ip = ""					# ip address of hosted web server
 		self.admin_id = 0
 
+		self.air_devices = []
+		self.ground_devices = []
 		# instance of the class to keep track of subscribers to a topic
 		# topic_cb = TopicSubscriberNotification(self.request_telegram_id)
 
@@ -118,9 +120,12 @@ class Identifiers:
 		# Runs on admin instance
 		if self.self_id == 0:
 			for obj in self.json_obj["ground"]:
-				# self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
+				self.ground_devices.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
 				if "telegram_id" in obj.keys():
 					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
+			for obj in self.json_obj['air']:
+				self.air_devices.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
+	
 		# for standalone numbers (not currently in use)
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
@@ -212,6 +217,11 @@ class Identifiers:
 
 	def get_self_number(self):
 		return self.device.number
+
+	def get_air_telegram_id(self, id_n):
+		for device in self.air_devices:
+			if device.id == id_n:
+				return device.telegram_id
 
 	# return all the id numbers currently in use (device exists in identifiers file)
 	def get_active_ids(self):
