@@ -49,12 +49,16 @@ class Device:
 
 
 class Identifiers:
-	def __init__(self, json_file, is_air, self_id, valid_ids):
+	def __init__(self, json_file, is_air, self_id, valid_ids_file):
 		self.json_file = json_file			# Location of identifiers file
 		self.is_air = is_air				# Boolean to know if it is running air side or ground side
 		self.self_id = self_id 				# id number as defined in the identifiers file of the device this runs on
-		self.valid_ids = valid_ids			# List of whitelisted ids as defined the identifiers file
 		self.self_device = None				# Information about the device this runs one
+		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
+
+		with open(valid_ids_file, "r") as f:
+			while valid_id := f.readline():
+				self.valid_ids.append(int(valid_id))
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)

@@ -26,11 +26,11 @@ home_dir = str(Path.home())
 tdlib_dir = home_dir + '/.tdlib_gnd'
 identifiers_file = home_dir + '/Sync/identifiers.json'
 self_id = 0
-valid_ids = []
+valid_ids_file = home_dir + '/.valid_ids'
 
 if __name__ == '__main__':
 	td = Td(tdlib_dir)
-	ids = Identifiers(identifiers_file, False, self_id, valid_ids)
+	ids = Identifiers(identifiers_file, False, self_id, valid_ids_file)
 	boot_time = time.time()
 
 	id_waitlist = {}
