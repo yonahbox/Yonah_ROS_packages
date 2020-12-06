@@ -17,7 +17,7 @@
 
 import rospy
 from std_msgs.msg import String
-from despatcher.msg import LinkMessage
+from despatcher.msgig import LinkMessage
 from identifiers.srv import GetDetails, AddTelegramId, CheckSender
 from telegram.msg import ContactInfo
 
@@ -42,7 +42,8 @@ def tdlib_topic_cb(msg, args):
 		rospy.logwarn("Invalid user id")
 	else:
 		ack = ack_converter(msg, 1)
-		pub_to_timeout.publish(ack)
+		if ack != None:
+			pub_to_timeout.publish(ack)
 		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 

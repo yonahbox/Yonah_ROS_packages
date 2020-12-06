@@ -73,7 +73,7 @@ def check_statustext(self):
 		return
 	self._send_ack()
 
-def check_arming(self):
+def check_arming(self, uuid):
 	"""Check for Arm/Disarm commands from Ground Control"""
 	arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 	if len(self._recv_msg) == 1:
@@ -85,18 +85,18 @@ def check_arming(self):
 			return
 	else:
 		return
-	self._send_ack()
+	self._send_ack(uuid)
 
-def check_mode(self):
+def check_mode(self, uuid):
 	"""Check for Mode change commands from Ground Control"""
 	mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
 	# Message structure: mode <flight mode>; extract 2nd word to get flightmode
 	if self._recv_msg[0] == 'mode' and len(self._recv_msg) == 2:
 		# Set flight mode, check if successful
 		if mode(custom_mode = self._recv_msg[1]).mode_sent == True:
-			self._send_ack()
+			self._send_ack(uuid)
 
-def check_mission(self):
+def check_mission(self, uuid):
 	"""Check for mission/waypoint commands from Ground Control"""
 	if self._recv_msg[0] == "wp":
 		if self._recv_msg[1] == 'set':

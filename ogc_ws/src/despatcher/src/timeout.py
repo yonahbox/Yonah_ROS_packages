@@ -72,6 +72,7 @@ class Manager():
             return 0
 
         else:
+            # Change the system so that it is just receiving the uuid number twice
             if data.data == "single tick":
                 self.messages[data.uuid].status = 1
                 self.messages[data.uuid].stop_timer()

@@ -104,6 +104,7 @@ class airdespatcher():
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             rospy.loginfo("Received \"" + data.data + "\"")
+            uuid = data.uuid
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
                 = self._header.split_headers(data.data)
@@ -117,11 +118,11 @@ class airdespatcher():
             elif "statustext" in self._recv_msg:
                 g2a.check_statustext(self)
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
-                g2a.check_arming(self)
+                g2a.check_arming(self, uuid)
             elif "mode" in self._recv_msg:
-                g2a.check_mode(self)
+                g2a.check_mode(self, uuid)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
-                g2a.check_mission(self)
+                g2a.check_mission(self, uuid)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError, TypeError):
@@ -132,21 +133,21 @@ class airdespatcher():
     # Handle Air-to-Ground (A2G) messages
     #########################################
     
-    def _send_ack(self):
+    def _send_ack(self, uuid = 0):
         '''Send a acknowledgement of the msg in self._recv_msg'''
         self._msg = ' '.join(self._recv_msg)
-        self.sendmsg("a")
+        self.sendmsg("a", uuid)
     
     def _attach_headers(self, msgtype):
         '''Attach message headers (prefixes and suffixes'''
         prefixes = [msgtype, self._is_air, self._id]
         self._msg = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
     
-    def sendmsg(self, msgtype):
+    def sendmsg(self, msgtype, uuid = 0):
         '''Send any msg that's not a regular payload'''
         self._attach_headers(msgtype)
         message = LinkMessage()
-        message.uuid = 0
+        message.uuid = uuid
         message.id = self.ground_id
         message.data = self._msg
         if self.link_select == 0:

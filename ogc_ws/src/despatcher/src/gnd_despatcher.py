@@ -102,6 +102,7 @@ class gnddespatcher():
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5) # Link to Timeout Module
 
         # Gnd Identifiers
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
@@ -158,6 +159,12 @@ class gnddespatcher():
                 self.rqt_recovery_log(entries, sysid)
                 self.pub_to_rqt_regular.publish(msg)
             else:
+                # Check if the incoming message is an acknowledgment message
+                if data.uuid != 0:
+                    ack = ack_converter(data, 2)
+                    if ack != None:
+                        self.pub_to_timeout.publish(ack)
+                    return 0 # Prevent the message to get sent through ondemand
                 if msgtype == 's':
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)

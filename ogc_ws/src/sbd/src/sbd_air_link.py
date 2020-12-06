@@ -30,6 +30,9 @@ import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
+import sys
+sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
+
 class local_mo_buffer():
     '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
@@ -49,7 +52,9 @@ class satcomms(rockBlockProtocol):
 
         self._init_variables()
         self._is_air = 1 # We are an air node!
-
+        
+        # Put the publisher function here
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
         _valid_ids = rospy.get_param("~valid_ids")
         self._new_switch_cmd = headers.new_msg_chk(max(_valid_ids))
@@ -170,11 +175,15 @@ class satcomms(rockBlockProtocol):
     # Rockblock MO/MT msg calls
     ############################
     
-    def sbd_get_mo_msg(self, data):
+    def sbd_get_mo_msg(self, data): # Add here
         '''
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
+        # Acknowledgment message sending
+        ack = ack_converter(msg, 1)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
         incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):

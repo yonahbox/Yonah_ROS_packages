@@ -111,7 +111,8 @@ class SMSrx():
         
         # Send acknowledgment to timeout module
         ack = ack_converter(data, 1)
-        self.pub_to_timeout.publish(ack)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
 
         if "Timeout\n" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
