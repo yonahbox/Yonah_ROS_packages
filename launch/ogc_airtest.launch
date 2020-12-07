@@ -16,7 +16,6 @@
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
 	<arg name="link_select" default="0" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
 	
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
@@ -29,6 +28,10 @@
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
+
+	<!-- file sync args -->
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
+	<arg name="waypoint_folder" default="$(env HOME)/Waypoints" />
 
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
@@ -72,6 +75,11 @@
 		<param name="is_air" value="$(arg is_air)" />
 		<param name="self_id" value="$(arg self_id)" />
 		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+	</node>
+
+	<!-- syncthing node -->
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
 	</node>
 
 	<!-- air despatcher node -->

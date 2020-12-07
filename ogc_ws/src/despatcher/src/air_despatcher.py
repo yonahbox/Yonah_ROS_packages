@@ -85,13 +85,18 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
-        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
+        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Sync/Waypoints/')
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
         rospy.wait_for_service('mavros/mission/push')
+
+        self._armed_st = False
+
+        # syncthing controls
+        self.syncthing_control = rospy.Publisher("ogc/files/syncthing", String, queue_size=5)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -117,7 +122,6 @@ class airdespatcher():
             self._recv_msg = self._recv_msg[3:-1] # Strip out msg headers
             # Go through series of checks
             if "ping" in self._recv_msg:
-                # self._check_ping()
                 g2a.check_ping(self)
             elif "sms" in self._recv_msg:
                 g2a.check_sms(self)
@@ -129,10 +133,16 @@ class airdespatcher():
                 g2a.check_mode(self)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
                 g2a.check_mission(self)
+            elif "syncthing" in self._recv_msg:
+                g2a.handle_syncthing(self)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError):
             rospy.logerr("Invalid message format")
+
+    def resume_syncthing(self, data):
+        if int(data.armed) == 0 and self.hop == False: 
+            self.syncthing_control.publish("resume")
 
 
     #########################################
@@ -225,12 +235,22 @@ class airdespatcher():
             self._send_regular_payload_sbd()
             # The sleep interval is controlled by sbd link node
 
+    def _handle_modified(self, msg):
+        self._msg = "syncthing downloaded " + msg.data
+        self.sendmsg("i")
+
+    def _handle_error(self, msg):
+        self._msg = msg.data
+        self.sendmsg("e")
+
+
     ############################
     # "Main" function
     ############################
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
+        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
@@ -240,6 +260,8 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
+        rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
+        rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         message_sender = rospy.Timer(rospy.Duration(1), self.send_regular_payload)
         rospy.spin()
