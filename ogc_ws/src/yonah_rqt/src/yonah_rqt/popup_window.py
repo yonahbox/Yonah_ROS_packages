@@ -42,6 +42,7 @@ class PopupMessages(QWidget):
         message.uuid = increment()
         message.id = destination_id
         message.data = data
+        # rospy.logwarn(message.uuid)
         self.command_publisher.publish(message)
 
     def user_input_textbox(self, title, message, id):

@@ -329,10 +329,15 @@ class CommandWindow(QWidget):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
     def sync_resume(self):
-        pass
+        if self.arm_status.get('AC' + str(self.destination_id)) == "ARMED":
+            print("Aircraft is armed, do you still want to resume?")
+            data = "syncthing resume"
+        
+        self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
-        pass
+        data = "syncthing pause"
+        self.create_link_message(self.destination_id, data)
 
     def change_identifiers(self):
         if self.identifiers_error == 1:

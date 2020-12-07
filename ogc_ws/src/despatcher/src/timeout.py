@@ -26,6 +26,7 @@ uuid = 0
 
 class MessageTimer():
     def __init__(self, message, message_id):
+        rospy.logwarn("REINISTIALISEATION")
         self.message_id = message_id
         self.message = message
         self.timeout = [5, 10]
@@ -33,13 +34,16 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        rospy.loginfo("COUNTDOWN STARTING")
+        rospy.logwarn("COUNTDOWN STARTING: " + str(self._watchdog[self.status]))
         self._watchdog[self.status] -= 1
-        if self._watchdog[self.status] <= 0:
+        if self._watchdog[self.status] == 0:
             self.stop_timer()
             data = "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status)
             send_to_rqt(self.message_id, data)
             self.status = -1
+            
+        elif self._watchdog[self.status] < 0:
+            rospy.logerr("MESSAGE STATUS IS NEGATIVE")
 
     def stop_timer(self):
         self.watcher.shutdown()
@@ -60,20 +64,22 @@ class Manager():
         rospy.spin()
 
     def sent_commands(self, data):
-        if data.uuid > 255:
-            data.uuid -= 255
-        
-        if data.id not in self.messages:
+        commands = ["sms", "statustext", "arm", "mode", "wp"]
+        if data.uuid not in self.messages:
+            rospy.logwarn(data)
             rospy.logwarn("CREATING NEW FIELD")
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
-
-        elif self.messages[data.uuid].status == -1:
-            rospy.logwarn("DROPPED MESSAGE")
-            return 0
+        
+        elif data.data in commands:
+            rospy.logerr("REWRITING OLD FIELD")
+            self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
+            self.messages[data.uuid].client()
 
         else:
+            rospy.logwarn("-----------" + str(data.data))
             if data.data == "pending":
+                rospy.logwarn("MESSAGE IS PENDING")
                 message = "Message pending"
                 send_to_rqt(data.uuid, message)
 
@@ -116,7 +122,9 @@ def ack_converter(data, state):
 def increment():
     global uuid
     uuid += 1
-    rospy.loginfo("increment is called, UUID " + str(uuid))
+    if uuid > 255:
+        uuid -= 255
+    rospy.logwarn("increment is called, UUID " + str(uuid))
     return uuid
 
 if __name__=='__main__':

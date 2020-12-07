@@ -152,9 +152,7 @@ class MyPlugin(Plugin):
         status.feedback_message_signal.emit(data.data)
 
     def feedback_message_display(self, data):
-        print(data)
         self.PopupMessages.warning_message("Command failed to send", data)
-
 
     ################################
     # Create Signal Slot functions #
@@ -196,9 +194,10 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
+        aircraft_id = "1"
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(data.data, str(data.data[5]))
+        status.ondemand_signal.emit(data.data, aircraft_id) # Change the id where to display using headers module
 
     def ondemand_sitl(self, data):
         status = Communicate()
@@ -341,17 +340,17 @@ class MyPlugin(Plugin):
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
-        if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
-            data = data.split(" ", 3)
-            if data[0] == "i":
-                status = "INFO"
-            elif data[0] == "w":
-                status = "WARN"
-            elif data[0] == "e":
-                status = "ERROR"
-            elif data[0] == "a":
-                status = "ACKNOWLEDGMENT"
-            data = data[3]
+        # if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
+        #     data = data.split(" ", 3)
+        #     if data[0] == "i":
+        #         status = "INFO"
+        #     elif data[0] == "w":
+        #         status = "WARN"
+        #     elif data[0] == "e":
+        #         status = "ERROR"
+        #     elif data[0] == "a":
+        #         status = "ACKNOWLEDGMENT"
+        #     data = data[3]
         text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)

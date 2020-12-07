@@ -41,6 +41,7 @@ def tdlib_topic_cb(msg, args):
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
 	else:
+		rospy.logwarn("TELE MESSAGE IS SENT")
 		ack = ack_converter(msg, 1)
 		if ack != None:
 			pub_to_timeout.publish(ack)

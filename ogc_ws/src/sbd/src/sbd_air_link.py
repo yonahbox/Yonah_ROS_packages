@@ -143,6 +143,9 @@ class satcomms(rockBlockProtocol):
         self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsn, momsg):
+        ack = ack_converter(msg, 1)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)
         self._msg_send_success = 1
 
@@ -180,10 +183,6 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        # Acknowledgment message sending
-        ack = ack_converter(msg, 1)
-        if ack != None:
-            self.pub_to_timeout.publish(ack)
         incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
