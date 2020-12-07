@@ -39,6 +39,8 @@ from std_msgs.msg import String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
+from identifiers.srv import GetSelfDetails, GetIds
+
 # Local
 from regular import air_payload
 import waypoint
@@ -68,12 +70,20 @@ class airdespatcher():
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
 
+
+        rospy.wait_for_service("identifiers/self/self_id")
+        rospy.wait_for_service("identifiers/get/valid_ids")
+        ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
+
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
-        self._id = rospy.get_param("~self_id") # Our aircraft ID
+        self._id = ids_get_self_id()
+        # self._id = rospy.get_param("~self_id") # Our aircraft ID
 
         # Ground Identifiers. For now we assume only one GCS
-        self.ground_id = rospy.get_param("~ground_ids")[0]
+        # self.ground_id = rospy.get_param("~ground_ids")[0]
+        self.ground_id = ids_get_valid_ids().ids[0]
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1") # Short time interval (seconds) for regular payload
