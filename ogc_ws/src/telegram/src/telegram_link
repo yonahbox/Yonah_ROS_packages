@@ -148,7 +148,6 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")			# Location of the telegram account, created by the tele_auth script
-		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
 
 		# wait for required services to be available before continuing
 		rospy.wait_for_service("identifiers/get/telegram_id")
