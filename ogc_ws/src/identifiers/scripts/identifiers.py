@@ -16,9 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-# import rospy
-
-# from telegram.msg import ContactInfo
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
@@ -31,23 +28,6 @@ class Device:
 		self.rb_serial = rb_serial
 		self.telegram_id = telegram_id
 
-# Class to keep track of subscriptions to any topic when publishing
-# class TopicSubscriberNotification:
-# 	def __init__(self, callback):
-# 		self.callback = callback	# the callback function that will be called when the subscriber count is 1
-# 		self.subscriber_count = 0
-
-# 	def peer_subscribe(self, topic_name, topic_publish, peer_publish):
-# 		rospy.loginfo("SUBSCRIBED to %s", topic_name)
-# 		self.subscriber_count += 1
-# 		if self.subscriber_count == 1:
-# 			self.callback()
-
-# 	def peer_unsubscribe(self, topic_name, num_peers):
-# 		rospy.loginfo("UNSUBSCRIBED from %s", topic_name)
-# 		self.subscriber_count -= 1
-
-
 class Identifiers:
 	def __init__(self, json_file, is_air, self_id, valid_ids_file):
 		self.json_file = json_file			# Location of identifiers file
@@ -56,6 +36,7 @@ class Identifiers:
 		self.self_device = None				# Information about the device this runs one
 		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
 
+		# read valid ids from the valid_ids file
 		with open(valid_ids_file, "r") as f:
 			while valid_id := f.readline():
 				self.valid_ids.append(int(valid_id))
@@ -73,12 +54,9 @@ class Identifiers:
 
 		self.air_devices = []
 		self.ground_devices = []
-		# instance of the class to keep track of subscribers to a topic
-		# topic_cb = TopicSubscriberNotification(self.request_telegram_id)
 
 		# topic publisher to the telegram node to add contacts
-		# self.telegram_add_contact = rospy.Publisher('ogc/to_telegram/contact', ContactInfo, queue_size=10, subscriber_listener=topic_cb)
-		self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
+		# self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
 
 		# parse the identifiers file
 		self._parse_file()
@@ -188,6 +166,7 @@ class Identifiers:
 
 		return telegram_id
 
+	# return the telegram_id of the admin account
 	def get_admin_id(self):
 		return self.admin_id
 
@@ -292,8 +271,6 @@ class Identifiers:
 
 		self._parse_file()
 
-		# get the telegram user id
-		# self.update_telegram_id(label, number)
 		return selected_id
 
 
@@ -326,58 +303,7 @@ class Identifiers:
 
 		self._parse_file()
 
-		# add the new number to telegram if number changed
-		# if number != "":
-			# self.update_telegram_id(selected_device["label"], selected_device["number"])
 		return True
-
-	# write the telegram user id for a device into the identifiers file
-	# def add_telegram_id(self, number, telegram_id):
-	# 	# edit objects in both air and ground if it exists in both (mainly needed in testing, unlikely to be needed in ops)
-	# 	obj_edited = False
-	# 	for device in self.json_obj["air"]:
-	# 		if device["number"] == number:
-	# 			if device.get("telegram_id", 0) != telegram_id:
-	# 				device["telegram_id"] = telegram_id
-	# 				obj_edited = True
-	# 				break
-
-	# 	for device in self.json_obj["ground"]:
-	# 		if device["number"] == number:
-	# 			if device.get("telegram_id", 0) != telegram_id:
-	# 				device["telegram_id"] = telegram_id
-	# 				obj_edited = True
-	# 				break
-
-	# 	if not obj_edited:
-	# 		return False
-
-	# 	# rospy.loginfo("Adding telegram id %s to number %s", telegram_id, number)
-	# 	print(f"Adding telegram id {telegram_id} to number {number}")
-
-	# 	with open(self.json_file, "w") as f:
-	# 		json.dump(self.json_obj, f)
-
-	# 	self._parse_file()
-	# 	return True
-
-	# request telegram to add contact and get the user id
-	# def update_telegram_id(self, label, number):
-	# 	# rospy.loginfo("requesting telegram_id for %s (%s)", label, number)
-	# 	print(f"requesting telegram_id for {label} ({number})", label, number)
-	# 	# contact = ContactInfo()
-	# 	contact.label = label
-	# 	contact.number = number
-		
-	# 	# check if the number is for the telegram account itself
-	# 	# it is not possible to add a contact of yourself in telegram
-	# 	if number == self.self_device.number:
-	# 		contact.me = True
-	# 	else:
-	# 		contact.me = False
-
-	# 	self.telegram_add_contact.publish(contact)
-
 
 	# Does a lazy check to see if the received message is from a valid sender
 	# Trusts that the sender of the message was correctly identified in the message headers
