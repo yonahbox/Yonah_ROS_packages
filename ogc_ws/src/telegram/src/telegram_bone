@@ -56,7 +56,7 @@ if __name__ == '__main__':
 						msg_json = json.loads(msg)
 						if msg_json['request'] == 'set_gcs_id':
 							gcs_ids = msg_json['ground_ids']
-							with open(ground_ids_file, "w") as f:
+							with open(valid_ids_file, "w") as f:
 								for id_n in gcs_ids:
 									f.write(f"{id_n}\n")
 							exit()
