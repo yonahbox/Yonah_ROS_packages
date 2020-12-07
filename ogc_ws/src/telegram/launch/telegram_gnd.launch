@@ -26,6 +26,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="is_air" default="False" />
 	<arg name="link_select" default="0" />
 
+	<!-- Common OGC args -->
+	<!-- temporary ogc intervals -->
+	<arg name="interval_1" default="20"/>
+	<arg name="interval_2" default="100"/>
+	<arg name="interval_3" default="200"/>
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
@@ -39,10 +44,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>	
 
-	<!-- ground despatcher node -->
-	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
+	<!-- gnd despatcher node -->
+	<!-- @TODO temporary hot fix -->
+	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="interval_1" value="$(arg interval_1)" />
+		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="interval_3" value="$(arg interval_3)" />
 		<param name="self_id" value="$(arg self_id)" />
-		<param name="link_select" value="$(arg link_select)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 	
 	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">
