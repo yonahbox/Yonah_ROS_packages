@@ -118,8 +118,10 @@ class gnddespatcher():
     
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
+        dummy_prefixes = ["i", 1, data.id] # Dummy prefixes for publishing local msgs to on_demand topic
         if data.data.split()[0] not in recognised_commands:
-            self.pub_to_rqt_ondemand.publish("Invalid command: " + data.data)
+            self.pub_to_rqt_ondemand.publish(\
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid command: " + data.data))
         else:
             msg = LinkMessage()
             msg.id = data.id
@@ -133,7 +135,8 @@ class gnddespatcher():
                 self.pub_to_sms.publish(msg)
             else:
                 self.pub_to_sbd.publish(msg)
-            self.pub_to_rqt_ondemand.publish("Command sent: " + data.data)
+            self.pub_to_rqt_ondemand.publish(\
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Command sent: " + data.data))
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
@@ -183,6 +186,12 @@ class gnddespatcher():
             id = int(msglist[0]) # Msg format: aircraft id + link no
             link = int(msglist[1])
             self._aircrafts[id].switch_link(link)
+
+            # Notify RQT of the link switch
+            dummy_prefixes = ["i", 1, id] # Dummy prefixes for publishing local msgs to on_demand topic
+            self.pub_to_rqt_ondemand.publish(\
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + link))
+
         except:
             rospy.logerr("Switcher: Invalid msg")
 
