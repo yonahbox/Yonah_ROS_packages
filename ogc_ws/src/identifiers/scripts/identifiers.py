@@ -29,10 +29,10 @@ class Device:
 		self.telegram_id = telegram_id
 
 class Identifiers:
-	def __init__(self, json_file, is_air, self_id, valid_ids_file):
+	def __init__(self, json_file, is_air, self_id_file, valid_ids_file):
 		self.json_file = json_file			# Location of identifiers file
 		self.is_air = is_air				# Boolean to know if it is running air side or ground side
-		self.self_id = self_id 				# id number as defined in the identifiers file of the device this runs on
+		# self.self_id = self_id 				# id number as defined in the identifiers file of the device this runs on
 		self.self_device = None				# Information about the device this runs one
 		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
 
@@ -46,6 +46,15 @@ class Identifiers:
 				print("Valid ids file is not available")
 				print("please check that the telegram_bone script works properly")
 				exit()
+
+		try:
+			with open(self_id_file, "r") as f:
+				self.self_id = int(f.readline().rstrip())
+				print(self.self_id)
+		except FileNotFoundError:
+			print("seld_id file is not available")
+			print("Please ensure the device was properly set up")
+			exit()
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)
@@ -196,6 +205,9 @@ class Identifiers:
 	def get_whitelist(self):
 		return self.whitelist_nums
 
+	def get_self_id(self):
+		return self.self_id
+
 	# return serial number for the device this runs on
 	def get_self_serial(self):
 		return self.self_device.rb_serial
@@ -218,8 +230,8 @@ class Identifiers:
 		ground_ids = [dev["id"] for dev in self.json_obj["ground"]]
 		return (air_ids, ground_ids)
 
-	def _format_device_message(self, device):
-		pass
+	def get_valid_ids(self):
+		return self.valid_ids
 
 	# request adding a new device to admin
 	def new_device_request(self, is_air, label, number, imei, rb_serial):

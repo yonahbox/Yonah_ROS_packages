@@ -56,6 +56,9 @@ class ServiceHandler:
 		else:
 			return None
 
+	def get_self_id(self, request):
+		return GetSelfDetailsResponse(data_int=self._ids.get_self_id())
+
 	def get_self_imei(self, request):
 		return GetSelfDetailsResponse(data=self._ids.get_self_imei())
 
@@ -66,6 +69,9 @@ class ServiceHandler:
 		username, password, svr_hostname, svr_ip = self._ids.get_sbd_credentials()
 		return GetSBDDetailsResponse(username=username, password=password, svr_hostname=svr_hostname,\
 			svr_ip=svr_ip)
+
+	def get_valid_ids(self, request):
+		return GetIdsResponse(ids=self._ids.get_valid_ids())
 
 	def add_new_device(self, request):
 		device= self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
@@ -101,10 +107,10 @@ if __name__ == '__main__':
 	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
 	identifiers_file = rospy.get_param("~identifiers_file")
 	is_air = rospy.get_param("~is_air")
-	self_id = rospy.get_param("~self_id")
-	valid_ids = rospy.get_param("~valid_ids")
+	self_id_file = rospy.get_param("~self_id_file")
+	valid_ids_file = rospy.get_param("~valid_ids_file")
 
-	handler = ServiceHandler(identifiers_file, is_air, self_id, valid_ids)
+	handler = ServiceHandler(identifiers_file, is_air, self_id_file, valid_ids_file)
 
 	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
@@ -112,9 +118,11 @@ if __name__ == '__main__':
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
 	admin_id_service = rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
+	valid_ids_servuce = rospy.Service("identifiers/get/valid_ids", GetIds, handler.get_valid_ids)
 
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
+	self_id_service = rospy.Service("identifiers/self/self_id", GetSelfDetails, handler.get_self_id)
 	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
 	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
 	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
