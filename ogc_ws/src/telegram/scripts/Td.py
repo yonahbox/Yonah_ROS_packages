@@ -73,6 +73,13 @@ class Td():
 		result = self._client_execute(None, query)
 		if result:
 			return json.loads(result.decode('utf-8'))
+	
+	# Get chats of user, latest 100 chats
+	def get_chats(self):
+		self.send({
+			"@type": "getChats",
+			"limit": 100
+		})
 
 	# Get the contacts of this telegram account
 	def get_contacts(self):

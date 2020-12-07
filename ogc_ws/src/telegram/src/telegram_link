@@ -89,6 +89,9 @@ def tdlib_recv():
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
 
+				# get chats to fix chat not found error
+				td.get_chats()
+
 			# For knowing status of downloading files
 			if event['@type'] == 'updateFile':
 				# Check if the file has finished downloading
