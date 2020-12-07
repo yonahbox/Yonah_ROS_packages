@@ -37,9 +37,15 @@ class Identifiers:
 		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
 
 		# read valid ids from the valid_ids file
-		with open(valid_ids_file, "r") as f:
-			while valid_id := f.readline():
-				self.valid_ids.append(int(valid_id))
+		if valid_ids_file:
+			try:
+				with open(valid_ids_file, "r") as f:
+					while valid_id := f.readline():
+						self.valid_ids.append(int(valid_id))
+			except FileNotFoundError:
+				print("Valid ids file is not available")
+				print("please check that the telegram_bone script works properly")
+				exit()
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)
