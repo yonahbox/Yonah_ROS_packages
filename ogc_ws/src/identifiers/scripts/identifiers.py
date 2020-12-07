@@ -50,7 +50,6 @@ class Identifiers:
 		try:
 			with open(self_id_file, "r") as f:
 				self.self_id = int(f.readline().rstrip())
-				print(self.self_id)
 		except FileNotFoundError:
 			print("seld_id file is not available")
 			print("Please ensure the device was properly set up")
