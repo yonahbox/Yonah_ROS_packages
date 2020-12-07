@@ -23,7 +23,7 @@ from Td import Td
 from identifiers import Identifiers
 
 home_dir = str(Path.home())
-tdlib_dir = home_dir + '/.tdlib_gnd'
+tdlib_dir = home_dir + '/.tdlib_admin'
 identifiers_file = home_dir + '/Sync/identifiers.json'
 self_id = 0
 valid_ids_file = home_dir + '/.valid_ids'
@@ -66,7 +66,6 @@ if __name__ == '__main__':
 								'request': 'set_gcs_id',
 								'ground_ids': msg_json['ground_ids']
 							}
-							print(json.dumps(command_msg))
 							td.send_message(telegram_id, json.dumps(command_msg))
 					elif msg_json['request'] in ['add','edit']:
 						print(msg_json)
@@ -96,7 +95,7 @@ if __name__ == '__main__':
 
 				if dev['is_air']:
 					msg = {
-						"action": "set_device_id",
+						"request": "set_device_id",
 						"device_id": dev_id
 					}
 					td.send_message(event['id'], json.dumps(msg))

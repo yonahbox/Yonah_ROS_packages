@@ -32,7 +32,7 @@ ground_ids_file = home_dir + '/.valid_ids'
 
 if __name__ == '__main__':
 	td = Td(tdlib_dir)
-	ids = Identifiers(identifiers_file, True, 0, ground_ids_file)
+	ids = Identifiers(identifiers_file, True, self_id, ground_ids_file)
 	boot_time = time.time()
 
 	admin_id = ids.get_admin_id()
