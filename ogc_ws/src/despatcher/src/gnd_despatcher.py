@@ -118,7 +118,7 @@ class gnddespatcher():
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################
-    
+
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
         if data.data.split()[0] not in recognised_commands:

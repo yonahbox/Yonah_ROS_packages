@@ -110,7 +110,7 @@ class SMSrx():
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
         
         # Send acknowledgment to timeout module
-        ack = ack_converter(data, 1)
+        ack = ack_converter(data, 0)
         if ack != None:
             self.pub_to_timeout.publish(ack)
 
@@ -120,6 +120,9 @@ class SMSrx():
         elif "Connection lost" in sendstatus:
             rospy.logerr("Connection to router lost!")
         else:
+            ack = ack_converter(data, 1)
+            if ack != None:
+                self.pub_to_timeout.publish(ack)
             self.pub_to_switcher.publish("Success")
     
     def recv_sms(self, data):

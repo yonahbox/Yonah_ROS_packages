@@ -37,7 +37,8 @@ class MessageTimer():
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] <= 0:
             self.stop_timer()
-            send_to_rqt(self.message_id, "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status))
+            data = "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status)
+            send_to_rqt(self.message_id, data)
             self.status = -1
 
     def stop_timer(self):
@@ -72,8 +73,11 @@ class Manager():
             return 0
 
         else:
-            # Change the system so that it is just receiving the uuid number twice
-            if data.data == "single tick":
+            if data.data == "pending":
+                message = "Message pending"
+                send_to_rqt(data.uuid, message)
+
+            elif data.data == "single tick":
                 self.messages[data.uuid].status = 1
                 self.messages[data.uuid].stop_timer()
                 self.messages[data.uuid].client()
@@ -101,7 +105,9 @@ def ack_converter(data, state):
         message = LinkMessage()
         message.uuid = data.uuid
         message.id = 0 #@TODO change the message id to the supposed value
-        if state == 1:
+        if state == 0:
+            message.data = "pending"
+        elif state == 1:
             message.data = "single tick"
         elif state == 2:
             message.data = "double tick"
