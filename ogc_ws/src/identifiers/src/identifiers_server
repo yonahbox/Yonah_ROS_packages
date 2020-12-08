@@ -17,6 +17,8 @@
 
 import rospy
 
+from std_msgs.msg import String
+
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
 from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
@@ -27,6 +29,8 @@ from identifiers.srv import EditDevice, EditDeviceResponse
 from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
+from identifiers.srv import SetDetails, SetDetailsResponse
+from identifiers.srv import GetId, GetIdResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -62,6 +66,12 @@ class ServiceHandler:
 		return GetSBDDetailsResponse(username=username, password=password, svr_hostname=svr_hostname,\
 			svr_ip=svr_ip)
 
+	def get_system_id(self, request):
+		if request.type == 4:
+			return GetIdResponse(self._ids.get_system_id(request.type, request.data_int))
+		else:
+			return GetIdResponse(self._ids.get_system_id(request.type, request.data))
+
 	def add_new_device(self, request):
 		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		if not result:
@@ -87,11 +97,18 @@ class ServiceHandler:
 		response.ground_ids = ground_ids
 		return response
 
+	def set_syncthing_id(self, request):
+		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
+
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
 	def check_valid_message_lazy(self, request):
 		return CheckSenderResponse(self._ids.is_valid_message_lazy(request.details))
+
+	def modified_cb(self, msg):
+		if msg.data == "identifiers.json":
+			self._ids.parse_file()
 
 
 if __name__ == '__main__':
@@ -108,6 +125,7 @@ if __name__ == '__main__':
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	system_id_server = rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
 
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
@@ -118,8 +136,11 @@ if __name__ == '__main__':
 	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
 	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
+	set_syncthing_id_service = rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
 
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
+
+	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
 	rospy.spin()

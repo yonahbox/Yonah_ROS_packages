@@ -57,9 +57,12 @@ def delete_msg(ssh, count):
 
 def blink_button(ssh):
     ssh.exec_command("gpio.sh invert DOUT1")
-
-def button_on(ssh):
+    return
+    
+def button_off(ssh):
     ssh.exec_command("gpio.sh set DOUT1")
+    ssh.exec_command("gpio.sh invert DOUT1")
+    return
 
 def check_button(ssh):
     _, stdout, _ = ssh.exec_command("gpio.sh get DIN1")

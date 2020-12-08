@@ -63,6 +63,15 @@ class Td():
 			'new_verbosity_level': 1
 		})
 
+		self.send({
+			"@type": "setOption",
+			"name": "ignore_inline_thumbnails",
+			"value": {
+				"@type": "optionValueBoolean",
+				"value": True
+			}
+		})
+
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
 		print('TDLiB fatal error: ', error)
@@ -73,6 +82,13 @@ class Td():
 		result = self._client_execute(None, query)
 		if result:
 			return json.loads(result.decode('utf-8'))
+	
+	# Get chats of user, latest 100 chats
+	def get_chats(self):
+		self.send({
+			"@type": "getChats",
+			"limit": 100
+		})
 
 	# Get the contacts of this telegram account
 	def get_contacts(self):
@@ -123,7 +139,7 @@ class Td():
 		for id_n in ids:
 			self.send_message(id_n, msg)
 
-	def send_file(self, telegram_id, path):
+	def send_file(self, telegram_id, path, destination):
 		self.send({
 			'@type': 'sendMessage',
 			'chat_id': telegram_id,
@@ -132,6 +148,10 @@ class Td():
 				'document': {
 					'@type': 'inputFileLocal',
 					'path': path
+				},
+				'caption': {
+					'@type': 'formattedText',
+					'text': destination
 				}
 			}
 		})
