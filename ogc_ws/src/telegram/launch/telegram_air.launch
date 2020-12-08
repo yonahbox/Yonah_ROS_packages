@@ -26,8 +26,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="self_id" default="2" />
 	<arg name="is_air" default="True" />
 	<arg name="link_select" default="0" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
-
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
 	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
 

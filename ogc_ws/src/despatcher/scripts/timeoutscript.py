@@ -1,4 +1,5 @@
 import rospy
+from despatcher.msg import LinkMessage
 
 uuid = 0
 
