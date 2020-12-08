@@ -19,8 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import sys
-sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
-from timeout import increment
+import timeoutscript
 
 import threading
 from despatcher.msg import LinkMessage
@@ -39,7 +38,7 @@ class PopupMessages(QWidget):
     def create_link_message(self, destination_id, data):
         '''Create a custom Link Message'''
         message = LinkMessage()
-        message.uuid = increment()
+        message.uuid = timeoutscript.increment()
         message.id = destination_id
         message.data = data
         # rospy.logwarn(message.uuid)

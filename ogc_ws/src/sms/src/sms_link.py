@@ -31,9 +31,7 @@ from identifiers.srv import CheckSender, GetDetails
 # Local
 import RuTOS
 import sys
-sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
-from timeout import ack_converter
-
+import timeoutscript
 
 
 class SMSrx():
@@ -110,7 +108,7 @@ class SMSrx():
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
         
         # Send acknowledgment to timeout module
-        ack = ack_converter(data, 0)
+        ack = timeoutscript.ack_converter(data, 0)
         if ack != None:
             self.pub_to_timeout.publish(ack)
 
@@ -120,7 +118,7 @@ class SMSrx():
         elif "Connection lost" in sendstatus:
             rospy.logerr("Connection to router lost!")
         else:
-            ack = ack_converter(data, 1)
+            ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
                 self.pub_to_timeout.publish(ack)
             self.pub_to_switcher.publish("Success")

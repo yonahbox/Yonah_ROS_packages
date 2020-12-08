@@ -21,9 +21,7 @@ from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails, AddTelegramId, CheckSender
 from telegram.msg import ContactInfo
 
-import sys
-sys.path.append('/home/huachen/Yonah/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
-from timeout import ack_converter
+import timeoutscript
 
 import os
 from pathlib import Path
@@ -42,7 +40,7 @@ def tdlib_topic_cb(msg, args):
 		rospy.logwarn("Invalid user id")
 	else:
 		rospy.logwarn("TELE MESSAGE IS SENT")
-		ack = ack_converter(msg, 1)
+		ack = timeoutscript.ack_converter(msg, 1)
 		if ack != None:
 			pub_to_timeout.publish(ack)
 		rospy.loginfo("sending message to " + str(tele_id.data_int))

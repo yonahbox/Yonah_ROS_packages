@@ -30,9 +30,7 @@ import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
-import sys
-sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
-
+import timeoutscript
 class local_mo_buffer():
     '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
@@ -143,7 +141,7 @@ class satcomms(rockBlockProtocol):
         self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsn, momsg):
-        ack = ack_converter(msg, 1)
+        ack = timeoutscript.ack_converter(msg, 1)
         if ack != None:
             self.pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)

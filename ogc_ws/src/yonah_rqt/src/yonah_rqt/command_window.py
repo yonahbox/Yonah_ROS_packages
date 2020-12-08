@@ -20,8 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import rospy
 import time
 import sys
-sys.path.append('/home/dani/Yonah_ROS_packages/ogc_ws/src/despatcher/src')
-from timeout import increment
+import timeoutscript
 
 from functools import partial
 from os import listdir
@@ -257,7 +256,7 @@ class CommandWindow(QWidget):
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
         message.id = destination_id
-        message.uuid = increment()
+        message.uuid = timeoutscript.increment()
         message.data = data
         self.pub_to_despatcher.publish(message)
 
