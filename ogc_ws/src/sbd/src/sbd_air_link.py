@@ -55,7 +55,7 @@ class satcomms(rockBlockProtocol):
         self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
         _valid_ids = rospy.get_param("~valid_ids")
-        self._new_switch_cmd = headers.new_msg_chk(max(_valid_ids))
+        self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)

@@ -70,7 +70,7 @@ class switcher():
         self._valid_ids = rospy.get_param("~valid_ids")
         self._username = rospy.get_param("~router_username","root")
         self._ip = rospy.get_param("~router_ip","192.168.1.1")
-        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._timeout_counter = 0
         self._watchdogs = dict()
         for i in self._valid_ids:
