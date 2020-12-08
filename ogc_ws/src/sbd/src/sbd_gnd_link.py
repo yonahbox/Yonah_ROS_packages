@@ -31,7 +31,7 @@ import struct
 import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
-from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds
+from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds, GetSelfDetails
 
 # Local
 from sbd_air_link import satcomms
@@ -50,6 +50,7 @@ class satcommsgnd(satcomms):
         rospy.wait_for_service("identifiers/get/imei")
         rospy.wait_for_service("identifiers/self/sbd")
         rospy.wait_for_service("identifiers/check/proper")
+        rospy.wait_for_service("identifiers/self/self_id")
 
         self._get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
         self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
@@ -58,9 +59,11 @@ class satcommsgnd(satcomms):
 
         self._init_variables()
 
+        ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+        self._id = ids_get_self_id().data_int # Our GCS ID
+
         # Switch state: Temporary state where gnd node is switching between server and ground rockblock
         self._switch_state = False # True = switch state is active
-        self._id = rospy.get_param("~self_id") # Our GCS ID
         self._is_air = 0 # We are a ground node!
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
