@@ -198,6 +198,12 @@ class Td():
 			'priority': 1,
 		})
 
+	def create_chat(self, user_id):
+		self.send({
+			'@type': 'createPrivateChat',
+			'user_id': user_id
+		})
+
 	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
