@@ -22,8 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 	<arg name="identifiers_file"  default="$(env HOME)/Sync/identifiers.json" />
-	<arg name="ground_ids" default="[2]" />
-	<arg name="self_id" default="2" />
+	<arg name="ground_ids" default="[3]" />
+	<arg name="self_id" default="4" />
 	<arg name="is_air" default="True" />
 	<arg name="link_select" default="0" />
 	<arg name="watch_dir" default="$(env HOME)/Sync" />

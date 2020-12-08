@@ -43,7 +43,7 @@ from despatcher.msg import LinkMessage
 from regular import air_payload
 import waypoint
 import g2a
-from headers import new_msg_chk
+import headers
 
 TELE = 0
 SMS = 1
@@ -79,7 +79,7 @@ class airdespatcher():
 
         # Ground Identifiers. For now we assume only one GCS
         self.ground_id = rospy.get_param("~ground_ids")[0]
-        self._new_msg_chk = headers.new_msg_chk(rospy.get_param("~ground_ids"))
+        self._new_msg_chk = headers.new_msg_chk(max(rospy.get_param("~ground_ids")))
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1")
