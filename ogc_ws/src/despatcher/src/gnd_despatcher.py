@@ -128,7 +128,7 @@ class gnddespatcher():
             # Add msg headers
             prefixes = ["i", self._is_air, self._id]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
-            link = self._aircrafts[data.id].link_status
+            link = self._aircrafts[data.id].link_status()
             if link == TELE:
                 self.pub_to_telegram.publish(msg)
             elif link == SMS:
