@@ -23,3 +23,6 @@
 
 # Other auto-generated files
 **/__pycache__
+
+# rqt log file
+*/rqt_log.txt
