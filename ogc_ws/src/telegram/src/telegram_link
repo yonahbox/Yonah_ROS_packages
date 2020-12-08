@@ -41,6 +41,7 @@ def tdlib_topic_cb(msg, args):
 		# rospy.loginfo("sending message to " + str(tele_id.data_int))
 		rospy.loginfo(f"sending message to {tele_id.data_int}")
 
+		td.create_chat(tele_id.data_int)
 		td.send_message(tele_id.data_int, msg.data)
 
 # callback function run to add a contact to the telegram account

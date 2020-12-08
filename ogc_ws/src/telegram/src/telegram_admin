@@ -25,12 +25,12 @@ from identifiers import Identifiers
 home_dir = str(Path.home())
 tdlib_dir = home_dir + '/.tdlib_admin'
 identifiers_file = home_dir + '/Sync/identifiers.json'
-self_id = 0
+self_id = home_dir + '/.self_id'
 # valid_ids_file = home_dir + '/.valid_ids'
 
 if __name__ == '__main__':
 	td = Td(tdlib_dir)
-	ids = Identifiers(identifiers_file, False, self_id, None)
+	ids = Identifiers(identifiers_file, True, self_id, None)
 	boot_time = time.time()
 
 	id_waitlist = {}
@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
 						id_waitlist[msg_json['number']] = msg_json
 						td.add_contact(msg_json['number'], msg_json['label'])
+						time.sleep(1)
 						td.get_contacts()
 				except json.JSONDecodeError:
 					print('invalid message format')
@@ -98,4 +99,5 @@ if __name__ == '__main__':
 						"request": "set_device_id",
 						"device_id": dev_id
 					}
+					td.create_chat(event['id'])
 					td.send_message(event['id'], json.dumps(msg))
