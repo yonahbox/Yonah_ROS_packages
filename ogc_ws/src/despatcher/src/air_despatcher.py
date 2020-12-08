@@ -43,7 +43,7 @@ from despatcher.msg import LinkMessage
 from regular import air_payload
 import waypoint
 import g2a
-from headers import headerhandler
+from headers import new_msg_chk
 
 
 class airdespatcher():
@@ -68,7 +68,7 @@ class airdespatcher():
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
-        self._header = headerhandler()
+        self._header = new_msg_chk(9)
 
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
@@ -101,9 +101,10 @@ class airdespatcher():
     ###########################################
 
     def check_incoming_msgs(self, data):
+        rospy.loginfo("hello")
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
-            rospy.loginfo("Received \"" + data.data + "\"")
+            rospy.logwarn("Received \"" + data.data + "\"")
             uuid = data.uuid
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
@@ -118,7 +119,10 @@ class airdespatcher():
             elif "statustext" in self._recv_msg:
                 g2a.check_statustext(self)
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
+                rospy.logwarn("received")
                 g2a.check_arming(self, uuid)
+                rospy.logwarn("acknowledging")
+                self.sendmsg("a", data.uuid)
             elif "mode" in self._recv_msg:
                 g2a.check_mode(self, uuid)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:

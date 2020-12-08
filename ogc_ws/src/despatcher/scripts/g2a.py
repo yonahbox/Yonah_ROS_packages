@@ -75,6 +75,7 @@ def check_statustext(self):
 
 def check_arming(self, uuid):
 	"""Check for Arm/Disarm commands from Ground Control"""
+	rospy.logwarn("trying to arm")
 	arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 	if len(self._recv_msg) == 1:
 		if self._recv_msg[0] == "disarm":
