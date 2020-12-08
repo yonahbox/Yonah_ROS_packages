@@ -35,6 +35,7 @@ class Identifiers:
 		# self.self_id = self_id 				# id number as defined in the identifiers file of the device this runs on
 		self.self_device = None				# Information about the device this runs one
 		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
+		self.admin = False
 
 		# read valid ids from the valid_ids file
 		if valid_ids_file:
@@ -46,6 +47,8 @@ class Identifiers:
 				print("Valid ids file is not available")
 				print("please check that the telegram_bone script works properly")
 				exit()
+		else:
+			self.admin = True
 
 		try:
 			with open(self_id_file, "r") as f:
@@ -68,9 +71,6 @@ class Identifiers:
 
 		self.air_devices = []
 		self.ground_devices = []
-
-		# topic publisher to the telegram node to add contacts
-		# self.telegram_unknown_ids = []		# List of unknown telegram users (contains tuple of the form (label, numer))
 
 		# parse the identifiers file
 		self._parse_file()
@@ -114,14 +114,12 @@ class Identifiers:
 				break
 
 		# Runs on admin instance
-		if self.self_id == 0:
-			for obj in self.json_obj["ground"]:
-				self.ground_devices.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
-				if "telegram_id" in obj.keys():
-					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
+		if self.admin:
+			for obj in self.json_obj['ground']:
+				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
 			for obj in self.json_obj['air']:
-				self.air_devices.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
-	
+				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
+
 		# for standalone numbers (not currently in use)
 		for num in self.json_obj["standalone"]:
 			self.whitelist_nums.append(num)
