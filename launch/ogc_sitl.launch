@@ -77,7 +77,7 @@
 	<!-- linkswitch -->
 	<node name="switcher" type="switcher.py" pkg="despatcher"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-	<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 </launch>
