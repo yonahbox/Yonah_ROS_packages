@@ -157,14 +157,14 @@ class satcomms(rockBlockProtocol):
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
         if "sbd switch 0" in data:
-            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
             if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 0
                 rospy.loginfo("SBD: Switching to RB-2-RB comms")
                 return True
         if "sbd switch 1" in data:
-            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
             if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 1
@@ -181,7 +181,7 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
+        incoming_msgtype,_,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.loginfo("SBD: Reject incoming msg " + data.data)

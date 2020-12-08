@@ -93,7 +93,7 @@ class switcher():
     def _is_valid_msg(self, msg):
         '''Takes in a string msg. Return true + sender's sysid if msg is valid'''
         try:
-            msgtype, devicetype, sysid, timestamp, entries \
+            msgtype, devicetype, sysid, uuid, timestamp, entries \
                 = headers.split_headers(msg)
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 return False, 0
