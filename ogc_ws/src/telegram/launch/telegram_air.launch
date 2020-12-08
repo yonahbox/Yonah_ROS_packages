@@ -36,7 +36,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<!-- <rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam> -->
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
@@ -44,7 +43,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="is_air" value="$(arg is_air)" />
 		<param name="self_id_file" value="$(arg self_id_file)" />
 		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
-		<!-- <rosparam param="valid_ids_file" subst_value="True">$(arg ground_ids)</rosparam> -->
 	</node>		
 
 	<!-- air despatcher node -->
