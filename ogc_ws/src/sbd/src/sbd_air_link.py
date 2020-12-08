@@ -181,7 +181,7 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
+        incoming_msgtype,_,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.loginfo("SBD: Reject incoming msg " + data.data)
