@@ -122,9 +122,9 @@ class gnddespatcher():
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
         dummy_prefixes = ["i", 1, data.id] # Dummy prefixes for publishing local msgs to on_demand topic
+        feedback_to_rqt = ""
         if data.data.split()[0] not in recognised_commands:
-            self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid command: " + data.data))
+            feedback_to_rqt = "Invalid command: " + data.data
         else:
             msg = LinkMessage()
             msg.uuid = data.uuid
@@ -132,20 +132,25 @@ class gnddespatcher():
             # Add msg headers
             prefixes = ["i", self._is_air, self._id]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
-            link = self._aircrafts[data.id].link_status()
-            if link == TELE:
-                self.pub_to_telegram.publish(msg)
-            elif link == SMS:
-                self.pub_to_sms.publish(msg)
-            elif link == SBD:
-                self.pub_to_sbd.publish(msg)
-            else:
-                rospy.logerr("Error: Invalid Link")
-                self.pub_to_rqt_ondemand.publish(\
-                    headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid Link: " + data.data))
-                return
+            try:
+                link = self._aircrafts[data.id].link_status()
+                if link == TELE:
+                    self.pub_to_telegram.publish(msg)
+                    feedback_to_rqt = "Command sent to Tele: " + data.data
+                elif link == SMS:
+                    self.pub_to_sms.publish(msg)
+                    feedback_to_rqt = "Command sent to SMS: " + data.data
+                elif link == SBD:
+                    self.pub_to_sbd.publish(msg)
+                    feedback_to_rqt = "Command sent to SBD: " + data.data
+                else:
+                    rospy.logerr("Error: Invalid Link")
+                    feedback_to_rqt = "Invalid Link. Command " + data.data + " not sent"
+            except KeyError:
+                rospy.logerr("Error: Invalid Aircraft ID")
+                feedback_to_rqt = "Invalid Aircraft ID. Command " + data.data + " not sent"
             self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Command sent: " + data.data))
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], feedback_to_rqt))
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
