@@ -97,8 +97,10 @@ class Identifiers:
 		if self.admin:
 			for obj in self.json_obj['ground']:
 				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
+				self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
 			for obj in self.json_obj['air']:
 				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
+				self.air_devices.append(Device(obj['label'], True, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
 
 		# Search file for all devices without a telegram user id
 		for obj in self.json_obj["ground"] + self.json_obj["air"]:
