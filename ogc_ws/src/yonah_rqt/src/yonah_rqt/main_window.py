@@ -194,10 +194,13 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
-        aircraft_id = "1"
+        # data. data list is i 1 1 0 message
+        data_list = data.data.split()
+        msg = " ".join(data_list[4:-1])
+        aircraft_id = data_list[2]
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(data.data, aircraft_id) # Change the id where to display using headers module
+        status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
 
     def ondemand_sitl(self, data):
         status = Communicate()

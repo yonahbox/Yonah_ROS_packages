@@ -110,7 +110,6 @@ class airdespatcher():
     ###########################################
 
     def check_incoming_msgs(self, data):
-        rospy.loginfo("hello")
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             rospy.loginfo("Received \"" + data.data + "\"")
