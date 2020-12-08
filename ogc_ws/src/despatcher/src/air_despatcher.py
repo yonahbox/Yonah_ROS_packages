@@ -78,7 +78,7 @@ class airdespatcher():
 
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
-        self._id = ids_get_self_id()
+        self._id = ids_get_self_id().data_int
         # self._id = rospy.get_param("~self_id") # Our aircraft ID
 
         # Ground Identifiers. For now we assume only one GCS

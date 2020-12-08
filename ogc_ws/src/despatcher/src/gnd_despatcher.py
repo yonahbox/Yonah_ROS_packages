@@ -55,7 +55,7 @@ class gnddespatcher():
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         # self._id = rospy.get_param("~self_id") # Our GCS ID
-        self._id = ids_get_self_id()
+        self._id = ids_get_self_id().data_int
         self._severity = "i" # Outgoing msg severity level
 
         # Used to handle incoming msgs
