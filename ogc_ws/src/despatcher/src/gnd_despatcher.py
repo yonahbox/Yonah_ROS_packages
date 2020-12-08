@@ -110,7 +110,7 @@ class gnddespatcher():
 
         # Msg headers and valid aircrafts to send to
         self._valid_ids = rospy.get_param("~valid_ids")
-        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._aircrafts = dict()
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)

@@ -114,9 +114,8 @@ class airdespatcher():
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             rospy.loginfo("Received \"" + data.data + "\"")
-            uuid = data.uuid
             # Handle msg headers
-            msgtype, devicetype, sysid, timestamp, self._recv_msg \
+            msgtype, devicetype, sysid, uuid, timestamp, self._recv_msg \
                 = headers.split_headers(data.data)
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 return
