@@ -11,15 +11,12 @@
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
-	<!-- <arg name="air_ids" default="[1]" /> -->
-	<arg name="self_id" default="1" />
 	<arg name="is_air" default="False" />
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
-
 	
 	<!-- tele args -->
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
@@ -41,8 +38,7 @@
 	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
-        <param name="portID" value="$(arg portID)" />
-		<param name="self_id" value="$(arg self_id)" />
+		<param name="portID" value="$(arg portID)" />
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >

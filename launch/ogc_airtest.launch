@@ -19,9 +19,7 @@
 	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
 	
 	<!-- identifiers args -->
-	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-	<!-- <arg name="ground_ids" default="[1]" /> -->
-	<!-- <arg name="self_id" default="1" /> -->
+	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="is_air" default="True" />
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
@@ -78,7 +76,6 @@
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="link_select" value="$(arg link_select)" />
