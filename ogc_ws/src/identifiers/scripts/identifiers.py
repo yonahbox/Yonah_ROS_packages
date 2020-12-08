@@ -50,13 +50,14 @@ class Identifiers:
 		else:
 			self.admin = True
 
-		try:
-			with open(self_id_file, "r") as f:
-				self.self_id = int(f.readline().rstrip())
-		except FileNotFoundError:
-			print("seld_id file is not available")
-			print("Please ensure the device was properly set up")
-			exit()
+		if not admin:
+			try:
+				with open(self_id_file, "r") as f:
+					self.self_id = int(f.readline().rstrip())
+			except FileNotFoundError:
+				print("self_id file is not available")
+				print("Please ensure the device was properly set up")
+				exit()
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)
