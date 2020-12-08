@@ -133,8 +133,13 @@ class gnddespatcher():
                 self.pub_to_telegram.publish(msg)
             elif link == SMS:
                 self.pub_to_sms.publish(msg)
-            else:
+            elif link == SBD:
                 self.pub_to_sbd.publish(msg)
+            else:
+                rospy.logerr("Error: Invalid Link")
+                self.pub_to_rqt_ondemand.publish(\
+                    headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid Link: " + data.data))
+                return
             self.pub_to_rqt_ondemand.publish(\
                 headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Command sent: " + data.data))
 
