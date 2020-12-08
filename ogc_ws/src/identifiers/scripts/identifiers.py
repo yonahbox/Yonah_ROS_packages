@@ -32,7 +32,7 @@ class Identifiers:
 	def __init__(self, json_file, is_air, self_id_file, valid_ids_file):
 		self.json_file = json_file			# Location of identifiers file
 		self.is_air = is_air				# Boolean to know if it is running air side or ground side
-		# self.self_id = self_id 				# id number as defined in the identifiers file of the device this runs on
+		self.self_id = 0	 				# id number as defined in the identifiers file of the device this runs on
 		self.self_device = None				# Information about the device this runs one
 		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
 		self.admin = False
@@ -50,7 +50,7 @@ class Identifiers:
 		else:
 			self.admin = True
 
-		if not admin:
+		if not self.admin:
 			try:
 				with open(self_id_file, "r") as f:
 					self.self_id = int(f.readline().rstrip())
@@ -93,6 +93,13 @@ class Identifiers:
 		self.whitelist_rb_serial.clear()
 		self.whitelist_telegram_ids.clear()
 
+		# Runs on admin instance
+		if self.admin:
+			for obj in self.json_obj['ground']:
+				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
+			for obj in self.json_obj['air']:
+				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
+
 		# Search file for all devices without a telegram user id
 		for obj in self.json_obj["ground"] + self.json_obj["air"]:
 			if "telegram_id" not in obj.keys():
@@ -113,13 +120,6 @@ class Identifiers:
 			if obj["id"] == self.self_id:
 				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None))
 				break
-
-		# Runs on admin instance
-		if self.admin:
-			for obj in self.json_obj['ground']:
-				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
-			for obj in self.json_obj['air']:
-				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
 
 		# for standalone numbers (not currently in use)
 		for num in self.json_obj["standalone"]:
