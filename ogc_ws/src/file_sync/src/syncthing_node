@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from inotify.adapters import Inotify
+import re
+from threading import Thread
+
+import rospy
+from std_msgs.msg import String
+
+from syncthing import Syncthing
+
+def st_cb(command, st):
+	if command.data == "pause":
+		st.pause()
+	elif command.data == "resume":
+		st.resume()
+
+if __name__ == "__main__":
+	try:
+		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
+		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=5)
+		file_conflict_pub = rospy.Publisher("ogc/files/conflict", String, queue_size=5)
+
+		watch_dir = rospy.get_param("~watch_dir")
+
+		st = Syncthing()
+		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
+
+		event_thread = Thread(target=st.event_subscribe)
+		event_thread.daemon = True
+		event_thread.start()
+
+		inotify_adapter = Inotify()
+		inotify_adapter.add_watch(watch_dir)
+
+		modified_list = []
+
+		for event in inotify_adapter.event_gen(yield_nones=False):
+			if event[1][0] == "IN_MOVED_FROM" and event[3][:11] == ".syncthing." and event[3][-4:] == ".tmp":
+				modified_list.append(event[3][11:-4])
+
+			if event[1][0] == "IN_MOVED_TO":
+				if ".sync-conflict-" in event[3]:
+					rospy.loginfo("File conflict found " + event[3])
+					filename= re.sub("sync-conflict-[0-9]{8}-[0-9]{6}-[A-Z0-9]{7}[.]", "", event[3])
+					file_conflict_pub.publish(filename)
+				elif event[3] in modified_list:
+					rospy.loginfo("File " + event[3] + " modified through syncthing")
+					file_modify_pub.publish(event[3])
+					modified_list.remove(event[3])
+				
+
+	except rospy.ROSInterruptException:
+		exit()
+	except KeyboardInterrupt:
+		exit()

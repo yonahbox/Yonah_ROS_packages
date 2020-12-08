@@ -54,7 +54,7 @@
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
+        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="interval_3" value="$(arg interval_3)" />
@@ -77,7 +77,7 @@
 	<!-- linkswitch -->
 	<node name="switcher" type="switcher.py" pkg="despatcher"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-	<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 </launch>

@@ -35,7 +35,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
-from std_msgs.msg import UInt8, String
+from std_msgs.msg import String
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
@@ -45,6 +45,9 @@ import waypoint
 import g2a
 from headers import new_msg_chk
 
+TELE = 0
+SMS = 1
+SBD = 2
 
 class airdespatcher():
 
@@ -68,7 +71,7 @@ class airdespatcher():
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
-        self._header = new_msg_chk(9)
+        # WARN deleted self._header = new_msg_chk(9)
 
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
@@ -76,6 +79,7 @@ class airdespatcher():
 
         # Ground Identifiers. For now we assume only one GCS
         self.ground_id = rospy.get_param("~ground_ids")[0]
+        self._new_msg_chk = headers.new_msg_chk(rospy.get_param("~ground_ids"))
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1")
@@ -88,13 +92,18 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
-        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Waypoints/')
+        self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Sync/Waypoints/')
 
         # Wait for MAVROS services
         rospy.wait_for_service('mavros/cmd/arming')
         rospy.wait_for_service('mavros/set_mode')
         rospy.wait_for_service('mavros/mission/set_current')
         rospy.wait_for_service('mavros/mission/push')
+
+        self._armed_st = False
+
+        # syncthing controls
+        self.syncthing_control = rospy.Publisher("ogc/files/syncthing", String, queue_size=5)
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages
@@ -108,8 +117,8 @@ class airdespatcher():
             uuid = data.uuid
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
-                = self._header.split_headers(data.data)
-            if not self._header.is_new_msg(timestamp, sysid):
+                = headers.split_headers(data.data)
+            if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 return
             # Go through series of checks
             if "ping" in self._recv_msg:
@@ -126,11 +135,17 @@ class airdespatcher():
             elif "mode" in self._recv_msg:
                 g2a.check_mode(self, uuid)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
-                g2a.check_mission(self, uuid)
+                g2a.check_mission(self)
+            elif "syncthing" in self._recv_msg:
+                g2a.handle_syncthing(self)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError, TypeError):
             rospy.logerr("Invalid message format")
+
+    def resume_syncthing(self, data):
+        if int(data.armed) == 0 and self.hop == False: 
+            self.syncthing_control.publish("resume")
 
 
     #########################################
@@ -145,7 +160,7 @@ class airdespatcher():
     def _attach_headers(self, msgtype):
         '''Attach message headers (prefixes and suffixes'''
         prefixes = [msgtype, self._is_air, self._id]
-        self._msg = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
+        self._msg = headers.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
     
     def sendmsg(self, msgtype, uuid = 0):
         '''Send any msg that's not a regular payload'''
@@ -223,12 +238,14 @@ class airdespatcher():
 
     def check_switcher(self, data):
         '''Obtain updates from switcher node'''
-        self.link_select = data.data
-        if self.link_select == 2:
+        msglist = data.data.split()
+        id = int(msglist[0]) # Msg format: aircraft id + link no. For now, id is not used
+        self.link_select = int(msglist[1])
+        if self.link_select == SBD:
             self._tele_interval = self._interval_3
             self._sms_interval = self._interval_3
             self.sbd_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sbd)
-        elif self.link_select == 1:
+        elif self.link_select == SMS:
             self._tele_interval = self._interval_2
             self._sms_interval = self._interval_2
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sms)
@@ -236,20 +253,29 @@ class airdespatcher():
                 self.sbd_sender.shutdown()
             except:
                 pass
-        elif self.link_select == 0:
+        elif self.link_select == TELE:
             self._tele_interval = self._interval_1
             try:
                 self.sms_sender.shutdown()
                 self.sbd_sender.shutdown()
             except:
                 pass
-    
+
+    def _handle_modified(self, msg):
+        self._msg = "syncthing downloaded " + msg.data
+        self.sendmsg("i")
+
+    def _handle_error(self, msg):
+        self._msg = msg.data
+        self.sendmsg("e")
+
     ############################
     # "Main" function
     ############################
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
+        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
@@ -259,7 +285,9 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_sms", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_sbd", String, self.check_incoming_msgs)
         rospy.Subscriber("ogc/from_telegram", String, self.check_incoming_msgs)
-        rospy.Subscriber("ogc/from_switcher", UInt8, self.check_switcher)
+        rospy.Subscriber("ogc/from_switcher", String, self.check_switcher)
+        rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
+        rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()

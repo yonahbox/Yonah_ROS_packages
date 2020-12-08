@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
   
-	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
+	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="air_ids" default="[4]" />
 	<arg name="self_id" default="3" />
 	<arg name="is_air" default="False" />
@@ -32,9 +32,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="interval_2" default="1000"/>
 	<arg name="interval_3" default="2000"/>
 
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
+
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
 		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>		
+	</node>
+
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >

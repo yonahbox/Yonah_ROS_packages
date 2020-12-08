@@ -26,7 +26,7 @@ from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from missionserver import MissionServer
 
-recognised_commands = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "mission"]
+recognised_commands = ["ping", "sms", "statustext", "arm", "disarm", "mode", "wp", "mission", "syncthing"]
 
 def check_ping(self):
 	'''Check for ping commands from Ground Control'''
@@ -82,6 +82,7 @@ def check_arming(self, uuid):
 			arm(0)
 		elif self._recv_msg[0] == "arm":
 			arm(1)
+			self.syncthing_control.publish("pause")
 		else:
 			return
 	else:
@@ -249,3 +250,8 @@ def mission_server_update(self):
 	run = MissionServer()
 	run.update_files()
 	run.close()
+
+def handle_syncthing(self):
+	if self._recv_msg[0] == 'syncthing' and len(self._recv_msg) == 2:
+		if self._recv_msg[1] in ["pause", "resume"]:
+			self.syncthing_control.publish(self._recv_msg[1])
