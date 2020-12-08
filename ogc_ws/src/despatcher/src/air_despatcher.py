@@ -43,7 +43,7 @@ from despatcher.msg import LinkMessage
 from regular import air_payload
 import waypoint
 import g2a
-from headers import headerhandler
+import headers
 
 TELE = 0
 SMS = 1
@@ -71,7 +71,6 @@ class airdespatcher():
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
-        self._header = headerhandler()
 
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
@@ -79,6 +78,7 @@ class airdespatcher():
 
         # Ground Identifiers. For now we assume only one GCS
         self.ground_id = rospy.get_param("~ground_ids")[0]
+        self._new_msg_chk = headers.new_msg_chk(rospy.get_param("~ground_ids"))
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1")
@@ -109,8 +109,8 @@ class airdespatcher():
             rospy.loginfo("Received \"" + data.data + "\"")
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
-                = self._header.split_headers(data.data)
-            if not self._header.is_new_msg(timestamp, sysid):
+                = headers.split_headers(data.data)
+            if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 return
             # Go through series of checks
             if "ping" in self._recv_msg:
@@ -143,7 +143,7 @@ class airdespatcher():
     def _attach_headers(self, msgtype):
         '''Attach message headers (prefixes and suffixes'''
         prefixes = [msgtype, self._is_air, self._id]
-        self._msg = self._header.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
+        self._msg = headers.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
     
     def sendmsg(self, msgtype):
         '''Send any msg that's not a regular payload'''
