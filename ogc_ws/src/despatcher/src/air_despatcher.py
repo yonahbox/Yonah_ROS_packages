@@ -113,7 +113,7 @@ class airdespatcher():
         rospy.loginfo("hello")
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
-            rospy.logwarn("Received \"" + data.data + "\"")
+            rospy.loginfo("Received \"" + data.data + "\"")
             uuid = data.uuid
             # Handle msg headers
             msgtype, devicetype, sysid, timestamp, self._recv_msg \
@@ -128,10 +128,7 @@ class airdespatcher():
             elif "statustext" in self._recv_msg:
                 g2a.check_statustext(self)
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
-                rospy.logwarn("received")
                 g2a.check_arming(self, uuid)
-                rospy.logwarn("acknowledging")
-                self.sendmsg("a", data.uuid)
             elif "mode" in self._recv_msg:
                 g2a.check_mode(self, uuid)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
@@ -157,16 +154,16 @@ class airdespatcher():
         self._msg = ' '.join(self._recv_msg)
         self.sendmsg("a", uuid)
     
-    def _attach_headers(self, msgtype):
+    def _attach_headers(self, msgtype, uuid = 0):
         '''Attach message headers (prefixes and suffixes'''
-        prefixes = [msgtype, self._is_air, self._id]
+        prefixes = [msgtype, self._is_air, self._id, uuid]
         self._msg = headers.attach_headers(prefixes, [rospy.get_rostime().secs], self._msg)
     
     def sendmsg(self, msgtype, uuid = 0):
         '''Send any msg that's not a regular payload'''
-        self._attach_headers(msgtype)
+        self._attach_headers(msgtype, uuid)
         message = LinkMessage()
-        message.uuid = uuid
+        message.uuid = 0 # This UUID does get passed through to the links
         message.id = self.ground_id
         message.data = self._msg
         if self.link_select == 0:

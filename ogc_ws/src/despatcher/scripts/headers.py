@@ -21,7 +21,7 @@ headers.py: Handle msg headers
 
 import rospy
 
-PREFIX_COUNT = 3
+PREFIX_COUNT = 4
 SUFFIX_COUNT = 1
 
 class new_msg_chk():
@@ -56,8 +56,9 @@ def split_headers(msg):
         msgtype = str(msglist[0])
         devicetype = int(msglist[1])
         sysid = int(msglist[2])
+        uuid = int(msglist[3])
         timestamp = int(msglist[-1])
-        return msgtype, devicetype, sysid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
+        return msgtype, devicetype, sysid, uuid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
     except:
         return None
     

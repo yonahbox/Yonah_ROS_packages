@@ -52,7 +52,7 @@ class aircraft():
 
     def _prep_heartbeat(self):
         '''Prepare a heartbeat msg'''
-        prefixes = ["h", 0, rospy.get_param("~self_id")]
+        prefixes = ["h", 0, rospy.get_param("~self_id"), 0]
         return headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
     
     def _send_heartbeat_tele(self, data):
@@ -121,7 +121,7 @@ class gnddespatcher():
 
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        dummy_prefixes = ["i", 1, data.id] # Dummy prefixes for publishing local msgs to on_demand topic
+        dummy_prefixes = ["i", 1, data.id, 0] # Dummy prefixes for publishing local msgs to on_demand topic
         feedback_to_rqt = ""
         if data.data.split()[0] not in recognised_commands:
             feedback_to_rqt = "Invalid command: " + data.data
@@ -130,7 +130,7 @@ class gnddespatcher():
             msg.uuid = data.uuid
             msg.id = data.id
             # Add msg headers
-            prefixes = ["i", self._is_air, self._id]
+            prefixes = ["i", self._is_air, self._id, data.uuid]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
             try:
                 link = self._aircrafts[data.id].link_status()
@@ -160,7 +160,7 @@ class gnddespatcher():
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             # Handle msg prefixes
-            msgtype, devicetype, sysid, timestamp, entries \
+            msgtype, devicetype, sysid, uuid, timestamp, entries \
                 = headers.split_headers(data.data)
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
@@ -210,7 +210,7 @@ class gnddespatcher():
             self._aircrafts[id].switch_link(link)
 
             # Notify RQT of the link switch
-            dummy_prefixes = ["i", 1, id] # Dummy prefixes for publishing local msgs to on_demand topic
+            dummy_prefixes = ["i", 1, id, 0] # Dummy prefixes for publishing local msgs to on_demand topic
             self.pub_to_rqt_ondemand.publish(\
                 headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + link))
 

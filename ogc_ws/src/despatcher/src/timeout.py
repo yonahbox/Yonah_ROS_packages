@@ -24,7 +24,6 @@ from despatcher.msg import LinkMessage
 
 class MessageTimer():
     def __init__(self, message, message_id):
-        rospy.logwarn("REINISTIALISEATION")
         self.message_id = message_id
         self.message = message
         self.timeout = [5, 10]

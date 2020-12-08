@@ -47,13 +47,15 @@ def tdlib_topic_cb(msg, args):
 	#	0: text
 	#	1: file
 	if args[2] == 0:
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
+		rospy.logerr("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.loginfo("SENDING FILE")
+		rospy.logerr("SENDING FILE")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
+	else:
+		rospy.logerr(args)
 
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
