@@ -110,7 +110,7 @@ class gnddespatcher():
 
         # Msg headers and valid aircrafts to send to
         self._valid_ids = rospy.get_param("~valid_ids")
-        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
         self._aircrafts = dict()
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
@@ -173,8 +173,11 @@ class gnddespatcher():
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 # Check if the incoming message is an acknowledgment message
-                if data.uuid != 0:
-                    ack = ack_converter(data, 2)
+                if uuid != 0:
+                    ack_msg = LinkMessage()
+                    ack_msg.uuid = uuid
+                    ack_msg.data = ""
+                    ack = ack_converter(ack_msg, 2)
                     if ack != None:
                         self.pub_to_timeout.publish(ack)
                     return 0 # Prevent the message to get sent through ondemand
