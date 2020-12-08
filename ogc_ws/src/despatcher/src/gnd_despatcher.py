@@ -165,11 +165,12 @@ class gnddespatcher():
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
                 return
-            if regular.is_regular(msgtype, len(entries)):
-                self.rqt_recovery_log(entries, sender_id)
+            # Check if it is regular msg. This requires a list of the msg with all its headers attached
+            data_list = data.data.split() # Msg + Headers, split into a list
+            if regular.is_regular(msgtype, len(data_list)):
                 # Check if it is regular payload
-                msg = regular.convert_to_rosmsg(entries)
-                self.rqt_recovery_log(entries, sysid)
+                msg = regular.convert_to_rosmsg(data_list)
+                self.rqt_recovery_log(data_list, sysid)
                 self.pub_to_rqt_regular.publish(msg)
             else:
                 # Check if the incoming message is an acknowledgment message
@@ -220,7 +221,7 @@ class gnddespatcher():
         except:
             rospy.logerr("Switcher: Invalid msg")
 
-    def rqt_recovery_log(self, entries, aircraft_id):
+    def rqt_recovery_log(self, reg_payload_list, aircraft_id):
         filename = "rqt_log.txt"
         path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
         with open(path, 'r') as lines:
@@ -232,7 +233,7 @@ class gnddespatcher():
             log.close()
         with open(path, 'r') as lines:
             data = lines.readlines()
-        data[aircraft_id - 1] = " ".join(entries) +"\n"
+        data[aircraft_id - 1] = " ".join(reg_payload_list) +"\n"
         with open(path, 'w') as files:
             files.writelines(data)
             files.close()
