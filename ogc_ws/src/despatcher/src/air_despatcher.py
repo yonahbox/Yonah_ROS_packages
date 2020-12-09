@@ -124,7 +124,7 @@ class airdespatcher():
             elif "sms" in self._recv_msg:
                 g2a.check_sms(self, uuid)
             elif "statustext" in self._recv_msg:
-                g2a.check_statustext(self, uuid))
+                g2a.check_statustext(self, uuid)
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
                 g2a.check_arming(self, uuid)
             elif "mode" in self._recv_msg:
