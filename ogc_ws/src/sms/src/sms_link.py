@@ -46,7 +46,7 @@ class SMSrx():
         self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
         self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self._msg = "" # Actual incoming message, located on 5th line of msglist
-        self.interval = 0.5 # Time interval between each check of the router for incoming msgs
+        self.interval = 1 # Time interval between each check of the router for incoming msgs
 
         # Initialise SSH
         try:
@@ -116,7 +116,7 @@ class SMSrx():
             self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
-            rospy.logerr("Connection to router lost (send)!")
+            rospy.logerr("Connection to router lost!")
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -134,7 +134,7 @@ class SMSrx():
         elif 'Timeout.\n' in self._msglist:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif 'Connection lost' in self._msglist:
-            rospy.logerr("Connection to router lost (receive)!")
+            rospy.logerr("Connection to router lost!")
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
