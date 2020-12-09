@@ -30,6 +30,23 @@ import json
 
 from Td import Td
 
+msg_success = {}
+
+class TimeoutClass():
+	def __init__(self, uuid):
+		self.uuid = uuid
+		self.time = 3
+		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
+
+	def countdown(self, data):
+		self.time -= 1
+		if self.time <= 0:
+			self.timer.shutdown()
+			self.pub_to_switcher.publish("Timeout")
+	
+	def persec(self):
+		self.timer = rospy.Timer(rospy.Duration(1), self.countdown)
+
 # callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, args):
 	td = args[0]					# instance of Td class
@@ -47,6 +64,9 @@ def tdlib_topic_cb(msg, args):
 	#	0: text
 	#	1: file
 	if args[2] == 0:
+		if msg.uuid > 0:
+			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
+			msg_success[msg.uuid].persec()
 		rospy.logerr("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
@@ -150,6 +170,13 @@ def tdlib_recv():
 					if local_path != 1:
 						td.download_file(file_id)
 						file_locations[file_id] = final_path
+
+			if event['@type'] == 'updateMessageSendSucceeded':
+				success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
+				if success_uuid > 0:
+					msg_success[success_uuid].timer.shutdown()
+					msg_success[success_uuid].pub_to_switcher.publish("Success")
+
 
 if __name__ == '__main__':
 	try:

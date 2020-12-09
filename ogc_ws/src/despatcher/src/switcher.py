@@ -138,13 +138,21 @@ class switcher():
                 old_link = self._watchdogs[i].link_status()
                 self._watchdogs[i].switch(old_link + 1) # In 4G mode, switch at low rssi
     
-    def monitor_smsout(self, data):
+    def monitor_teleout(self, data):
         if data.data == "Timeout":
             self._timeout_counter += 1
         elif data.data == "Success":
             self._timeout_counter = 0
         if self._timeout_counter == 3:
             self._switch_all(SMS)
+
+    def monitor_smsout(self, data):
+        if data.data == "Timeout":
+            self._timeout_counter += 1
+        elif data.data == "Success":
+            self._timeout_counter = 0
+        if self._timeout_counter == 3:
+            self._switch_all(SBD)
 
     ###########################
     # "Main" function
@@ -153,7 +161,8 @@ class switcher():
     def client(self):
         rospy.Subscriber("ogc/from_sms", String, self.monitor_sms)
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
-        rospy.Subscriber('ogc/to_switcher', String, self.monitor_smsout)
+        rospy.Subscriber('ogc/to_switcher_tele', String, self.monitor_teleout)
+        rospy.Subscriber('ogc/to_switcher_sms', String, self.monitor_smsout)
         router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
         router_monitor.shutdown()

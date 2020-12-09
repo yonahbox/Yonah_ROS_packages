@@ -60,7 +60,7 @@ class SMSrx():
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
         
         # Publish to switcher
-        self.pub_to_switcher = rospy.Publisher('ogc/to_switcher', String, queue_size=5)
+        self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_sms', String, queue_size=5)
 
         # Publish to timeout module
         self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
