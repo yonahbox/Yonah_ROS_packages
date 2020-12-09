@@ -152,6 +152,7 @@ class switcher():
         elif data.data == "Success":
             self._timeout_counter = 0
         if self._timeout_counter == 3:
+            self._timeout_counter = 0
             self._switch_all(SMS)
 
     def monitor_smsout(self, data):
@@ -172,7 +173,7 @@ class switcher():
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
         rospy.Subscriber('ogc/to_switcher_tele', String, self.monitor_teleout)
         rospy.Subscriber('ogc/to_switcher_sms', String, self.monitor_smsout)
-        router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
+        # router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
         router_monitor.shutdown()
 

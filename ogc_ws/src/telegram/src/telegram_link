@@ -171,11 +171,11 @@ def tdlib_recv():
 						td.download_file(file_id)
 						file_locations[file_id] = final_path
 
-			if event['@type'] == 'updateMessageSendSucceeded':
-				success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
-				if success_uuid > 0:
-					# msg_success[success_uuid].timer.shutdown()
-					msg_success[success_uuid].pub_to_switcher.publish("Success")
+			# if event['@type'] == 'updateMessageSendSucceeded':
+			# 	success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
+			# 	if success_uuid > 0:
+			# 		msg_success[success_uuid].timer.shutdown()
+			# 		msg_success[success_uuid].pub_to_switcher.publish("Success")
 
 
 if __name__ == '__main__':
