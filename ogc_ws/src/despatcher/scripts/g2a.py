@@ -43,7 +43,7 @@ def check_ping(self):
 			return
 	self.sendmsg(severity)
 
-def check_sms(self):
+def check_sms(self, uuid):
 	'''Check for SMS commands from Ground Control'''
 	if self._recv_msg[0] == "sms" and len(self._recv_msg) == 2:
 		if self._recv_msg[1] == "true": # Send regular payloads to Ground Control
@@ -58,9 +58,9 @@ def check_sms(self):
 			return
 	else:
 		return
-	self._send_ack()
+	self._send_ack(uuid)
 
-def check_statustext(self):
+def check_statustext(self, uuid):
 	'''Check for statustext commands from Ground Control'''
 	if len(self._recv_msg) == 2 and self._recv_msg[0] == "statustext":
 		if self._recv_msg[1] == "true":
@@ -71,7 +71,7 @@ def check_statustext(self):
 			return
 	else:
 		return
-	self._send_ack()
+	self._send_ack(uuid)
 
 def check_arming(self, uuid):
 	"""Check for Arm/Disarm commands from Ground Control"""
@@ -102,7 +102,7 @@ def check_mission(self, uuid):
 	"""Check for mission/waypoint commands from Ground Control"""
 	if self._recv_msg[0] == "wp":
 		if self._recv_msg[1] == 'set':
-			wp_set(self)
+			wp_set(self, uuid)
 		elif self._recv_msg[1] == 'load':
 			wp_load(self)
 		else:
@@ -122,13 +122,13 @@ def check_mission(self, uuid):
 		else:
 			return
 
-def wp_set(self):
+def wp_set(self, uuid):
 	# Message structure: wp set <seq_no>, extract the 3rd word to get seq no
 	wp_set = rospy.ServiceProxy('mavros/mission/set_current', WaypointSetCurrent)
 	seq_no = self._recv_msg[2]
 	# Set target waypoint, check if successful
 	if wp_set(wp_seq = int(seq_no)).success == True:
-		self._send_ack()
+		self._send_ack(uuid)
 
 def wp_load(self):
 	# Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file

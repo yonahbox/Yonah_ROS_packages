@@ -337,8 +337,8 @@ class MyPlugin(Plugin):
         message_type = status[0]
         aircraft_id = status[2]
         
-        info = status[3:-1]
-        display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, info)
+        info = status[4:-1]
+        display_text = "Aircraft {} : {}".format(aircraft_id, str(info[0]))
         self.SummaryWindow.statustext.appendPlainText(display_text)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(display_text)
 

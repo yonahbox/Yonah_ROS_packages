@@ -122,17 +122,17 @@ class airdespatcher():
             if "ping" in self._recv_msg:
                 g2a.check_ping(self)
             elif "sms" in self._recv_msg:
-                g2a.check_sms(self)
+                g2a.check_sms(self, uuid)
             elif "statustext" in self._recv_msg:
-                g2a.check_statustext(self)
+                g2a.check_statustext(self, uuid))
             elif "arm" in self._recv_msg or "disarm" in self._recv_msg:
                 g2a.check_arming(self, uuid)
             elif "mode" in self._recv_msg:
                 g2a.check_mode(self, uuid)
             elif "wp" in self._recv_msg or "mission" in self._recv_msg:
-                g2a.check_mission(self)
+                g2a.check_mission(self, uuid)
             elif "syncthing" in self._recv_msg:
-                g2a.handle_syncthing(self)
+                g2a.handle_syncthing(self, uuid)
         except(rospy.ServiceException):
             rospy.logwarn("Service Call Failed")
         except (ValueError, IndexError, TypeError):
