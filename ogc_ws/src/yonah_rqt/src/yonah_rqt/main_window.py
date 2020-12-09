@@ -209,8 +209,8 @@ class MyPlugin(Plugin):
 
     def status_text(self, data):
         status = Communicate()
-        status.ondemand_signal.connect(self.status_text_display)
-        status.ondemand_signal.emit(data)
+        status.status_text_signal.connect(self.status_text_display)
+        status.status_text_signal.emit(data.data)
     
     def syncthing(self, data):
         status = Communicate()
@@ -331,13 +331,14 @@ class MyPlugin(Plugin):
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
 
-    def status_text_display(self, status_text, aircraft_id):
-        status = status_text.split()
-        time_stamp = int(status[-1])
+    def status_text_display(self, status_text):
+        status = status_text.split(",")
+        # time_stamp = int(status[-1]) # Timestamp not needed
         message_type = status[0]
         aircraft_id = status[2]
+        
         info = status[3:-1]
-        display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, text_displayed)
+        display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, info)
         self.SummaryWindow.statustext.appendPlainText(display_text)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(display_text)
 
