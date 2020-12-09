@@ -10,8 +10,8 @@
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
-	<arg name="air_ids" default="[2]" />
-	<arg name="self_id" default="1" />
+	<arg name="air_ids" default="[1]" />
+	<arg name="self_id" default="6" />
 	<arg name="is_air" default="False" />
 	
 	<!-- tele args -->

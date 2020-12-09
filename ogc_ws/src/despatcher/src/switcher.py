@@ -57,6 +57,7 @@ class watchdog():
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
         if self._watchdog[self._link] <= 0:
+            rospy.logerr("switching cos countdown")
             self.switch(self._link + 1)
     
     def link_status(self):
@@ -84,6 +85,7 @@ class switcher():
         '''Command ALL clients to switch to the target link (if not already on that link)'''
         for i in self._valid_ids:
             if not (self._watchdogs[i].link_status() == link):
+                rospy.logerr("switching all")
                 self._watchdogs[i].switch(link)
 
     ###########################
@@ -107,6 +109,7 @@ class switcher():
         # If active link is downstream of current link, trigger link switch to current link
         # Otherwise, simply reset the watchdog of the current link
         if self._watchdogs[sysid].link_status() > link:
+            rospy.logerr("monitor common switch")
             self._watchdogs[sysid].switch(link)
         else:
             self._watchdogs[sysid].reset_watchdog(link)
@@ -126,19 +129,24 @@ class switcher():
             self._monitor_common(sender_sysid, SMS)
 
     def monitor_router(self, data):
+        rospy.logerr("inside monitor router")
         ssh = RuTOS.start_client(self._ip, self._username)
         connection = RuTOS.get_conntype(ssh)
         rssi = RuTOS.get_rssi(ssh)
         if connection == "NOSERVICE":
+            rospy.logerr("switching cos no service")
             self._switch_all(SBD) # Switch to SBD immediately
         elif connection == "GSM":
+            rospy.logerr("switching cos gsm")
             self._switch_all(SMS) # Switch to SMS
         elif rssi <= -85: # To include RSRQ, RSRP, SINR in the future
             for i in self._valid_ids:
+                rospy.logerr("switching rssi")
                 old_link = self._watchdogs[i].link_status()
                 self._watchdogs[i].switch(old_link + 1) # In 4G mode, switch at low rssi
     
     def monitor_teleout(self, data):
+        rospy.logerr("inside monitor tele")
         if data.data == "Timeout":
             self._timeout_counter += 1
         elif data.data == "Success":
@@ -147,6 +155,7 @@ class switcher():
             self._switch_all(SMS)
 
     def monitor_smsout(self, data):
+        rospy.logerr("inside monitor sms")
         if data.data == "Timeout":
             self._timeout_counter += 1
         elif data.data == "Success":

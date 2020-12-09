@@ -116,7 +116,7 @@ class SMSrx():
             self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
-            rospy.logerr("Connection to router lost!")
+            rospy.logerr("Connection to router lost (send)!")
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -134,7 +134,7 @@ class SMSrx():
         elif 'Timeout.\n' in self._msglist:
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif 'Connection lost' in self._msglist:
-            rospy.logerr("Connection to router lost!")
+            rospy.logerr("Connection to router lost (receive)!")
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
