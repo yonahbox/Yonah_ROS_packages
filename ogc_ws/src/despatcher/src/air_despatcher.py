@@ -95,10 +95,10 @@ class airdespatcher():
         self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Sync/Waypoints/')
 
         # Wait for MAVROS services
-        # rospy.wait_for_service('mavros/cmd/arming')
-        # rospy.wait_for_service('mavros/set_mode')
-        # rospy.wait_for_service('mavros/mission/set_current')
-        # rospy.wait_for_service('mavros/mission/push')
+        rospy.wait_for_service('mavros/cmd/arming')
+        rospy.wait_for_service('mavros/set_mode')
+        rospy.wait_for_service('mavros/mission/set_current')
+        rospy.wait_for_service('mavros/mission/push')
 
         self._armed_st = False
 

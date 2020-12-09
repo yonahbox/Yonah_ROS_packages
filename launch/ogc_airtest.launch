@@ -19,8 +19,8 @@
 	
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
-	<arg name="ground_ids" default="[1]" />
-	<arg name="self_id" default="4" />
+	<arg name="ground_ids" default="[6]" />
+	<arg name="self_id" default="1" />
 	<arg name="is_air" default="True" />
 
 	<!-- tele args -->
