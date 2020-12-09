@@ -175,7 +175,7 @@ class switcher():
         rospy.Subscriber('ogc/to_switcher_sms', String, self.monitor_smsout)
         # router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
-        router_monitor.shutdown()
+        # router_monitor.shutdown()
 
 if __name__=='__main__':
     run = switcher()
