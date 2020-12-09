@@ -102,17 +102,17 @@ def get_rssi(ssh):
 def get_rsrp(ssh):
     '''Get RSRP'''
     _, stdout, _ = ssh.exec_command("gsmctl -W")
-    rsrp = int(stdout.readlines()[0]rstrip())
+    rsrp = int(stdout.readlines()[0].rstrip())
     return rsrp
 
 def get_rsrq(ssh):
     '''Get RSRQ'''
     _, stdout, _ = ssh.exec_command("gsmctl -M")
-    rsrq = float(stdout.readlines()[0]rstrip())
+    rsrq = float(stdout.readlines()[0].rstrip())
     return rsrq
 
 def get_sinr(ssh):
     '''Get SINR'''
     _, stdout, _ = ssh.exec_command("gsmctl -Z")
-    sinr = float(stdout.readlines()[0]rstrip())
+    sinr = float(stdout.readlines()[0].rstrip())
     return sinr
