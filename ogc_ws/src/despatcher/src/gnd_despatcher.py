@@ -31,6 +31,7 @@ from despatcher.msg import LinkMessage
 # Local
 import regular
 import headers
+import timeoutscript
 from g2a import recognised_commands
 
 TELE = 0
@@ -178,7 +179,7 @@ class gnddespatcher():
                     ack_msg = LinkMessage()
                     ack_msg.uuid = uuid
                     ack_msg.data = ""
-                    ack = ack_converter(ack_msg, 2)
+                    ack = timeoutscript.ack_converter(ack_msg, 2)
                     if ack != None:
                         self.pub_to_timeout.publish(ack)
                     return 0 # Prevent the message to get sent through ondemand
@@ -216,7 +217,7 @@ class gnddespatcher():
             # Notify RQT of the link switch
             dummy_prefixes = ["i", 1, id, 0] # Dummy prefixes for publishing local msgs to on_demand topic
             self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + link))
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + str(link)))
 
         except:
             rospy.logerr("Switcher: Invalid msg")
