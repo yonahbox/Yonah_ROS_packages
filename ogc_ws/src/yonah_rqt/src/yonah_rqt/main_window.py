@@ -322,11 +322,11 @@ class MyPlugin(Plugin):
             minutes = str(self.time_in_seconds // 60)
             hours = str(self.time_in_seconds // 3600)
             seconds = str(self.time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
-            if seconds < 10:
+            if int(seconds) < 10:
                 seconds = "0" + seconds
-            if minutes < 10:
+            if int(minutes) < 10:
                 minutes = "0" + minutes
-            if hours < 10:
+            if int(hours) < 10:
                 hours = "0" + hours
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
