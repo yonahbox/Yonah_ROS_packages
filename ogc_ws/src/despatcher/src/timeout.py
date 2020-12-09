@@ -63,7 +63,6 @@ class Manager():
     def sent_commands(self, data):
         commands = ["sms", "statustext", "arm", "mode", "wp"]
         if data.uuid not in self.messages:
-            rospy.logwarn(data)
             rospy.logwarn("CREATING NEW FIELD")
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
