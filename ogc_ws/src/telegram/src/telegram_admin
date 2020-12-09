@@ -43,7 +43,6 @@ if __name__ == '__main__':
 				td.get_chats()
 
 			if event['@type'] == 'updateNewMessage':
-				print("message received")
 				if event['message']['is_outgoing'] or event['message']['date'] < boot_time:
 					continue
 
