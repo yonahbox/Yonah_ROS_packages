@@ -2,12 +2,11 @@
 
 	<!-- Common OGC args -->
 	<arg name="log_output" default="screen" />
-	<arg name="interval_1" default="10"/>
-	<arg name="interval_2" default="60"/>
-	<arg name="interval_3" default="5"/>
+	<arg name="interval_1" default="2"/>
+	<arg name="interval_2" default="10"/>
+	<arg name="interval_3" default="20"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
-	<arg name="link_select" default="0" />
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
@@ -20,6 +19,9 @@
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
+
+	<!-- file sync args -->
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
 
 	<!-- tele link node -->
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
@@ -41,6 +43,8 @@
 		<param name="portID" value="$(arg portID)" />
 	</node>
 
+
+	<!-- identifiers service node -->
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
@@ -48,10 +52,18 @@
 		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
 	</node>
 
+	<!-- syncthing node -->
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
+	</node>
+
 	<!-- gnd despatcher node -->
 	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="link_select" value="$(arg link_select)" />
+		<param name="interval_1" value="$(arg interval_1)" />
+		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="interval_3" value="$(arg interval_3)" />
 	</node>
 
 	<!-- gnd statustext handler node -->
@@ -63,5 +75,12 @@
 	<node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node>
+
+	<!-- linkswitch -->
+	<node name="switcher" type="switcher.py" pkg="despatcher"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+	</node>
+
 
 </launch>

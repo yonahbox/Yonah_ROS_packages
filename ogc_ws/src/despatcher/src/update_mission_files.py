@@ -13,7 +13,7 @@ class mission_updater():
 		
 	def update(self):
 		home_dir = str(Path.home())
-		gndfolder = home_dir + "/Waypoints/"
+		gndfolder = home_dir + "/Sync/Waypoints/"
 		gndfiles = listdir(gndfolder)
 		mission_msg = []
 		for i in gndfiles:

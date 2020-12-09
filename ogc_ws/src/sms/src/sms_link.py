@@ -56,6 +56,9 @@ class SMSrx():
 
         # Initialize publisher to despatcher nodes
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
+        
+        # Publish to switcher
+        self.pub_to_switcher = rospy.Publisher('ogc/to_switcher', String, queue_size=5)
 
         # identifiers work
         rospy.wait_for_service("identifiers/check/proper")
@@ -99,9 +102,12 @@ class SMSrx():
 
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
         if "Timeout\n" in sendstatus:
+            self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
             rospy.logerr("Connection to router lost!")
+        else:
+            self.pub_to_switcher.publish("Success")
     
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''

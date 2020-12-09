@@ -25,8 +25,8 @@ from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 
 # Local
-# from identifiers import Identifiers
 from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
+import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
@@ -49,7 +49,10 @@ class satcomms(rockBlockProtocol):
 
         self._init_variables()
         self._is_air = 1 # We are an air node!
-        self._prev_switch_cmd_time = rospy.get_rostime().secs # Transmit time of previous incoming switch cmd
+
+        # Headers (for checking of switch cmds)
+        _valid_ids = rospy.get_param("~valid_ids")
+        self._new_switch_cmd = headers.new_msg_chk(max(_valid_ids))
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
@@ -74,13 +77,14 @@ class satcomms(rockBlockProtocol):
         
         # Msg Type Prioritization. Higher number means higher priority
         self._msg_priority = {
-            "r": 0,
-            "a": 1,
-            "m": 2,
-            "s": 3,
-            "i": 4,
-            "w": 5,
-            "e": 6
+            "h": 0,
+            "r": 1,
+            "a": 2,
+            "m": 3,
+            "s": 4,
+            "i": 5,
+            "w": 6,
+            "e": 7
         }
 
     ################################
@@ -147,15 +151,15 @@ class satcomms(rockBlockProtocol):
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
         if "sbd switch 0" in data:
-            switch_cmd_time = int(data.split()[-1])
-            if switch_cmd_time > self._prev_switch_cmd_time:
+            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 0
                 rospy.loginfo("SBD: Switching to RB-2-RB comms")
                 return True
         if "sbd switch 1" in data:
-            switch_cmd_time = int(data.split()[-1])
-            if switch_cmd_time > self._prev_switch_cmd_time:
+            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 1
                 rospy.loginfo("SBD: Switching to Server comms")
@@ -171,7 +175,7 @@ class satcomms(rockBlockProtocol):
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        incoming_msgtype = data.data.split()[0]
+        incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.loginfo("SBD: Reject incoming msg " + data.data)

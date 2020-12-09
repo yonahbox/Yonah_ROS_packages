@@ -19,7 +19,7 @@ import json
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
-	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id):
+	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id, syncthing_id):
 		self.label = label
 		self.is_air = is_air
 		self.id = dev_id
@@ -27,6 +27,7 @@ class Device:
 		self.imei = imei
 		self.rb_serial = rb_serial
 		self.telegram_id = telegram_id
+		self.syncthing_id = syncthing_id
 
 class Identifiers:
 	def __init__(self, json_file, is_air, self_id_file, valid_ids_file):
@@ -73,11 +74,17 @@ class Identifiers:
 		self.air_devices = []
 		self.ground_devices = []
 
-		# parse the identifiers file
-		self._parse_file()
+		# used to prevent two functions writing at the same time
+		# basically a mutex lock
 		self.file_busy = False
 
-	def _parse_file(self):
+		# parse the identifiers file
+		self.parse_file()
+
+
+	def parse_file(self):
+		self.file_busy = True
+
 		with open(self.json_file) as file:
 			try:
 				# read the file as a json object
@@ -111,7 +118,7 @@ class Identifiers:
 		# add all whitelisted devices into the whitelist and required information to their respective whitelists
 		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
 			if obj["id"] in self.valid_ids:
-				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None)))
+				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None)))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 				if "telegram_id" in obj.keys():
@@ -120,7 +127,7 @@ class Identifiers:
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
-				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None))
+				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None))
 				break
 
 		# for standalone numbers (not currently in use)
@@ -134,6 +141,7 @@ class Identifiers:
 		self.svr_ip = self.json_obj["sbd_details"]["svr_ip"]
 
 		self.admin_id = self.json_obj["admin"]["telegram_id"]
+		self.file_busy = False
 
 	# callback function for the topic subscriber class
 	# used to add contacts to telegram after the telegram node has subscribed to the topic
@@ -258,7 +266,36 @@ class Identifiers:
 		}
 		return json.dumps(device)
 
-	# add new device to the identifiers file
+  # returns the system id for a certain device based on information type
+	# data_type values:
+	#	0: label
+	#	1: number
+	#	2: imei
+	#	3: rb_serial
+	#	4: telegram_id
+	#	5: syncthing_id
+	def get_system_id(self, data_type, data):
+		for obj in self.json_obj["air"] + self.json_obj["ground"]:
+			val = None
+			if data_type == 0 and data == obj["label"]:
+				return obj["id"]
+			elif data_type == 1 and data == obj["number"]:
+				return obj["id"]
+			elif data_type == 2 and data == obj["imei"]:
+				return obj["id"]
+			elif data_type == 3 and data == obj["rb_serial"]:
+				return obj["id"]
+			elif data_type == 4 and data == obj.get("telegram_id", None):
+				return obj["id"]
+			elif data_type == 5 and data == obj.get("syncthing_id", None):
+				return obj["id"]
+
+			if val == data:
+				return obj["id"]
+
+		return 0
+
+  # add new device to the identifiers file
 	def add_new_device(self, device):
 		# get the correct array in the json object
 		edit_list = self.json_obj["air"] if device["is_air"] else self.json_obj["ground"]
@@ -272,6 +309,7 @@ class Identifiers:
 
 		# if no number is available (implies the maximum number of devices has been reached)
 		if selected_id == -1:
+			self.file_busy = False
 			return False
 
 		edit_list.append({
@@ -286,8 +324,8 @@ class Identifiers:
 		# write details to file
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
-
-		self._parse_file()
+    
+		self.parse_file()
 
 		return selected_id
 
@@ -306,6 +344,7 @@ class Identifiers:
 
 		# id does not exist
 		if selected_device is None:
+			self.file_busy = False
 			return False
 
 		# edit the fields specified, keep old info if no new information provided
@@ -319,7 +358,29 @@ class Identifiers:
 		with open(self.json_file, "w") as f:
 			json.dump(self.json_obj, f)
 
-		self._parse_file()
+		self.parse_file()
+
+		return True
+
+	def set_syncthing_id(self, device_id):
+		if self.self_device.syncthing_id is not None:
+			return False
+
+		edit_list = self.json_obj["air"] if self.is_air else self.json_obj["ground"]
+
+		selected_device = None
+
+		for device in edit_list:
+			if device["id"]  == self.self_id:
+				selected_device = device
+				break
+
+		selected_device["syncthing_id"] = device_id
+
+		with open(self.json_file, "w") as f:
+			json.dump(self.json_obj, f)
+
+		self.parse_file()
 
 		return True
 

@@ -23,12 +23,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
+
 	<arg name="is_air" default="False" />
 	<arg name="link_select" default="0" />
 
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
+	</node>
+
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >

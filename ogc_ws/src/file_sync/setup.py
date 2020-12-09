@@ -4,7 +4,7 @@ from distutils.core import setup
 from catkin_pkg.python_setup import generate_distutils_setup
 
 setup_args = generate_distutils_setup(
-     packages=['g2a', 'headers', 'regular', 'waypoint'],
+     packages=['syncthing'],
      package_dir={'': 'scripts'}
 )
 
