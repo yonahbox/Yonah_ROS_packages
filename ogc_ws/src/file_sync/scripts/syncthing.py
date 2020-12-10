@@ -58,7 +58,7 @@ class Syncthing:
 		except FileNotFoundError:
 			rospy.logwarn("Unable to call syncthing")
 
-	def _post(self, url):
+	def _post(self, url, data):
 		try:
 			req.post(self.host + url, headers = {
 				"X-API-Key": self.api_key
@@ -78,10 +78,10 @@ class Syncthing:
 		return result.json()
 
 	def pause(self):
-		self._post("/rest/system/pause")
+		self._post("/rest/system/pause", None)
 
 	def resume(self):
-		self._post("/rest/system/resume")
+		self._post("/rest/system/resume", None)
 
 	def get_event(self, last_id):
 		response = self._get("/rest/events?events=DeviceConnected,DeviceDisconnected&limit=1&since="+str(last_id))
@@ -95,10 +95,13 @@ class Syncthing:
 
 		known_devices = []
 		for device in devices:
-			print(f'{device["name"]} {device["deviceID"]}')
 			known_devices.append(device["deviceID"])
 
 		return known_devices
+
+	def add_device(self, st_id):
+		pass
+		# self._post("/rest/config/devices", )
 
 	# def event_subscribe(self):
 	# 	last_id = 0

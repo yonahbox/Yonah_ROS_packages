@@ -22,7 +22,7 @@ import json
 
 import rospy
 from std_msgs.msg import String, UInt8
-from identifiers.srv import SetDetails, GetId
+from identifiers.srv import SetDetails, GetId, GetSyncthingIds
 
 from syncthing import Syncthing
 
@@ -32,7 +32,6 @@ def st_cb(command, st):
 		st.pause()
 	elif command.data == "resume":
 		st.resume()
-		st.get_devices()
 
 def st_events():
 	connected_pub = rospy.Publisher("ogc/files/connected", UInt8, queue_size=5)
@@ -73,8 +72,12 @@ if __name__ == "__main__":
 		watch_dir = rospy.get_param("~watch_dir")
 
 		rospy.wait_for_service("identifiers/set/st_id")
+		rospy.wait_for_service("identifiers/get/syncthing_ids")
+		rospy.wait_for_service("identifiers/get/id")
 
 		set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+		get_st_ids = rospy.ServiceProxy("identifiers/get/syncthing_ids", GetSyncthingIds)
+		get_system_id = rospy.ServiceProxy("identifiers/get/id", GetId)
 
 		# st = Syncthing(connected_pub, disconnected_pub, error_pub)
 		st = Syncthing(error_pub)
@@ -84,6 +87,19 @@ if __name__ == "__main__":
 		event_thread = Thread(target=st_events)
 		event_thread.daemon = True
 		event_thread.start()
+
+		# list of devices already added to syncthing
+		st_devices = st.get_devices()
+
+		# list of devices in identifers file
+		st_ids = get_st_ids().data.split(" ")[:-1]
+		rospy.logwarn(st_ids)
+
+		for id_n in st_ids:
+			if id_n not in st_devices:
+				sys_id = get_system_id(type=5, data=id_n)
+
+				rospy.logwarn(f"need to add {sys_id.is_air} {sys_id.id} {id_n}")
 
 		inotify_adapter = Inotify()
 		inotify_adapter.add_watch(watch_dir)
