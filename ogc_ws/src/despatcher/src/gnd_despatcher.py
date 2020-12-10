@@ -27,6 +27,7 @@ import rospkg
 from std_msgs.msg import String
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
+from identifiers.srv import GetSelfDetails
 
 # Local
 import regular
@@ -105,10 +106,15 @@ class gnddespatcher():
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
         self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5) # Link to Timeout Module
 
-        # Gnd Identifiers
-        self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
-        self._id = rospy.get_param("~self_id") # Our GCS ID
+        rospy.wait_for_service("identifiers/self/self_id")
+        ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
 
+        # Gnd Identifiers and msg headers (attached to outgoing msgs)
+        self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
+        self._id = ids_get_self_id().data_int # Our GCS ID
+        self._severity = "i" # Outgoing msg severity level
+
+        
         # Msg headers and valid aircrafts to send to
         self._valid_ids = rospy.get_param("~valid_ids")
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)

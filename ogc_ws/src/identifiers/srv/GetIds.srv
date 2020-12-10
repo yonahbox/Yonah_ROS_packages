@@ -1,3 +1,4 @@
 ---
 uint8[] air_ids
 uint8[] ground_ids
+uint8[] ids

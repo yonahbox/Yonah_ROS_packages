@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
+from std_msgs.msg import String
 
 from std_msgs.msg import String
 
@@ -35,6 +36,7 @@ from identifiers.srv import GetId, GetIdResponse
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
+		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin', String, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -48,12 +50,18 @@ class ServiceHandler:
 	def get_telegram_id(self, request):
 		return GetDetailsResponse(data_int=self._ids.get_telegram_id(request.id))
 
+	def get_admin_id(self, request):
+		return GetDetailsResponse(data_int=self._ids.get_admin_id())
+
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
 		if device is not None:
 			return GetAllDetailsResponse(label=device.label, number=device.number, imei=device.imei, rb_serial=device.rb_serial)
 		else:
 			return None
+
+	def get_self_id(self, request):
+		return GetSelfDetailsResponse(data_int=self._ids.get_self_id())
 
 	def get_self_imei(self, request):
 		return GetSelfDetailsResponse(data=self._ids.get_self_imei())
@@ -66,25 +74,26 @@ class ServiceHandler:
 		return GetSBDDetailsResponse(username=username, password=password, svr_hostname=svr_hostname,\
 			svr_ip=svr_ip)
 
-	def get_system_id(self, request):
+	def get_valid_ids(self, request):
+		return GetIdsResponse(ids=self._ids.get_valid_ids())
+
+  def get_system_id(self, request):
 		if request.type == 4:
 			return GetIdResponse(self._ids.get_system_id(request.type, request.data_int))
 		else:
 			return GetIdResponse(self._ids.get_system_id(request.type, request.data))
 
 	def add_new_device(self, request):
-		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to add information to identifiers file")
+		device= self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
 
-		return AddNewDeviceResponse(result)
+		return AddNewDeviceResponse(True)
 
 	def edit_device(self, request):
-		result = self._ids.edit_device(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to edit device in identifiers_file")
+		device= self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
 
-		return EditDeviceResponse(result)
+		return EditDeviceResponse(True)
 
 	def add_telegram_id(self, request):
 		return AddTelegramIdResponse(self._ids.add_telegram_id(request.number, request.telegram_id))
@@ -115,20 +124,23 @@ if __name__ == '__main__':
 	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
 	identifiers_file = rospy.get_param("~identifiers_file")
 	is_air = rospy.get_param("~is_air")
-	self_id = rospy.get_param("~self_id")
-	valid_ids = rospy.get_param("~valid_ids")
+	self_id_file = rospy.get_param("~self_id_file")
+	valid_ids_file = rospy.get_param("~valid_ids_file")
 
-	handler = ServiceHandler(identifiers_file, is_air, self_id, valid_ids)
+	handler = ServiceHandler(identifiers_file, is_air, self_id_file, valid_ids_file)
 
 	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
 	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
 	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
 	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
 	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	admin_id_service = rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
+	valid_ids_servuce = rospy.Service("identifiers/get/valid_ids", GetIds, handler.get_valid_ids)
 	system_id_server = rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
 
 	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 
+	self_id_service = rospy.Service("identifiers/self/self_id", GetSelfDetails, handler.get_self_id)
 	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
 	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
 	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)

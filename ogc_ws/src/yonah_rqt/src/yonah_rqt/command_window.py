@@ -530,10 +530,12 @@ class CommandWindow(QWidget):
         # Somehow get the current label inside it
         if side == "Air":
             for i in self.air_ids:
-                self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
+                self.edit_combo_box.addItem(f"Aircraft {i}")
         else:
             for i in self.ground_ids:
-                self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
+                self.edit_combo_box.addItem(f"GCS {i}")
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         self.check_validity = [0, 0, 0, 0]

@@ -20,10 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
-
+  
 	<arg name="identifiers_file"  default="$(env HOME)/Sync/identifiers.json" />
-	<arg name="ground_ids" default="[3]" />
-	<arg name="self_id" default="4" />
+	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
+	<arg name="self_id_file" default="$(env HOME)/.self_id" />
 	<arg name="is_air" default="True" />
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
 	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
@@ -36,14 +36,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+		<param name="self_id_file" value="$(arg self_id_file)" />
+		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
 	</node>		
 
 	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
@@ -52,11 +51,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
-		<rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="interval_3" value="$(arg interval_3)" />
-		<param name="self_id" value="$(arg self_id)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)" />
 	</node>
 </launch>

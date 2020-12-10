@@ -10,9 +10,9 @@
 
 	<!-- identifiers args -->
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
-	<arg name="air_ids" default="[1]" />
-	<arg name="self_id" default="6" />
 	<arg name="is_air" default="False" />
+	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
+	<arg name="self_id_file" default="$(env HOME)/.self_id" />
 	
 	<!-- tele args -->
 	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
@@ -27,7 +27,6 @@
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
 	<!-- sms_link node -->
@@ -41,15 +40,15 @@
 	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
-        <param name="portID" value="$(arg portID)" />
+		<param name="portID" value="$(arg portID)" />
 	</node>
 
 	<!-- identifiers service node -->
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+		<param name="self_id_file" value="$(arg self_id_file)" />
+		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
 	</node>
 
 	<!-- syncthing node -->
@@ -63,8 +62,6 @@
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
 		<param name="interval_3" value="$(arg interval_3)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 
 	<!-- gnd statustext handler node -->

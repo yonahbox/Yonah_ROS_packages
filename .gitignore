@@ -24,3 +24,4 @@
 # Other auto-generated files
 **/__pycache__
 *.pyc
+*/rqt_log.txt
