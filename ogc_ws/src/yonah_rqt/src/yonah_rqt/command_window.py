@@ -644,7 +644,7 @@ class CommandWindow(QWidget):
     def direct_update(self):
         rospy.logwarn('direct update pressed')
         home_dir = expanduser("~")
-        gndfolder = home_dir + "/Waypoints/"
+        gndfolder = home_dir + "/Sync/Waypoints/"
         gndfiles = listdir(gndfolder)
         mission_msg = []
         for i in gndfiles:

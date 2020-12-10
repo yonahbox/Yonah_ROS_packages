@@ -121,11 +121,8 @@ def tdlib_recv():
 			if event['@type'] == 'updateFile':
 				# Check if the file has finished downloading
 				if event['file']['local']['is_downloading_completed']:
-					print(json.dumps(event))
 					local_path = event['file']['local']['path']
 					file_id = event['file']['id']
-
-					rospy.logwarn(file_locations.get(file_id, "NOT THERE"))
 
 					# Currenly only supports sending waypoint files
 					base_dir = str(Path.home()) + "/Sync/"
@@ -140,7 +137,7 @@ def tdlib_recv():
 					
 					# Move the file
 					os.rename(local_path, final_path)
-					#from_tele_pub.publish(f"File {final_path} Downloaded")
+					from_tele_pub.publish(f"File {final_path} Downloaded")
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
