@@ -87,7 +87,7 @@ class airdespatcher():
 
         # Ground Identifiers. For now we assume only one GCS
         self.ground_id = ids_get_valid_ids().ids[0]
-        self._new_msg_chk = headers.new_msg_chk(self.ground_id)
+        self._new_msg_chk = headers.new_msg_chk([self.ground_id])
 
         # Intervals btwn msgs
         self._interval_1 = rospy.get_param("~interval_1")

@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_air"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
 	<arg name="identifiers_file"  default="$(env HOME)/Sync/identifiers.json" />
