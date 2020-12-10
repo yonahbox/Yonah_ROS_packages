@@ -287,7 +287,7 @@ class CommandWindow(QWidget):
     def go(self):
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
-        self.create_link_message(3, data)
+        self.create_link_message(self.destination_id, data)
 
     def mission_load(self):
         self.PopupMessages.user_input_textbox("Mission Load", "Load mission to Aircraft ", self.destination_id)
@@ -309,7 +309,7 @@ class CommandWindow(QWidget):
         elif self.PopupMessages.input_text[0] == "":
             statustext_message = "ERROR: Please input a valid waypoint file"
         else:
-            data = "waypoint load " + self.PopupMessages.input_text[0]
+            data = "wp load " + self.PopupMessages.input_text[0]
             load_destination_id = self.PopupMessages.input_text[1]
             statustext_message = "Waypoint file: {} uploaded to Aircraft {}".format(data, load_destination_id)
             self.create_link_message(load_destination_id, data)
@@ -329,9 +329,8 @@ class CommandWindow(QWidget):
 
     def sync_resume(self):
         if self.arm_status.get('AC' + str(self.destination_id)) == "ARMED":
-            print("Aircraft is armed, do you still want to resume?")
+            # Pop up window
             data = "syncthing resume"
-        
         self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
