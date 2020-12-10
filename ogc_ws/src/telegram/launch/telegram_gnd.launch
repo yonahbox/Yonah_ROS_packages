@@ -24,7 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="air_ids" default="[2]" />
 	<arg name="self_id" default="3" />
 	<arg name="is_air" default="False" />
-	<arg name="link_select" default="0" />
 
 	<!-- Common OGC args -->
 	<!-- temporary ogc intervals -->
