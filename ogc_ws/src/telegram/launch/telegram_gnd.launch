@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
   
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
@@ -25,7 +25,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
 
 	<arg name="is_air" default="False" />
-	<arg name="link_select" default="0" />
 
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
 
@@ -46,7 +45,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<!-- ground despatcher node -->
 	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
-		<param name="link_select" value="$(arg link_select)" />
 	</node>
 	
 	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">
