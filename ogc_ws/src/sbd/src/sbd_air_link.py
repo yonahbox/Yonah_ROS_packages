@@ -25,7 +25,7 @@ from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 
 # Local
-from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
+from identifiers.srv import GetSelfDetails, GetDetails, CheckSender, GetIds
 import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
@@ -47,6 +47,10 @@ class satcomms(rockBlockProtocol):
         rospy.wait_for_service("identifiers/self/serial")
         rospy.wait_for_service("identifiers/get/serial")
         rospy.wait_for_service("identifiers/check/lazy")
+        rospy.wait_for_service("identifiers/get/valid_ids")
+
+        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
+        _valid_ids = ids_get_valid_ids().ids
 
         self._init_variables()
         self._is_air = 1 # We are an air node!
@@ -54,7 +58,6 @@ class satcomms(rockBlockProtocol):
         # Put the publisher function here
         self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
-        _valid_ids = rospy.get_param("~valid_ids")
         self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
     def _init_variables(self):
