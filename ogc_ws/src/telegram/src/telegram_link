@@ -35,7 +35,7 @@ msg_success = {}
 class TimeoutClass():
 	def __init__(self, uuid):
 		self.uuid = uuid
-		self.time = 3
+		self.time = 5
 		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
 
 	def countdown(self, data):
@@ -127,7 +127,7 @@ def tdlib_recv():
 					# Currenly only supports sending waypoint files
 					base_dir = str(Path.home()) + "/Sync/"
 					try:
-						final_dir = file_locations[file_id]
+						sender, final_dir = file_locations[file_id]
 					except KeyError:
 						continue
 
@@ -137,7 +137,8 @@ def tdlib_recv():
 					
 					# Move the file
 					os.rename(local_path, final_path)
-					from_tele_pub.publish(f"File {final_path} Downloaded")
+					# Acknowledgement
+					td.send_message(sender, final_dir)
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
@@ -151,6 +152,7 @@ def tdlib_recv():
 
 				# Check if sender is from a whitelisted contact
 				is_valid_sender = is_valid_sender_service(0, str(event["message"]["sender_user_id"]))
+				sender = event["message"]["sender_user_id"]
 				if not is_valid_sender.result:
 					continue
 
