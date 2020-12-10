@@ -24,18 +24,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 	<!-- Common OGC args -->
 	<!-- temporary ogc intervals -->
-	<arg name="interval_1" default="200"/>
-	<arg name="interval_2" default="1000"/>
-	<arg name="interval_3" default="2000"/>
+	<arg name="interval_1" default="2"/>
+	<arg name="interval_2" default="10"/>
+	<arg name="interval_3" default="20"/>
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
 	<arg name="is_air" default="False" />
 
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
-
-	<arg name="interval_1" default="2"/>
-	<arg name="interval_2" default="10"/>
-	<arg name="interval_3" default="20"/>
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
