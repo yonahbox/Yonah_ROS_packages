@@ -21,13 +21,31 @@ from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails, AddTelegramId, CheckSender
 from telegram.msg import ContactInfo
 
-import sys
+import timeoutscript
+
 import os
 from pathlib import Path
 from threading import Thread
 import json
 
 from Td import Td
+
+msg_success = {}
+
+class TimeoutClass():
+	def __init__(self, uuid):
+		self.uuid = uuid
+		self.time = 3
+		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
+
+	def countdown(self, data):
+		self.time -= 1
+		if self.time <= 0:
+			self.timer.shutdown()
+			self.pub_to_switcher.publish("Timeout")
+	
+	def persec(self):
+		self.timer = rospy.Timer(rospy.Duration(1), self.countdown)
 
 # callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, args):
@@ -41,17 +59,25 @@ def tdlib_topic_cb(msg, args):
 
   td.create_chat(tele_id.data_int)
 
+	ack = timeoutscript.ack_converter(msg, 1)
+	if ack != None:
+		pub_to_timeout.publish(ack)
 	# args[2] contains the type of message to send
 	#	0: text
 	#	1: file
 	if args[2] == 0:
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
+		if msg.uuid > 0:
+			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
+			msg_success[msg.uuid].persec()
+		rospy.logerr("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.loginfo("SENDING FILE")
+		rospy.logerr("SENDING FILE")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
+	else:
+		rospy.logerr(args)
 
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
@@ -152,6 +178,13 @@ def tdlib_recv():
 						td.download_file(file_id)
 						file_locations[file_id] = final_path
 
+			# if event['@type'] == 'updateMessageSendSucceeded':
+			# 	success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
+			# 	if success_uuid > 0:
+			# 		msg_success[success_uuid].timer.shutdown()
+			# 		msg_success[success_uuid].pub_to_switcher.publish("Success")
+
+
 if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
@@ -182,6 +215,7 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
+		pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 		rospy.Subscriber('ogc/to_telegram/admin', String, tdlib_admin_cb, td)
 		# inform all valid nodes that the link is up
 		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")

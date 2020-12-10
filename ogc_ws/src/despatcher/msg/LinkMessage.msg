@@ -1,2 +1,3 @@
 string data
-uint8 id # Sys ID of recipient
+uint8 id
+uint8 uuid

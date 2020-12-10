@@ -21,9 +21,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="log_output" default="screen"/>
   
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
+
+	<!-- Common OGC args -->
+	<!-- temporary ogc intervals -->
+	<arg name="interval_1" default="200"/>
+	<arg name="interval_2" default="1000"/>
+	<arg name="interval_3" default="2000"/>
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
-
 	<arg name="is_air" default="False" />
 
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
@@ -43,8 +48,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
 	</node>	
 
-	<!-- ground despatcher node -->
-	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
+	<!-- gnd despatcher node -->
+	<!-- @TODO temporary hot fix -->
+	<node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher" 
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+		<param name="interval_1" value="$(arg interval_1)" />
+		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="interval_3" value="$(arg interval_3)" />
+		<param name="self_id" value="$(arg self_id)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
 	</node>
 	
 	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">

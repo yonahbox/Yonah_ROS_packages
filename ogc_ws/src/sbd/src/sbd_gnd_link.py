@@ -36,6 +36,9 @@ from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds, GetS
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
+# TODO remove this
+
+import timeoutscript
 
 class satcommsgnd(satcomms):
 
@@ -145,6 +148,10 @@ class satcommsgnd(satcomms):
         try:
             reply = requests.post(url, data=self._mt_cred)
             rospy.loginfo(reply.text)
+            if reply.text == "OK":
+                ack = timeoutscript.ack_converter(msg, 1)
+                if ack != None:
+                    self.pub_to_timeout.publish(ack)
             return True
         except:
             rospy.logerr("SBD: Cannot contact Rock 7 server")
@@ -180,6 +187,7 @@ class satcommsgnd(satcomms):
         '''Send cmds to all aircraft, telling them to switch between server and RB-2-RB methods'''
         air_ids = self._get_ids().air_ids
         switch_cmd = LinkMessage()
+        switch_cmd.uuid = 0
         for i in air_ids:
             switch_cmd.id = i
             rospy.loginfo("SBD: Sending switch cmd to aircraft " + str(i))
@@ -210,6 +218,10 @@ class satcommsgnd(satcomms):
 
     def send_msg(self, data):
         '''Handle outgoing msgs'''
+        # Acknowledgment message sending
+        ack = timeout.ack_converter(msg, 0)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
         # Try sending through Rock 7 server first. If it fails, fallback to gnd rockBlock
         if not self._server_send_msg(data):
             self.sbd_get_mo_msg(data)

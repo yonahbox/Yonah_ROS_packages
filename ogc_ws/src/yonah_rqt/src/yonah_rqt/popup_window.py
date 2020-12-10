@@ -18,6 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
+import sys
+import timeoutscript
+
 import threading
 from despatcher.msg import LinkMessage
 from PyQt5.QtWidgets import *
@@ -29,13 +32,16 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
+        # self.CommandWindow = CommandWindow()
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
         '''Create a custom Link Message'''
         message = LinkMessage()
+        message.uuid = timeoutscript.increment()
         message.id = destination_id
         message.data = data
+        # rospy.logwarn(message.uuid)
         self.command_publisher.publish(message)
 
     def user_input_textbox(self, title, message, id):
@@ -78,7 +84,6 @@ class PopupMessages(QWidget):
             data = "arm"
             statustext_message = "Aircraft {} ARM command sent".format(self.destination_id)
             self.create_link_message(self.destination_id, data)
-            rospy.logdebug("[AC %d arm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
 
@@ -87,7 +92,6 @@ class PopupMessages(QWidget):
             data = "disarm"
             statustext_message = "Aircraft {} DISARM command sent".format(self.destination_id)
             self.create_link_message(self.destination_id, data)
-            rospy.logdebug("[AC %d disarm_button] %s", self.destination_id, statustext_message)
         else:
             self.message.close()
     

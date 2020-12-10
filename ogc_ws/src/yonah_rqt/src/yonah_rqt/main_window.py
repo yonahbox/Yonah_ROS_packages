@@ -80,6 +80,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
+        rospy.Subscriber("ogc/feedback_to_rqt", LinkMessage, self.feedback_message)
 
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.ondemand_sitl)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
@@ -138,37 +139,20 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(i)))
             self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(i))
         self.tab.setMinimumHeight(500)
-    
-    '''Commented out function for dynamic UI'''
-    # def update_active_aircrafts(self, active_aircrafts):
-    #     self.SummaryWindow.remove(self.SummaryWindow.summary_layout)
-    #     self.SummaryWindow.create_layout(active_aircrafts)
-        # self.CommandWindow.create_combobox(active_aircrafts)
-        # self.WaypointWindow.remove(self.WaypointWindow.progressbar_layout)
-        # self.WaypointWindow.create_layout(active_aircrafts)
-
-        # # remove all the tabs
-        # for i in range(self.tab.count(), 0, -1):
-        #     self.tab.removeTab(i)
-        # # add back all the tabs
-        # for j in active_aircrafts:
-        #     if self.aircrafts_info.get(self.key) == None:
-        #         self.aircrafts_info["AC" + str(j)] = AircraftInfo(j)
-        #         self.checklist_info["AC" + str(j)] = ChecklistWindow(j)
-
-        #         self.aircrafts_info[self.key] = QScrollArea()
-        #         self.aircrafts_info.get(self.key).setMinimumHeight(500)
-        #         self.aircrafts_info.get(self.key).setMinimumWidth(600)
-        #         self.aircrafts_info.get(self.key).setWidgetResizable(True)
-        #         self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(j)))
-            
-        #     self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(j))
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
         self.CommandWindow.combo_box.setCurrentIndex(i - 1)
+
+    def feedback_message(self, data):
+        status = Communicate()
+        status.feedback_message_signal.connect(self.feedback_message_display)
+        status.feedback_message_signal.emit(data.data)
+
+    def feedback_message_display(self, data):
+        self.PopupMessages.warning_message("Command failed to send", data)
 
     ################################
     # Create Signal Slot functions #
@@ -210,9 +194,13 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
+        # data. data list is i 1 1 0 message
+        data_list = data.data.split()
+        msg = " ".join(data_list[4:-1])
+        aircraft_id = data_list[2]
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
-        status.ondemand_signal.emit(data.data, str(data.data[5]))
+        status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
 
     def ondemand_sitl(self, data):
         status = Communicate()
@@ -221,8 +209,8 @@ class MyPlugin(Plugin):
 
     def status_text(self, data):
         status = Communicate()
-        status.ondemand_signal.connect(self.status_text_display)
-        status.ondemand_signal.emit(data)
+        status.status_text_signal.connect(self.status_text_display)
+        status.status_text_signal.emit(data.data)
     
     def syncthing(self, data):
         status = Communicate()
@@ -334,38 +322,39 @@ class MyPlugin(Plugin):
             minutes = str(self.time_in_seconds // 60)
             hours = str(self.time_in_seconds // 3600)
             seconds = str(self.time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
-            if seconds < 10:
+            if int(seconds) < 10:
                 seconds = "0" + seconds
-            if minutes < 10:
+            if int(minutes) < 10:
                 minutes = "0" + minutes
-            if hours < 10:
+            if int(hours) < 10:
                 hours = "0" + hours
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
 
-    def status_text_display(self, status_text, aircraft_id):
-        status = status_text.split()
-        time_stamp = int(status[-1])
+    def status_text_display(self, status_text):
+        status = status_text.split(",")
+        # time_stamp = int(status[-1]) # Timestamp not needed
         message_type = status[0]
         aircraft_id = status[2]
-        info = status[3:-1]
-        display_text = "Aircraft {} [{}]: {}".format(aircraft_id, message_type, text_displayed)
+        
+        info = status[4:-1]
+        display_text = "Aircraft {} : {}".format(aircraft_id, str(info[0]))
         self.SummaryWindow.statustext.appendPlainText(display_text)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(display_text)
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
-        if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
-            data = data.split(" ", 3)
-            if data[0] == "i":
-                status = "INFO"
-            elif data[0] == "w":
-                status = "WARN"
-            elif data[0] == "e":
-                status = "ERROR"
-            elif data[0] == "a":
-                status = "ACKNOWLEDGMENT"
-            data = data[3]
+        # if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
+        #     data = data.split(" ", 3)
+        #     if data[0] == "i":
+        #         status = "INFO"
+        #     elif data[0] == "w":
+        #         status = "WARN"
+        #     elif data[0] == "e":
+        #         status = "ERROR"
+        #     elif data[0] == "a":
+        #         status = "ACKNOWLEDGMENT"
+        #     data = data[3]
         text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)
@@ -472,6 +461,8 @@ class Communicate (QObject):
     status_text_signal = Signal(str)
     ondemand_signal = Signal(str, str)
     syncthing_signal = Signal(str)
+
+    feedback_message_signal = Signal(str)
     # SITL specific signals
     waypoint_list_signal = Signal(list, int, str)
     mode_sitl_signal = Signal(str, str)

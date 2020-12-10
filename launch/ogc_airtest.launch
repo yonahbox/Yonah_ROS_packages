@@ -15,8 +15,6 @@
 	<arg name="interval_3" default="20"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
-
-	<arg name="link_select" default="0" />
 	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints/"/>
 	
 	<!-- identifiers args -->
@@ -33,14 +31,13 @@
 
 	<!-- file sync args -->
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints" />
+	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
 
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
 	<include file="$(find mavros)/launch/node.launch">
 		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
 		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
-
 		<arg name="fcu_url" value="$(arg fcu_url)" />
 		<arg name="gcs_url" value="$(arg gcs_url)" />
 		<arg name="tgt_system" value="$(arg tgt_system)" />
