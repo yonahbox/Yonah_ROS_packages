@@ -55,6 +55,10 @@ def delete_msg(ssh, count):
     ssh.exec_command("gsmctl -S -d %d"%(count))
     return
 
+def button_on(ssh):
+    ssh.exec_command("gpio.sh set DOUT1")
+    return
+
 def blink_button(ssh):
     ssh.exec_command("gpio.sh invert DOUT1")
     return

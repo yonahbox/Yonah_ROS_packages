@@ -65,6 +65,8 @@ class airdespatcher():
         self.pub_to_sbd = rospy.Publisher('ogc/to_sbd', LinkMessage, queue_size = 5) # Link to SBD node
         self.pub_to_rff = rospy.Publisher('ogc/to_rff', String, queue_size = 5)
 
+        self.link_select = TELE
+
         # Msg handlers
         self._msg = "" # Stores outgoing msg Air-to-Ground message
         self._recv_msg = list() # Stores incoming Ground-to-Air message in list form
@@ -100,6 +102,7 @@ class airdespatcher():
         # Mission params
         self.hop = False
         self.missionlist = []
+        self.current_mission = -1
         self.wpfolder = rospy.get_param('~waypoint_folder', '/home/ubuntu/Sync/Waypoints/')
 
         # Wait for MAVROS services
