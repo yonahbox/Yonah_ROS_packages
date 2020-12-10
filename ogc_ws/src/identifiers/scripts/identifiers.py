@@ -118,7 +118,7 @@ class Identifiers:
 		# add all whitelisted devices into the whitelist and required information to their respective whitelists
 		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
 			if obj["id"] in self.valid_ids:
-				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None)))
+				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj["telegram_id"], obj.get("syncthing_id", None)))
 				self.whitelist_nums.append(obj["number"])
 				self.whitelist_rb_serial.append(obj["rb_serial"])
 				if "telegram_id" in obj.keys():
@@ -127,7 +127,7 @@ class Identifiers:
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
-				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None))
+				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj["telegram_id"], obj.get("syncthing_id", None))
 				break
 
 		# for standalone numbers (not currently in use)
@@ -154,7 +154,7 @@ class Identifiers:
 		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 		for dev in device_list:
 			if dev["id"] == id_n:
-				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev.get("telegram_id", None))
+				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev["telegram_id"])
 
 		return None
 
@@ -270,7 +270,7 @@ class Identifiers:
 				return obj["id"]
 			elif data_type == 3 and data == obj["rb_serial"]:
 				return obj["id"]
-			elif data_type == 4 and data == obj.get("telegram_id", None):
+			elif data_type == 4 and data == obj["telegram_id"]:
 				return obj["id"]
 			elif data_type == 5 and data == obj.get("syncthing_id", None):
 				return obj["id"]
