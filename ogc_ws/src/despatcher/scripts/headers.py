@@ -73,7 +73,8 @@ def attach_headers(prefixes, suffixes, msg):
     If prefixes/suffixes are invalid, return None
     '''
     if len(prefixes) != PREFIX_COUNT or len(suffixes) != SUFFIX_COUNT:
-        return None
+        rospy.logerr("Prefix/suffix incorrect")
+        return ""
     prefix_string = " ".join(str(i) for i in prefixes)
     suffix_string = " ".join(str(i) for i in suffixes)
     return prefix_string + " " + msg + " " + suffix_string

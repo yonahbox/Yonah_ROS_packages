@@ -64,7 +64,7 @@ class aircraft():
 
     def _prep_heartbeat(self):
         '''Prepare a heartbeat msg'''
-        prefixes = ["h", 0, self._id]
+        prefixes = ["h", 0, self._id, 0]
         return headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
     
     def _send_heartbeat_tele(self, data):

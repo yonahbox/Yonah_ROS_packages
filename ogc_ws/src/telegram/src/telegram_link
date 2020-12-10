@@ -52,10 +52,9 @@ def tdlib_topic_cb(msg, args):
 	td = args[0]					# instance of Td class
 	id_service = args[1]			# service proxy for identifers service to get the telegram user id
 	tele_id = id_service(msg.id)	# get the telegram user id to send the message to
-
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
-	return
+		return
 
 	td.create_chat(tele_id.data_int)
 
