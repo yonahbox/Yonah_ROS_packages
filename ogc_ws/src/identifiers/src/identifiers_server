@@ -77,7 +77,7 @@ class ServiceHandler:
 	def get_valid_ids(self, request):
 		return GetIdsResponse(ids=self._ids.get_valid_ids())
 
-  def get_system_id(self, request):
+	def get_system_id(self, request):
 		if request.type == 4:
 			return GetIdResponse(self._ids.get_system_id(request.type, request.data_int))
 		else:

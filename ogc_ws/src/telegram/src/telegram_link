@@ -37,9 +37,9 @@ def tdlib_topic_cb(msg, args):
 
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
-    return
+	return
 
-  td.create_chat(tele_id.data_int)
+	td.create_chat(tele_id.data_int)
 
 	# args[2] contains the type of message to send
 	#	0: text

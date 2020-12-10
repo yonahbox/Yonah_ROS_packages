@@ -27,7 +27,7 @@ import rospkg
 from std_msgs.msg import String
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
-from identifiers.srv import GetSelfDetails
+from identifiers.srv import GetSelfDetails, GetIds
 
 # Local
 import regular
@@ -43,7 +43,7 @@ class aircraft():
     
     def __init__(self, air_id):
         self._air_id = air_id
-        self._valid_ids = rospy.get_param("~valid_ids")
+        # self._valid_ids = rospy.get_param("~valid_ids")
         self._link = TELE
         self._tele_interval = rospy.get_param("~interval_1")
         self._sms_interval = rospy.get_param("~interval_2")
@@ -51,9 +51,19 @@ class aircraft():
         self._pub_to_sms = rospy.Publisher('ogc/to_sms', LinkMessage, queue_size = 5)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self._send_heartbeat_tele)
 
+        rospy.wait_for_service("identifiers/get/valid_ids")
+        rospy.wait_for_service("identifiers/self/self_id")
+
+        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
+        ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+
+        self._valid_ids = ids_get_valid_ids().ids
+        self._id = ids_get_self_id().data_int
+
+
     def _prep_heartbeat(self):
         '''Prepare a heartbeat msg'''
-        prefixes = ["h", 0, rospy.get_param("~self_id")]
+        prefixes = ["h", 0, self._id]
         return headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
     
     def _send_heartbeat_tele(self, data):
@@ -103,7 +113,9 @@ class gnddespatcher():
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
 
         rospy.wait_for_service("identifiers/self/self_id")
+        rospy.wait_for_service("identifiers/get/valid_ids")
         ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
 
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
@@ -112,7 +124,8 @@ class gnddespatcher():
 
         
         # Msg headers and valid aircrafts to send to
-        self._valid_ids = rospy.get_param("~valid_ids")
+        # self._valid_ids = rospy.get_param("~valid_ids")
+        self._valid_ids = ids_get_valid_ids().ids
         self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
         self._aircrafts = dict()
         for i in self._valid_ids:
