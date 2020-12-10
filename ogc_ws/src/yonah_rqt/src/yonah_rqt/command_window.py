@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import time
+import sys
+import timeoutscript
 
 from functools import partial
 from os import listdir
@@ -254,6 +256,7 @@ class CommandWindow(QWidget):
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
         message.id = destination_id
+        message.uuid = timeoutscript.increment()
         message.data = data
         self.pub_to_despatcher.publish(message)
 
@@ -284,7 +287,7 @@ class CommandWindow(QWidget):
     def go(self):
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
-        self.create_link_message(self.destination_id, data)
+        self.create_link_message(3, data)
 
     def mission_load(self):
         self.PopupMessages.user_input_textbox("Mission Load", "Load mission to Aircraft ", self.destination_id)
@@ -325,10 +328,15 @@ class CommandWindow(QWidget):
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
     def sync_resume(self):
-        pass
+        if self.arm_status.get('AC' + str(self.destination_id)) == "ARMED":
+            print("Aircraft is armed, do you still want to resume?")
+            data = "syncthing resume"
+        
+        self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
-        pass
+        data = "syncthing pause"
+        self.create_link_message(self.destination_id, data)
 
     def change_identifiers(self):
         if self.identifiers_error == 1:
@@ -646,6 +654,7 @@ class CommandWindow(QWidget):
             update_time = g.readlines()[-1].rstrip().split()[-1]
             mission_msg.append(str(i) + " " + str(update_time))
         update = LinkMessage()
+        update.uuid = timeout.increment()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
         time.sleep(1)

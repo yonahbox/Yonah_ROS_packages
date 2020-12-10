@@ -30,6 +30,8 @@ from identifiers.srv import CheckSender, GetDetails
 
 # Local
 import RuTOS
+import sys
+import timeoutscript
 
 
 class SMSrx():
@@ -44,7 +46,7 @@ class SMSrx():
         self._ip = rospy.get_param("~router_ip","192.168.1.1") # IP Adress of onboard router
         self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self._msg = "" # Actual incoming message, located on 5th line of msglist
-        self.interval = 0.5 # Time interval between each check of the router for incoming msgs
+        self.interval = 1 # Time interval between each check of the router for incoming msgs
 
         # Initialise SSH
         try:
@@ -58,7 +60,10 @@ class SMSrx():
         self.pub_to_despatcher = rospy.Publisher('ogc/from_sms', String, queue_size = 5)
         
         # Publish to switcher
-        self.pub_to_switcher = rospy.Publisher('ogc/to_switcher', String, queue_size=5)
+        self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_sms', String, queue_size=5)
+
+        # Publish to timeout module
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 
         # identifiers work
         rospy.wait_for_service("identifiers/check/proper")
@@ -101,12 +106,21 @@ class SMSrx():
             return
 
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
+        
+        # Send acknowledgment to timeout module
+        ack = timeoutscript.ack_converter(data, 0)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
+
         if "Timeout\n" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
         elif "Connection lost" in sendstatus:
             rospy.logerr("Connection to router lost!")
         else:
+            ack = timeoutscript.ack_converter(data, 1)
+            if ack != None:
+                self.pub_to_timeout.publish(ack)
             self.pub_to_switcher.publish("Success")
     
     def recv_sms(self, data):

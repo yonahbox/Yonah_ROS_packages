@@ -30,6 +30,7 @@ import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
+import timeoutscript
 class local_mo_buffer():
     '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
@@ -49,10 +50,12 @@ class satcomms(rockBlockProtocol):
 
         self._init_variables()
         self._is_air = 1 # We are an air node!
-
+        
+        # Put the publisher function here
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
         _valid_ids = rospy.get_param("~valid_ids")
-        self._new_switch_cmd = headers.new_msg_chk(max(_valid_ids))
+        self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
@@ -138,6 +141,9 @@ class satcomms(rockBlockProtocol):
         self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsn, momsg):
+        ack = timeoutscript.ack_converter(msg, 1)
+        if ack != None:
+            self.pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)
         self._msg_send_success = 1
 
@@ -151,14 +157,14 @@ class satcomms(rockBlockProtocol):
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
         if "sbd switch 0" in data:
-            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
             if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 0
                 rospy.loginfo("SBD: Switching to RB-2-RB comms")
                 return True
         if "sbd switch 1" in data:
-            _, _, sysid, switch_cmd_time, _ = headers.split_headers(data)
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
             if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 1
@@ -170,12 +176,12 @@ class satcomms(rockBlockProtocol):
     # Rockblock MO/MT msg calls
     ############################
     
-    def sbd_get_mo_msg(self, data):
+    def sbd_get_mo_msg(self, data): # Add here
         '''
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        incoming_msgtype,_,_,_,_ = headers.split_headers(data.data)
+        incoming_msgtype,_,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.loginfo("SBD: Reject incoming msg " + data.data)

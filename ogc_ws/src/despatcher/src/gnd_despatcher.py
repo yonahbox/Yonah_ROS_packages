@@ -32,6 +32,7 @@ from identifiers.srv import GetSelfDetails, GetIds
 # Local
 import regular
 import headers
+import timeoutscript
 from g2a import recognised_commands
 
 TELE = 0
@@ -63,11 +64,16 @@ class aircraft():
 
     def _prep_heartbeat(self):
         '''Prepare a heartbeat msg'''
+<<<<<<< HEAD
         prefixes = ["h", 0, self._id]
+=======
+        prefixes = ["h", 0, rospy.get_param("~self_id"), 0]
+>>>>>>> d80831413a4a2821792382b62c9fb22c49c66172
         return headers.attach_headers(prefixes, [rospy.get_rostime().secs], "HB")
     
     def _send_heartbeat_tele(self, data):
         msg = LinkMessage()
+        msg.uuid = 0
         msg.data = self._prep_heartbeat()
         msg.id = self._air_id
         self._pub_to_telegram.publish(msg)
@@ -75,6 +81,7 @@ class aircraft():
 
     def _send_heartbeat_sms(self, data):
         msg = LinkMessage()
+        msg.uuid = 0
         msg.data = self._prep_heartbeat()
         msg.id = self._air_id
         self._pub_to_sms.publish(msg)
@@ -111,6 +118,7 @@ class gnddespatcher():
         self.pub_to_rqt_ondemand = rospy.Publisher('ogc/from_despatcher/ondemand', String, queue_size=5)
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5) # Link to Timeout Module
 
         rospy.wait_for_service("identifiers/self/self_id")
         rospy.wait_for_service("identifiers/get/valid_ids")
@@ -124,9 +132,8 @@ class gnddespatcher():
 
         
         # Msg headers and valid aircrafts to send to
-        # self._valid_ids = rospy.get_param("~valid_ids")
         self._valid_ids = ids_get_valid_ids().ids
-        self._new_msg_chk = headers.new_msg_chk(max(self._valid_ids))
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._aircrafts = dict()
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
@@ -134,33 +141,39 @@ class gnddespatcher():
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################
-    
+
     def handle_outgoing_msgs(self, data):
         '''Check that outgoing G2A messages are valid before forwarding them to the links'''
-        dummy_prefixes = ["i", 1, data.id] # Dummy prefixes for publishing local msgs to on_demand topic
+        dummy_prefixes = ["i", 1, data.id, 0] # Dummy prefixes for publishing local msgs to on_demand topic
+        feedback_to_rqt = ""
         if data.data.split()[0] not in recognised_commands:
-            self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid command: " + data.data))
+            feedback_to_rqt = "Invalid command: " + data.data
         else:
             msg = LinkMessage()
+            msg.uuid = data.uuid
             msg.id = data.id
             # Add msg headers
-            prefixes = ["i", self._is_air, self._id]
+            prefixes = ["i", self._is_air, self._id, data.uuid]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
-            link = self._aircrafts[data.id].link_status()
-            if link == TELE:
-                self.pub_to_telegram.publish(msg)
-            elif link == SMS:
-                self.pub_to_sms.publish(msg)
-            elif link == SBD:
-                self.pub_to_sbd.publish(msg)
-            else:
-                rospy.logerr("Error: Invalid Link")
-                self.pub_to_rqt_ondemand.publish(\
-                    headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Invalid Link: " + data.data))
-                return
+            try:
+                link = self._aircrafts[data.id].link_status()
+                if link == TELE:
+                    self.pub_to_telegram.publish(msg)
+                    feedback_to_rqt = "Command sent to Tele: " + data.data
+                elif link == SMS:
+                    self.pub_to_sms.publish(msg)
+                    feedback_to_rqt = "Command sent to SMS: " + data.data
+                elif link == SBD:
+                    self.pub_to_sbd.publish(msg)
+                    feedback_to_rqt = "Command sent to SBD: " + data.data
+                else:
+                    rospy.logerr("Error: Invalid Link")
+                    feedback_to_rqt = "Invalid Link. Command " + data.data + " not sent"
+            except KeyError:
+                rospy.logerr("Error: Invalid Aircraft ID")
+                feedback_to_rqt = "Invalid Aircraft ID. Command " + data.data + " not sent"
             self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "Command sent: " + data.data))
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], feedback_to_rqt))
 
     ###########################################
     # Handle Air-to-Ground (A2G) messages
@@ -170,23 +183,35 @@ class gnddespatcher():
         '''Check for incoming A2G messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
             # Handle msg prefixes
-            msgtype, devicetype, sysid, timestamp, entries \
+            msgtype, devicetype, sysid, uuid, timestamp, entries \
                 = headers.split_headers(data.data)
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
                 # Check if it is new msg
                 return
-            if regular.is_regular(msgtype, len(entries)):
+            # Check if it is regular msg. This requires a list of the msg with all its headers attached
+            data_list = data.data.split() # Msg + Headers, split into a list
+            if regular.is_regular(msgtype, len(data_list)):
                 # Check if it is regular payload
-                msg = regular.convert_to_rosmsg(entries)
-                self.rqt_recovery_log(entries, sysid)
+                msg = regular.convert_to_rosmsg(data_list)
+                self.rqt_recovery_log(data_list, sysid)
                 self.pub_to_rqt_regular.publish(msg)
             else:
+                # Check if the incoming message is an acknowledgment message
+                if uuid != 0:
+                    ack_msg = LinkMessage()
+                    ack_msg.uuid = uuid
+                    ack_msg.data = ""
+                    ack = timeoutscript.ack_converter(ack_msg, 2)
+                    if ack != None:
+                        self.pub_to_timeout.publish(ack)
+                    return 0 # Prevent the message to get sent through ondemand
                 if msgtype == 's':
                     # Check if it is statustext
                     self.pub_to_statustext.publish(data.data)
                 elif msgtype == 'm':
                     # Check if it is mission update message
                     reqFile = LinkMessage()
+                    reqFile.uuid = 0
                     reqFile.id = sysid
                     if entries == ["No", "update", "required"]:
                         return
@@ -212,14 +237,14 @@ class gnddespatcher():
             self._aircrafts[id].switch_link(link)
 
             # Notify RQT of the link switch
-            dummy_prefixes = ["i", 1, id] # Dummy prefixes for publishing local msgs to on_demand topic
+            dummy_prefixes = ["i", 1, id, 0] # Dummy prefixes for publishing local msgs to on_demand topic
             self.pub_to_rqt_ondemand.publish(\
-                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + link))
+                headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + str(link)))
 
         except:
             rospy.logerr("Switcher: Invalid msg")
 
-    def rqt_recovery_log(self, entries, aircraft_id):
+    def rqt_recovery_log(self, reg_payload_list, aircraft_id):
         filename = "rqt_log.txt"
         path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
         with open(path, 'r') as lines:
@@ -231,7 +256,7 @@ class gnddespatcher():
             log.close()
         with open(path, 'r') as lines:
             data = lines.readlines()
-        data[aircraft_id - 1] = " ".join(entries) +"\n"
+        data[aircraft_id - 1] = " ".join(reg_payload_list) +"\n"
         with open(path, 'w') as files:
             files.writelines(data)
             files.close()

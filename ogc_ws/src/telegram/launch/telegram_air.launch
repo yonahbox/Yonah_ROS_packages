@@ -23,7 +23,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="identifiers_file"  default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
-  
 	<arg name="is_air" default="True" />
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
 	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />

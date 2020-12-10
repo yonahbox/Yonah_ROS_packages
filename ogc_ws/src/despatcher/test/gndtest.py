@@ -60,6 +60,7 @@ def display_statustext(data):
 def send_msgs(data):
     '''Send messages from user input (in terminal) to screen'''
     cmd = LinkMessage()
+    cmd.uuid = 0
     cmd.id = 1 # Temp ID
     cmd.data = input()
     pub_to_despatcher.publish(cmd)

@@ -95,24 +95,24 @@ def get_conntype(ssh):
 
 def get_rssi(ssh):
     '''Get RSSI'''
-    _, stdout, _ = ssh.exec_command("gpsctl -q")
-    rssi = int(stdout.readlines()[0])
+    _, stdout, _ = ssh.exec_command("gsmctl -q")
+    rssi = int((stdout.readlines()[0].rstrip()))
     return rssi
 
 def get_rsrp(ssh):
     '''Get RSRP'''
-    _, stdout, _ = ssh.exec_command("gpsctl -W")
-    rsrp = int(stdout.readlines()[0])
+    _, stdout, _ = ssh.exec_command("gsmctl -W")
+    rsrp = int(stdout.readlines()[0].rstrip())
     return rsrp
 
 def get_rsrq(ssh):
     '''Get RSRQ'''
-    _, stdout, _ = ssh.exec_command("gpsctl -M")
-    rsrq = int(stdout.readlines()[0])
+    _, stdout, _ = ssh.exec_command("gsmctl -M")
+    rsrq = float(stdout.readlines()[0].rstrip())
     return rsrq
 
 def get_sinr(ssh):
     '''Get SINR'''
-    _, stdout, _ = ssh.exec_command("gpsctl -Z")
-    sinr = int(stdout.readlines()[0])
+    _, stdout, _ = ssh.exec_command("gsmctl -Z")
+    sinr = float(stdout.readlines()[0].rstrip())
     return sinr

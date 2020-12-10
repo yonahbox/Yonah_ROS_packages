@@ -21,26 +21,24 @@ headers.py: Handle msg headers
 
 import rospy
 
-PREFIX_COUNT = 3
+PREFIX_COUNT = 4
 SUFFIX_COUNT = 1
 
 class new_msg_chk():
     '''Check whether incoming msgs are new'''
-    def __init__(self, max_valid_id):
-        self._prev_transmit_time = list() # Transmit times of previous incoming msgs
-        i = 0
-        while i < max_valid_id:
-            self._prev_transmit_time.append(rospy.get_rostime().secs)
-            i = i + 1
+    def __init__(self, valid_id_list):
+        self._prev_transmit_time = dict() # Transmit times of previous incoming msgs
+        for i in valid_id_list:
+            self._prev_transmit_time[i] = rospy.get_rostime().secs
     
     def is_new_msg(self, timestamp, sysid):
-        '''Return true is incoming msg is a new msg from sysid. sysid assumed to start from 1'''
-        if sysid > len(self._prev_transmit_time):
+        '''Return true is incoming msg is a new msg from sysid'''
+        if not sysid in self._prev_transmit_time:
             return False
-        if timestamp < self._prev_transmit_time[sysid - 1]:
+        if timestamp < self._prev_transmit_time[sysid]:
             return False
         else:
-            self._prev_transmit_time[sysid - 1] = timestamp
+            self._prev_transmit_time[sysid] = timestamp
             return True
 
 ######################
@@ -58,8 +56,9 @@ def split_headers(msg):
         msgtype = str(msglist[0])
         devicetype = int(msglist[1])
         sysid = int(msglist[2])
+        uuid = int(msglist[3])
         timestamp = int(msglist[-1])
-        return msgtype, devicetype, sysid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
+        return msgtype, devicetype, sysid, uuid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
     except:
         return None
     
