@@ -127,7 +127,7 @@ def tdlib_recv():
 					# Currenly only supports sending waypoint files
 					base_dir = str(Path.home()) + "/Sync/"
 					try:
-						sender, final_dir = file_locations[file_id]
+						final_dir = file_locations[file_id]
 					except KeyError:
 						continue
 
