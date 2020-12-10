@@ -197,6 +197,7 @@ class gnddespatcher():
                     ack_msg = LinkMessage()
                     ack_msg.uuid = uuid
                     ack_msg.data = ""
+                    ack_msg.id = 1
                     ack = timeoutscript.ack_converter(ack_msg, 2)
                     if ack != None:
                         self.pub_to_timeout.publish(ack)

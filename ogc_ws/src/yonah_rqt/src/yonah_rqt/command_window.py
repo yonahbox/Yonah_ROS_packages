@@ -654,7 +654,7 @@ class CommandWindow(QWidget):
             update_time = g.readlines()[-1].rstrip().split()[-1]
             mission_msg.append(str(i) + " " + str(update_time))
         update = LinkMessage()
-        update.uuid = timeout.increment()
+        update.uuid = timeoutscript.increment()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
         time.sleep(1)
