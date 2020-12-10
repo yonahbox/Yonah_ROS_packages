@@ -135,16 +135,6 @@ class Identifiers:
 
 		self.admin_id = self.json_obj["admin"]["telegram_id"]
 
-	# callback function for the topic subscriber class
-	# used to add contacts to telegram after the telegram node has subscribed to the topic
-	def request_telegram_id(self):
-		# rospy.loginfo("Telegram link has subscribed to contact topic")
-		print("Telegram link has subscribed to contact topic")
-		# loop through list of unknown devices
-		while self.telegram_unknown_ids:
-			contact = self.telegram_unknown_ids.pop(0)		# removed item from list as it wont be needed anymore
-			self.update_telegram_id(contact[0], contact[1])	# request telegram to add the information to a new contact
-
 	# return the device associated with the id from whitelisted devices
 	def get_device(self, id_n):
 		for device in self.whitelist:
@@ -173,12 +163,7 @@ class Identifiers:
 		if device is None:
 			return None
 		
-		# check if device has the telegram id available, if not available, try to add it
 		telegram_id = device.telegram_id
-		if telegram_id is None:
-			self.update_telegram_id(device.label, device.number)
-			return None
-
 		return telegram_id
 
 	# return the telegram_id of the admin account
