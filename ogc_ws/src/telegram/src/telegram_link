@@ -37,7 +37,9 @@ def tdlib_topic_cb(msg, args):
 
 	if tele_id.data_int == 0:
 		rospy.logwarn("Invalid user id")
-		return
+    return
+
+  td.create_chat(tele_id.data_int)
 
 	# args[2] contains the type of message to send
 	#	0: text
@@ -61,6 +63,11 @@ def tdlib_add_contact_cb(contact, td):
 	else:
 		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
 	td.get_contacts()									# refresh contacts to get the user ids
+
+def tdlib_admin_cb(msg, td):
+	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
+	admin_id = get_admin_id()
+	td.send_message(admin_id.data_int, msg.data)
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -149,12 +156,12 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")			# Location of the telegram account, created by the tele_auth script
-		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
 
 		# wait for required services to be available before continuing
 		rospy.wait_for_service("identifiers/get/telegram_id")
 		rospy.wait_for_service("identifiers/add/telegram_id")
 		rospy.wait_for_service("identifiers/check/proper")
+		rospy.wait_for_service("identifiers/get/admin_id")
 
 		# Service to get the telegram user id from identifiers
 		identifiers_get_telegram_id = rospy.ServiceProxy("identifiers/get/telegram_id", GetDetails)
@@ -175,7 +182,7 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
-
+		rospy.Subscriber('ogc/to_telegram/admin', String, tdlib_admin_cb, td)
 		# inform all valid nodes that the link is up
 		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 
