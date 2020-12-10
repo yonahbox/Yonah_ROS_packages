@@ -15,7 +15,7 @@
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
 	
 	<!-- tele args -->
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
