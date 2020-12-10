@@ -251,7 +251,7 @@ def mission_server_update(self):
 	run.update_files()
 	run.close()
 
-def handle_syncthing(self):
+def handle_syncthing(self, uuid):
 	if self._recv_msg[0] == 'syncthing' and len(self._recv_msg) == 2:
 		if self._recv_msg[1] in ["pause", "resume"]:
 			self.syncthing_control.publish(self._recv_msg[1])
