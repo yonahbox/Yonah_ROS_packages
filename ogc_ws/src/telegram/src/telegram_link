@@ -224,10 +224,10 @@ if __name__ == '__main__':
 
 	except rospy.ROSInterruptException:
 		sys.stdout.flush()
-		# td.destroy()
+		td.destroy()
 		exit()
 	except KeyboardInterrupt:
 		sys.stdout.flush()
-		# td.destroy()
+		td.destroy()
 		exit()
 	
