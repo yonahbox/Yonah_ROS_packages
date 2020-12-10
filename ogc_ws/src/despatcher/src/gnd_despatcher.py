@@ -102,9 +102,6 @@ class gnddespatcher():
         self.pub_to_statustext = rospy.Publisher('ogc/from_despatcher/statustext', String, queue_size=5)
         self.file_to_telegram = rospy.Publisher('ogc/to_telegram/file', LinkMessage, queue_size = 5) # Link to Telegram node
 
-        # Link switching
-        self.link_select = rospy.get_param("~link_select") # 0 = Tele, 1 = SMS, 2 = SBD
-
         rospy.wait_for_service("identifiers/self/self_id")
         ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
 
