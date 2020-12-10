@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_air"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
 
@@ -26,9 +26,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
   
 	<arg name="is_air" default="True" />
-	<arg name="link_select" default="0" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
-
 	<arg name="watch_dir" default="$(env HOME)/Sync" />
 	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
 
@@ -56,7 +53,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
-		<param name="link_select" value="$(arg link_select)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)" />
 	</node>
 </launch>
