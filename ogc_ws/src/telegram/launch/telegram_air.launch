@@ -17,21 +17,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_air"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 	<arg name="log_output" default="screen"/>
 
 
 	<arg name="identifiers_file"  default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
 	<arg name="self_id_file" default="$(env HOME)/.self_id" />
-	<!-- <arg name="ground_ids" default="[1]" /> -->
-	<!-- <arg name="self_id" default="2" /> -->
+  
 	<arg name="is_air" default="True" />
-	<arg name="link_select" default="0" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
+	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints" />
+
 
 	<!--Various regular payload intervals in seconds-->
-    <arg name="interval_1" default="10"/>
+    <arg name="interval_1" default="20"/>
     <arg name="interval_2" default="20"/>
 
 	<node pkg="telegram" type="telegram_link" name="telegram_link" respawn="true" respawn_delay="3" output="$(arg log_output)" >
@@ -45,11 +45,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
 	</node>		
 
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
+	</node>
+
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
-		<param name="link_select" value="$(arg link_select)" />
-		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
+		<param name="waypoint_folder" value="$(arg waypoint_folder)" />
 	</node>
 </launch>

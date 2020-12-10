@@ -57,9 +57,12 @@ def delete_msg(ssh, count):
 
 def blink_button(ssh):
     ssh.exec_command("gpio.sh invert DOUT1")
-
-def button_on(ssh):
+    return
+    
+def button_off(ssh):
     ssh.exec_command("gpio.sh set DOUT1")
+    ssh.exec_command("gpio.sh invert DOUT1")
+    return
 
 def check_button(ssh):
     _, stdout, _ = ssh.exec_command("gpio.sh get DIN1")
@@ -83,3 +86,33 @@ def get_gps_speed(ssh):
     _, stdout, _ = ssh.exec_command("gpsctl -v")
     speed = stdout.readlines()
     return speed
+
+def get_conntype(ssh):
+    '''Get type of connection'''
+    _, stdout, _ = ssh.exec_command("gpsctl -t")
+    conntype = stdout.readlines()[0]
+    return conntype
+
+def get_rssi(ssh):
+    '''Get RSSI'''
+    _, stdout, _ = ssh.exec_command("gpsctl -q")
+    rssi = int(stdout.readlines()[0])
+    return rssi
+
+def get_rsrp(ssh):
+    '''Get RSRP'''
+    _, stdout, _ = ssh.exec_command("gpsctl -W")
+    rsrp = int(stdout.readlines()[0])
+    return rsrp
+
+def get_rsrq(ssh):
+    '''Get RSRQ'''
+    _, stdout, _ = ssh.exec_command("gpsctl -M")
+    rsrq = int(stdout.readlines()[0])
+    return rsrq
+
+def get_sinr(ssh):
+    '''Get SINR'''
+    _, stdout, _ = ssh.exec_command("gpsctl -Z")
+    sinr = int(stdout.readlines()[0])
+    return sinr
