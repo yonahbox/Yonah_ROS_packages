@@ -24,6 +24,7 @@ import RuTOS
 from std_msgs.msg import String
 
 import headers
+from identifiers.srv import GetIds
 
 TELE = 0
 SMS = 1
@@ -68,7 +69,9 @@ class switcher():
     def __init__(self):
         rospy.init_node('switcher', anonymous=False)
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
-        self._valid_ids = rospy.get_param("~valid_ids")
+        rospy.wait_for_service("identifiers/get/valid_ids")
+        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
+        self._valid_ids = ids_get_valid_ids().ids
         self._username = rospy.get_param("~router_username","root")
         self._ip = rospy.get_param("~router_ip","192.168.1.1")
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
