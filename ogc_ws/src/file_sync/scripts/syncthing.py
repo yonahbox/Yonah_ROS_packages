@@ -60,10 +60,13 @@ class Syncthing:
 
 	def _post(self, url, data):
 		try:
-			req.post(self.host + url, headers = {
+			result = req.post(self.host + url, headers = {
 				"X-API-Key": self.api_key
-			})
+			}, data=json.dumps(data))
+			# print(result)
+			# print(result.text)
 		except req.exceptions.RequestException:
+			print("POST ERROR")
 			self._error_pub.publish("syncthing not running")
 
 	def _get(self, url):
@@ -99,39 +102,16 @@ class Syncthing:
 
 		return known_devices
 
-	def add_device(self, st_id):
-		pass
-		# self._post("/rest/config/devices", )
+	# add device to syncthing and add it to the default folder as well
+	def add_device(self, st_id, label):
+		self._post("/rest/config/devices", {
+			"deviceID": st_id,
+			"name": label
+		})
 
-	# def event_subscribe(self):
-	# 	last_id = 0
-	# 	while True:
-	# 		rospy.loginfo("MAKING REQUEST")
-	# 		response = self._get("/rest/events?events=DeviceConnected,DeviceDisconnected&limit=1&since="+str(last_id))
-			
-	# 		if response is None:
-	# 			return
+		folder = self._get("/rest/config/folders/default")
+		folder["devices"].append({
+			"deviceID": st_id
+		})
 
-	# 		print(response)
-
-	# 		print(json.dumps(response, sort_keys=True, indent=4))
-	# 		if len(response) == 0:
-	# 			continue
-
-	# 		last_id = response[0]["id"]
-	# 		device_id = response[0]["data"]["id"]
-
-	# 		id_request = GetIdRequest()
-	# 		id_request.type = 5
-	# 		id_request.data = device_id
-
-	# 		system_id = self.get_device(id_request)
-
-	# 		if response[0]["type"] == "DeviceConnected":
-	# 			self._connected_pub.publish(system_id.id)
-	# 			# self._connected_pub_str.publish(device_id) if system_id.id == 0 else self._connected_pub.publish(system_id.id)
-	# 		elif response[0]["type"] == "DeviceDisconnected":
-	# 			self._disconnected_pub.publish(system_id.id)
-	# 			# self._disconnected_pub_str.publish(device_id) if system_id.id == 0 else self._disconnected_pub.publish(system_id.id)
-
-	
+		self._post("/rest/config/folders", folder)

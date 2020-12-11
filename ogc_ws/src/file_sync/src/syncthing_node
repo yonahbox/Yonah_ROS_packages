@@ -22,7 +22,7 @@ import json
 
 import rospy
 from std_msgs.msg import String, UInt8
-from identifiers.srv import SetDetails, GetId, GetSyncthingIds
+from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
 
 from syncthing import Syncthing
 
@@ -38,7 +38,7 @@ def st_events():
 	disconnected_pub = rospy.Publisher("ogc/files/disconnected", UInt8, queue_size=5)
 	
 	rospy.wait_for_service("identifiers/get/id")
-	get_device = rospy.ServiceProxy("identifiers/get/id", GetId)
+	get_device_id = rospy.ServiceProxy("identifiers/get/id", GetId)
 
 	last_id = 0
 
@@ -52,7 +52,7 @@ def st_events():
 		print(json.dumps(response, sort_keys=True, indent=4))
 
 		device_id = response["data"]["id"]
-		system_id = get_device(data=device_id, type=5)
+		system_id = get_device_id(data=device_id, type=5)
 
 		rospy.loginfo(f"[Syncthing] system_id: {system_id.id}")
 
@@ -74,10 +74,12 @@ if __name__ == "__main__":
 		rospy.wait_for_service("identifiers/set/st_id")
 		rospy.wait_for_service("identifiers/get/syncthing_ids")
 		rospy.wait_for_service("identifiers/get/id")
+		rospy.wait_for_service("identifiers/get/all")
 
 		set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
 		get_st_ids = rospy.ServiceProxy("identifiers/get/syncthing_ids", GetSyncthingIds)
 		get_system_id = rospy.ServiceProxy("identifiers/get/id", GetId)
+		get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
 
 		# st = Syncthing(connected_pub, disconnected_pub, error_pub)
 		st = Syncthing(error_pub)
@@ -93,13 +95,13 @@ if __name__ == "__main__":
 
 		# list of devices in identifers file
 		st_ids = get_st_ids().data.split(" ")[:-1]
-		rospy.logwarn(st_ids)
 
 		for id_n in st_ids:
 			if id_n not in st_devices:
-				sys_id = get_system_id(type=5, data=id_n)
-
-				rospy.logwarn(f"need to add {sys_id.is_air} {sys_id.id} {id_n}")
+				device_id = get_system_id(type=5, data=id_n)
+				device = get_device(is_air=device_id.is_air, id=device_id.id)
+				rospy.loginfo(f"Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id} to syncthing")
+				st.add_device(id_n, device.label)
 
 		inotify_adapter = Inotify()
 		inotify_adapter.add_watch(watch_dir)
