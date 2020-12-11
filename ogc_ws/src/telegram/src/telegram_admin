@@ -21,6 +21,7 @@ import time
 
 from Td import Td
 from identifiers import Identifiers
+from syncthing import Syncthing
 
 home_dir = str(Path.home())
 tdlib_dir = home_dir + '/.tdlib_admin'
@@ -31,6 +32,7 @@ self_id = home_dir + '/.self_id'
 if __name__ == '__main__':
 	td = Td(tdlib_dir)
 	ids = Identifiers(identifiers_file, True, self_id, None)
+	st = Syncthing()
 	boot_time = time.time()
 
 	id_waitlist = {}
@@ -96,8 +98,9 @@ if __name__ == '__main__':
 
 				if dev['is_air']:
 					msg = {
-						"request": "set_device_id",
-						"device_id": dev_id
+						"request": "init_device",
+						"device_id": dev_id,
+						"admin_syncthing_id": st.get_device()
 					}
 					td.create_chat(event['id'])
 					td.send_message(event['id'], json.dumps(msg))

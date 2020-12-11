@@ -26,7 +26,6 @@ import subprocess
 import json
 
 class Syncthing:
-	# def __init__(self, connected_pub, disconnected_pub, error_pub):
 	def __init__(self, error_pub):
 		self.host = "http://localhost:8384"
 		self._error_pub = error_pub
@@ -35,9 +34,6 @@ class Syncthing:
 
 		self._connected_pub_str = rospy.Publisher("ogc/files/connected/string", String, queue_size=5)
 		self._disconnected_pub_str = rospy.Publisher("ogc/files/disconnected/string", String, queue_size=5)
-
-
-		# self.set_id()
 
 	def parse_config(self):
 		home_dir = str(Path.home())
@@ -57,6 +53,13 @@ class Syncthing:
 			self.set_device(self.device_id)
 		except FileNotFoundError:
 			rospy.logwarn("Unable to call syncthing")
+
+	def get_id(self):
+		try:
+			sub_call = subprocess.run(['syncthing', '-device-id'], capture_output=True, text=True)
+			return sub_call.stdout.rstrip()
+		except FileNotFoundError:
+			print("Unable to call syncthing, please check if it is installer")
 
 	def _post(self, url, data):
 		try:
