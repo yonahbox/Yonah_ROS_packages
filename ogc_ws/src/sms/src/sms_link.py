@@ -91,6 +91,15 @@ class SMSrx():
                 continue
         rospy.loginfo("Purge complete!")
 
+    def _wait_out_timeout(self):
+        """
+        We need to wait out the timeout of the router as if we continue pinging the router, it 
+        will always return timeout and our SMS link will be permanently down
+        """
+        self.message_checker.shutdown()
+        rospy.sleep(180)
+        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+
     #########################################
     # Handle incoming/outgoing SMS messages
     #########################################
@@ -114,6 +123,7 @@ class SMSrx():
 
         if "Timed out" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
+            self._wait_out_timeout()
             rospy.logerr("Timeout: Check SIM card balance")
         else:
             ack = timeoutscript.ack_converter(data, 1)
@@ -130,6 +140,7 @@ class SMSrx():
         elif 'N/A\n' in self._msglist:
             pass
         elif 'Timed out' in self._msglist:
+            self._wait_out_timeout()
             rospy.logerr("No response from SIM card. Please wait.")
         else:
             # extract sender number (2nd word of 3rd line in msglist)
@@ -155,16 +166,16 @@ class SMSrx():
     def client(self):
         """Main function to let aircraft receive SMS commands"""
         rospy.Subscriber("ogc/to_sms", LinkMessage, self.send_sms)
-        message_sender = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
         rospy.spin()
-        message_sender.shutdown()
+        self.message_checker.shutdown()
 
 if __name__=='__main__':
     try:
         run = SMSrx()
         run.client()
     except:
-        rospy.loginfo("Failed to start node")
+        rospy.logerr("Failed to start node")
         raise
     else:
         run.ssh.close()
