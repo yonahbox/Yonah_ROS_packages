@@ -97,7 +97,9 @@ class SMSrx():
         will always return timeout and our SMS link will be permanently down
         """
         self.message_checker.shutdown()
+        rospy.logwarn("SMS link shut down for 3 minutes")
         rospy.sleep(180)
+        rospy.loginfo("SMS link back online")
         self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
 
     #########################################
