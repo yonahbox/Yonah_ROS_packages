@@ -42,7 +42,8 @@ class Identifiers:
 		if valid_ids_file:
 			try:
 				with open(valid_ids_file, "r") as f:
-					while valid_id := f.readline():
+					valid_id = f.readline()
+					while valid_id == f.readline():
 						self.valid_ids.append(int(valid_id))
 			except FileNotFoundError:
 				print("Valid ids file is not available")

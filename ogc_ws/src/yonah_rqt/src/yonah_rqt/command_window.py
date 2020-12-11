@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import time
-import sys
 import timeoutscript
 
 from functools import partial
