@@ -98,6 +98,7 @@ def tdlib_admin_cb(msg, td):
 # runs in a seperate thread
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
+	to_despatcher_pub = rospy.Publisher('ogc/ack_tele_file', String, queue_size=10)
 	identifiers_add_tele_id = rospy.ServiceProxy("identifiers/add/telegram_id", AddTelegramId)
 	is_valid_sender_service = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
 	boot_time = rospy.get_rostime().secs
@@ -138,7 +139,8 @@ def tdlib_recv():
 					# Move the file
 					os.rename(local_path, final_path)
 					# Acknowledgement
-					td.send_message(sender, final_dir)
+					ack = "FILE " + final_dir + " updated"
+					to_despatcher_pub.publish(ack)
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
@@ -152,7 +154,6 @@ def tdlib_recv():
 
 				# Check if sender is from a whitelisted contact
 				is_valid_sender = is_valid_sender_service(0, str(event["message"]["sender_user_id"]))
-				sender = event["message"]["sender_user_id"]
 				if not is_valid_sender.result:
 					continue
 

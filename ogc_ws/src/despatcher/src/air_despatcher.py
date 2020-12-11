@@ -275,6 +275,10 @@ class airdespatcher():
         self._msg = msg.data
         self.sendmsg("e")
 
+    def acknowledge_file_download(self, msg):
+        self._msg = msg.data
+        self.sendmsg("a")
+
     ############################
     # "Main" function
     ############################
@@ -294,6 +298,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/from_switcher", String, self.check_switcher)
         rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
         rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
+        rospy.Subscriber("ogc/ack_tele_file", String, self.acknowledge_file_download)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()
