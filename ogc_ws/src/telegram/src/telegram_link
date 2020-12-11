@@ -139,7 +139,7 @@ def tdlib_recv():
 					# Move the file
 					os.rename(local_path, final_path)
 					# Acknowledgement
-					ack = "FILE " + final_dir + " updated"
+					ack = "FILE SYNC: " + final_dir + " updated"
 					to_despatcher_pub.publish(ack)
 
 			# information about a user ( used to get the user id)
