@@ -80,6 +80,7 @@ class satcomms(rockBlockProtocol):
         try:
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
+            rospy.logerr("Check rockBlock")
             rospy.signal_shutdown("rockBlock error")
         
         # Msg Type Prioritization. Higher number means higher priority

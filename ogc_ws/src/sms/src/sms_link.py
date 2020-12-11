@@ -123,7 +123,6 @@ class SMSrx():
 
         if "Timed out" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
-            self._wait_out_timeout()
             rospy.logerr("Timeout: Check SIM card balance")
         else:
             ack = timeoutscript.ack_converter(data, 1)
@@ -140,8 +139,8 @@ class SMSrx():
         elif 'N/A\n' in self._msglist:
             pass
         elif 'Timed out' in self._msglist:
-            self._wait_out_timeout()
             rospy.logerr("No response from SIM card. Please wait.")
+            self._wait_out_timeout()
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
