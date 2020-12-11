@@ -2,6 +2,10 @@ uint8 id
 bool is_air
 ---
 string label
+bool is_air
+uint8 id
 string number
 string imei
 string rb_serial
+int64 telegram_id
+string syncthing_id
