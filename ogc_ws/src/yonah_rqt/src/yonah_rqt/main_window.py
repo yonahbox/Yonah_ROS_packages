@@ -69,7 +69,6 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data = {}
  
         # Declare attributes for each imported class
-        self.ValidIdWindow = ValidIdWindow()
         self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.aircraft_list)
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
@@ -77,6 +76,7 @@ class MyPlugin(Plugin):
 
         self.create_layout()
         self.shortcuts()
+        self.ValidIdWindow = ValidIdWindow()
         self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
         
         # Subscriber lists

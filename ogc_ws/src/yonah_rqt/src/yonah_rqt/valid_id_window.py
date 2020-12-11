@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import rospy
 from std_msgs.msg import UInt8MultiArray
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
+from python_qt_binding.QtCore import Qt
 
 class ValidIdWindow (QDialog):
     def __init__(self):
@@ -29,6 +30,8 @@ class ValidIdWindow (QDialog):
         self.buttons_state = {} # Dictionary to store all the states of the Buttons
         self.pub_valid_ids = rospy.Publisher("ogc/to_telegram/admin/valid_ids", UInt8MultiArray, queue_size = 5)
         self.populate_layout()
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+
     
     def populate_layout(self):
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
@@ -45,11 +48,9 @@ class ValidIdWindow (QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
-    def btnstate(self, buttons):
-        pass
-
     def accept(self):
         valid_ids = [x for x in self.buttons_state.keys() if self.buttons_state.get(x).isChecked()]
         array_valid_ids = UInt8MultiArray(data=valid_ids)
         self.pub_valid_ids.publish(array_valid_ids)
         rospy.loginfo("Sent valid ids: " + str(valid_ids))
+        self.close()
