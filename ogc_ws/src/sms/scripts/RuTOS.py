@@ -38,7 +38,7 @@ def send_msg(ssh, GCS_no, msg):
         _, stdout, _ = ssh.exec_command("gsmctl -S -s '%s %s'"%(GCS_no, msg), timeout=5)
         sendstatus = stdout.readlines()
     except:
-        sendstatus = "Connection lost"
+        sendstatus = "Timed out"
     return sendstatus
     
 def extract_msg(ssh, count):
@@ -47,7 +47,7 @@ def extract_msg(ssh, count):
         _, stdout, _ = ssh.exec_command("gsmctl -S -r %d"%(count), timeout=5)
         msglist = stdout.readlines()
     except:
-        msglist = "Connection lost"
+        msglist = "Timed out"
     return msglist
 
 def delete_msg(ssh, count):
