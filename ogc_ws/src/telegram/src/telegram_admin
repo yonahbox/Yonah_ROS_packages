@@ -100,7 +100,7 @@ if __name__ == '__main__':
 					msg = {
 						"request": "init_device",
 						"device_id": dev_id,
-						"admin_syncthing_id": st.get_device()
+						"admin_syncthing_id": st.get_id()
 					}
 					td.create_chat(event['id'])
 					td.send_message(event['id'], json.dumps(msg))

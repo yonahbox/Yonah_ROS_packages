@@ -26,7 +26,7 @@ import subprocess
 import json
 
 class Syncthing:
-	def __init__(self, error_pub):
+	def __init__(self, error_pub=None):
 		self.host = "http://localhost:8384"
 		self._error_pub = error_pub
 
