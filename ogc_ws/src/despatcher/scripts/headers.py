@@ -60,6 +60,7 @@ def split_headers(msg):
         timestamp = int(msglist[-1])
         return msgtype, devicetype, sysid, uuid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
     except:
+        rospy.logerr("Invalid format for split headers")
         return None
     
 ######################
