@@ -36,6 +36,7 @@ from .summary_window import SummaryWindow
 from .command_window import CommandWindow
 from .popup_window import PopupMessages
 from .aircraft_info import AircraftInfo
+from .valid_id_window import ValidIdWindow
 
 class MyPlugin(Plugin):
     def __init__(self, context):
@@ -46,6 +47,7 @@ class MyPlugin(Plugin):
         self._widget.setWindowTitle("Yonah RQt")
         context.add_widget(self._widget)
 
+        
         # Get path to UI file and load it
         ui_file = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "resource", "second_window.ui")
         loadUi(ui_file, self._widget)
@@ -67,6 +69,7 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data = {}
  
         # Declare attributes for each imported class
+        self.ValidIdWindow = ValidIdWindow()
         self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.aircraft_list)
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
@@ -74,7 +77,8 @@ class MyPlugin(Plugin):
 
         self.create_layout()
         self.shortcuts()
-
+        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
+        
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)

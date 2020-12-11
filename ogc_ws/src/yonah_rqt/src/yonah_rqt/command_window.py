@@ -114,7 +114,6 @@ class CommandWindow(QWidget):
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
         
-
         # Create the widgets
         self.combo_box = QComboBox()
 
@@ -529,12 +528,12 @@ class CommandWindow(QWidget):
         # Somehow get the current label inside it
         if side == "Air":
             for i in self.air_ids:
-                # self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
-                self.edit_combo_box.addItem(f"Aircraft {i}")
+                self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem(f"Aircraft {i}")
         else:
             for i in self.ground_ids:
-                # self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
-                self.edit_combo_box.addItem(f"GCS {i}")
+                self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem(f"GCS {i}")
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         self.check_validity = [0, 0, 0, 0]
@@ -607,6 +606,7 @@ class CommandWindow(QWidget):
             self.edit_imei = new_edit_device.imei
             self.serial_lineedit.setText(str(new_edit_device.rb_serial))
             self.edit_serial = new_edit_device.rb_serial
+
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
             self.PopupMessages.warning_message("The ID you have selected is invalid", "Please select another ID")
