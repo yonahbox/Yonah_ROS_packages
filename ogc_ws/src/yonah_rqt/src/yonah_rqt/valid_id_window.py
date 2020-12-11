@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 from std_msgs.msg import UInt8MultiArray
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QLabel
 from python_qt_binding.QtCore import Qt
 from identifiers.srv import GetIds, GetAllDetails
 
@@ -34,12 +34,10 @@ class ValidIdWindow (QDialog):
         rospy.wait_for_service("identifiers/get/all")
         self.get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
         self.get_all = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
-        
         self.air_ids_encoded = self.get_ids().air_ids
         self.air_ids = []
         for i in self.air_ids_encoded:
             self.air_ids.append(int(chr(ord(i) + 48)))
-
         self.buttons_state = {} # Dictionary to store all the states of the Buttons
         self.pub_valid_ids = rospy.Publisher("ogc/to_telegram/admin/valid_ids", UInt8MultiArray, queue_size = 5)
 
@@ -47,14 +45,18 @@ class ValidIdWindow (QDialog):
     
     def populate_layout(self):
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        header = QLabel('Select Aircrafts you need: ')
 
         self.buttonBox = QDialogButtonBox(buttons)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+        
         self.layout = QVBoxLayout()
-
+        self.layout.addWidget(header)
         for i in self.air_ids:
-            self.buttons_state[i] = QCheckBox("Aircraft " + str(i))
+            label = self.get_all(i, True).label
+            number = self.get_all(i, True).number
+            self.buttons_state[i] = QCheckBox(label + " - " + str(number))
             self.layout.addWidget(self.buttons_state.get(i))
         
         self.layout.addWidget(self.buttonBox)

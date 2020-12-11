@@ -155,8 +155,7 @@ class Identifiers:
 		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
 		for dev in device_list:
 			if dev["id"] == id_n:
-				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev.get("telegram_id", None))
-
+				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev.get("telegram_id", None),  dev.get("syncthing_id", None))
 		return None
 
 	# return phone number associated with id if it is whitelisted
