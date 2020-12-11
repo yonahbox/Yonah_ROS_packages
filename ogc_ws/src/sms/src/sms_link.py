@@ -113,7 +113,7 @@ class SMSrx():
         '''
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
-        if !self.is_online:
+        if not self.is_online:
             return
         rospy.loginfo("Sending SMS: " + data.data)
         number = self._identifiers_get_number(data.id)
