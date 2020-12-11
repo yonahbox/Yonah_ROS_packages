@@ -103,14 +103,6 @@ class Identifiers:
 		self.syncthing_ids.clear()
 
 		# # Runs on admin instance
-		# if self.admin:
-		# 	for obj in self.json_obj['ground']:
-		# 		self.whitelist_telegram_ids.append(str(obj['telegram_id']))
-		# 		self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
-		# 	for obj in self.json_obj['air']:
-		# 		self.whitelist_telegram_ids.append(str(obj['telegram_id']))
-		# 		self.air_devices.append(Device(obj['label'], True, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
-
 		for obj in self.json_obj['ground']:
 			self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id'], obj.get("syncthing_id", None)))
 			if self.admin:
@@ -164,10 +156,10 @@ class Identifiers:
 
 	# return the device associated with the id from any device
 	def get_device_details(self, id_n, is_air):
-		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+		device_list = self.air_devices if is_air else self.ground_devices
 		for dev in device_list:
-			if dev["id"] == id_n:
-				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev["telegram_id"], dev.get("syncthing_id", None)) 
+			if dev.id == id_n:
+				return dev
 
 		return None
 
@@ -299,7 +291,6 @@ class Identifiers:
 		# 	elif data_type == 5 and data == obj.get("syncthing_id", None):
 		# 		return obj["is_air"], obj["id"]
 		for obj in self.air_devices + self.ground_devices:
-			val = None
 			if data_type == 0 and data == obj.label:
 				return obj.is_air, obj.id
 			elif data_type == 1 and data == obj.number:
@@ -313,7 +304,7 @@ class Identifiers:
 			elif data_type == 5 and data == obj.syncthing_id:
 				return obj.is_air, obj.id
 
-		print("Error")
+		print(f"Error {data_type} {data}")
 		return 0, 0
 
   # add new device to the identifiers file
