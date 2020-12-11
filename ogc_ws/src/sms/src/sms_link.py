@@ -47,6 +47,7 @@ class SMSrx():
         self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self._msg = "" # Actual incoming message, located on 5th line of msglist
         self.interval = 1 # Time interval between each check of the router for incoming msgs
+        self.is_online = True
 
         # Initialise SSH
         try:
@@ -98,8 +99,10 @@ class SMSrx():
         """
         self.message_checker.shutdown()
         rospy.logwarn("SMS link shut down for 3 minutes")
+        self.is_online = False
         rospy.sleep(180)
         rospy.loginfo("SMS link back online")
+        self.is_online = True
         self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
 
     #########################################
@@ -110,6 +113,8 @@ class SMSrx():
         '''
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
+        if !self.is_online:
+            return
         rospy.loginfo("Sending SMS: " + data.data)
         number = self._identifiers_get_number(data.id)
         if number is None:
