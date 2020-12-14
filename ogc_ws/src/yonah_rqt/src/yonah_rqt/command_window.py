@@ -50,7 +50,8 @@ class CommandWindow(QWidget):
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
-        self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
+        self.windows_open = {}
+        # self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
@@ -155,13 +156,13 @@ class CommandWindow(QWidget):
     def full_window(self):
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
+        
+
         layout = QGridLayout()
         self.ping_row = QFormLayout()
         group_titles = ["","Identifiers", "Sync", "Log", "Missions", "Ping"]
 
         self.custom_ping_combobox = QComboBox()
-
-        
         # Use a for loop to add items inside the drop down menu
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
@@ -232,6 +233,7 @@ class CommandWindow(QWidget):
         self.full_widget.setLayout(layout)
 
         self.full_widget.show()
+        self.windows_open["full_menu"] = self.full_widget.isVisible()
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
@@ -366,16 +368,16 @@ class CommandWindow(QWidget):
         layout.addWidget(edit_air)
 
         self.change_identifiers_dialog.show()
-        self.is_window_open[0] = 1
+        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        # self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.is_window_open[0] = 0
+        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         self.add_identifiers_dialog = QDialog()
         self.add_identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
-        self.is_window_open[1] = 1
 
         title = QLabel("Add New {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -400,6 +402,7 @@ class CommandWindow(QWidget):
         identifiers_layout.addWidget(buttons)
         self.add_identifiers_dialog.setLayout(identifiers_layout)
         self.add_identifiers_dialog.show()
+        self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def identifiers_input_field(self, field):
         self.name = QLabel("Label")
@@ -503,19 +506,18 @@ class CommandWindow(QWidget):
         add_identifier = self.add_new_device(new_identifier)
         rospy.loginfo(add_identifier.success)
         self.add_identifiers_dialog.close()
-        self.is_window_open[1] = 0
+        self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def edit_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.is_window_open[0] = 0
+        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         ids_response = self.get_ids()
         self.air_ids = ids_response.air_ids
         self.ground_ids = ids_response.ground_ids
 
         self.edit_identifiers_dialog = QDialog()
-        self.is_window_open[2] = 1
         self.edit_identifiers_dialog.setWindowTitle("Edit {} Identifier".format(side))
         title = QLabel("Edit Existing {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -555,16 +557,17 @@ class CommandWindow(QWidget):
         self.changed()
         lay.addWidget(box)
         self.edit_identifiers_dialog.show()
+        self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
 
     def close_identifiers(self, side):
         if side == "Edit":
             self.edit_identifiers_dialog.close()
-            self.is_window_open[2] = 0
+            self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
         else:
             self.add_identifiers_dialog.close()
-            self.is_window_open[1] = 0
+            self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
         self.change_identifiers_dialog.show()
-        self.is_window_open[0] = 1
+        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
     def edit_identifiers_accept(self, side):
         if sum(self.check_validity) != 4:
@@ -585,7 +588,7 @@ class CommandWindow(QWidget):
         edit_result = self.edit_device(edit_identifiers)
         rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_identifiers_dialog.close()
-        self.is_window_open[2] = 0
+        self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1 # Identifiers start with index 1

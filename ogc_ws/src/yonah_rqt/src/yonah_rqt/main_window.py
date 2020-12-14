@@ -36,7 +36,7 @@ from .summary_window import SummaryWindow
 from .command_window import CommandWindow
 from .popup_window import PopupMessages
 from .aircraft_info import AircraftInfo
-from .valid_id_window import ValidIdWindow
+# from .valid_id_window import ValidIdWindow
 
 class MyPlugin(Plugin):
     def __init__(self, context):
@@ -47,7 +47,6 @@ class MyPlugin(Plugin):
         self._widget.setWindowTitle("Yonah RQt")
         context.add_widget(self._widget)
 
-        
         # Get path to UI file and load it
         ui_file = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "resource", "second_window.ui")
         loadUi(ui_file, self._widget)
@@ -76,8 +75,8 @@ class MyPlugin(Plugin):
 
         self.create_layout()
         self.shortcuts()
-        self.ValidIdWindow = ValidIdWindow()
-        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
+        # self.ValidIdWindow = ValidIdWindow()
+        # self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
         
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
@@ -400,12 +399,16 @@ class MyPlugin(Plugin):
         for i in self.aircraft_list:
             self.checklist_info.get("AC" + str(i)).shutdown()
         # Shutdown all identifiers windows
-        if sum(self.CommandWindow.is_window_open):
-            if self.CommandWindow.is_window_open[0]:
+        opened_windows = [x for x in self.CommandWindow.windows_open.keys() if self.CommandWindow.windows_open.get(x)]
+        print(opened_windows)
+        for i in opened_windows:
+            if i == "full_menu":
+                self.CommandWindow.full_widget.close()
+            elif i == "change_identifiers_dialog":
                 self.CommandWindow.change_identifiers_dialog.close()
-            if self.CommandWindow.is_window_open[1]:
+            elif i == "add_identifiers_dialog":
                 self.CommandWindow.add_identifiers_dialog.close()
-            if self.CommandWindow.is_window_open[2]:
+            elif i == "edit_identifiers_dialog":
                 self.CommandWindow.edit_identifiers_dialog.close()
 
         self.WaypointWindow.shutdown()
