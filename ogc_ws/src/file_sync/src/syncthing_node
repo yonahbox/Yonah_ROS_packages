@@ -23,19 +23,21 @@ import json
 import rospy
 from std_msgs.msg import String, UInt8
 from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
+from identifiers.msg import DeviceId
 
 from syncthing import Syncthing
 
 def st_cb(command, st):
-	print(command)
 	if command.data == "pause":
+		rospy.loginfo("[Syncthing] Pauseing syncthing")
 		st.pause()
 	elif command.data == "resume":
+		rospy.loginfo("[Syncthing] resuming syncthing")
 		st.resume()
 
 def st_events():
-	connected_pub = rospy.Publisher("ogc/files/connected", UInt8, queue_size=5)
-	disconnected_pub = rospy.Publisher("ogc/files/disconnected", UInt8, queue_size=5)
+	connected_pub = rospy.Publisher("ogc/files/connected", DeviceId, queue_size=5)
+	disconnected_pub = rospy.Publisher("ogc/files/disconnected", DeviceId, queue_size=5)
 	
 	rospy.wait_for_service("identifiers/get/id")
 	get_device_id = rospy.ServiceProxy("identifiers/get/id", GetId)
@@ -48,18 +50,25 @@ def st_events():
 		if response is None:
 			continue
 
+		rospy.logdebug(response)
 		last_id = response["id"]
-		print(json.dumps(response, sort_keys=True, indent=4))
+		# print(json.dumps(response, sort_keys=True, indent=4))
 
 		device_id = response["data"]["id"]
 		system_id = get_device_id(data=device_id, type=5)
+		device = get_device(id=system_id.id, is_air=system_id.is_air)
 
-		rospy.loginfo(f"[Syncthing] system_id: {system_id.id}")
+		msg = DeviceId()
+		msg.id = system_id.id
+		msg.is_air = system_id.is_air
+		msg.label = device.label
 
 		if response["type"] == "DeviceConnected":
-			connected_pub.publish(system_id.id)
+			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) connected')
+			connected_pub.publish(msg)
 		elif response["type"] == "DeviceDisconnected":
-			disconnected_pub.publish(system_id.id)
+			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
+			disconnected_pub.publish(msg)
 
 
 if __name__ == "__main__":
@@ -81,11 +90,9 @@ if __name__ == "__main__":
 		get_system_id = rospy.ServiceProxy("identifiers/get/id", GetId)
 		get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
 
-		# st = Syncthing(connected_pub, disconnected_pub, error_pub)
 		st = Syncthing(error_pub)
 		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 
-		# event_thread = Thread(target=st.event_subscribe)
 		event_thread = Thread(target=st_events)
 		event_thread.daemon = True
 		event_thread.start()
@@ -103,6 +110,7 @@ if __name__ == "__main__":
 				rospy.loginfo(f"Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id} to syncthing")
 				st.add_device(id_n, device.label)
 
+		# inotify, used to look for changes to any files in the Sync folder
 		inotify_adapter = Inotify()
 		inotify_adapter.add_watch(watch_dir)
 
