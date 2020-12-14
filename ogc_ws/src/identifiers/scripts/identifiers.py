@@ -29,6 +29,7 @@ class Device:
 		self.telegram_id = telegram_id
 		self.syncthing_id = syncthing_id
 
+	# return the object as a dictionary
 	def to_json(self):
 		return {
 			"label": self.label,
@@ -60,10 +61,7 @@ class Identifiers:
 				print("Valid ids file is not available")
 				print("please check that the telegram_bone script works properly")
 				exit()
-		else:
-			self.admin = True
 
-		if not self.admin:
 			try:
 				with open(self_id_file, "r") as f:
 					self.self_id = int(f.readline().rstrip())
@@ -71,6 +69,8 @@ class Identifiers:
 				print("self_id file is not available")
 				print("Please ensure the device was properly set up")
 				exit()
+		else:
+			self.admin = True
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)
@@ -94,7 +94,7 @@ class Identifiers:
 		# parse the identifiers file
 		self.parse_file()
 
-
+	# Parse the identifiers.json file
 	def parse_file(self):
 		self.file_busy = True
 
@@ -144,23 +144,11 @@ class Identifiers:
 				self.whitelist_rb_serial.append(obj.rb_serial)
 				self.whitelist_telegram_ids.append(str(obj.telegram_id))
 
-		# for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
-		# 	if obj["id"] in self.valid_ids:
-		# 		self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj["telegram_id"], obj.get("syncthing_id", None)))
-		# 		self.whitelist_nums.append(obj["number"])
-		# 		self.whitelist_rb_serial.append(obj["rb_serial"])
-		# 		if "telegram_id" in obj.keys():
-		# 			self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
-
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
 				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj["telegram_id"], obj.get("syncthing_id", None))
 				break
-
-		# for standalone numbers (not currently in use)
-		# for num in self.json_obj["standalone"]:
-		# 	self.whitelist_nums.append(num)
 
 		# Get remaining information for SBD link
 		self.rock7_un = self.json_obj["sbd_details"]["rock7_username"]
@@ -262,9 +250,6 @@ class Identifiers:
 	def get_valid_ids(self):
 		return self.valid_ids
 
-	# def get_device(self, is_air, id_n):
-		# for obj in self.json_obj["air"] if is_air
-
 	# request adding a new device to admin
 	def new_device_request(self, is_air, label, number, imei, rb_serial):
 		device = {
@@ -349,7 +334,6 @@ class Identifiers:
 		self.parse_file()
 
 		return selected_id
-
 
 	# edit an existing device in the identifiers file
 	def edit_device(self, device):	

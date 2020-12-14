@@ -32,9 +32,7 @@ class Syncthing:
 
 		self.parse_config()
 
-		self._connected_pub_str = rospy.Publisher("ogc/files/connected/string", String, queue_size=5)
-		self._disconnected_pub_str = rospy.Publisher("ogc/files/disconnected/string", String, queue_size=5)
-
+	# Parse the syncthing config file
 	def parse_config(self):
 		home_dir = str(Path.home())
 		config_path = home_dir + "/.config/syncthing/config.xml"
@@ -46,32 +44,25 @@ class Syncthing:
 		for elem in root.iter('apikey'):
 			self.api_key = elem.text
 
-	def set_id(self):
-		try:
-			sub_call = subprocess.run(["syncthing", "-device-id"], capture_output=True, text=True)
-			self.device_id = sub_call.stdout.rstrip()
-			self.set_device(self.device_id)
-		except FileNotFoundError:
-			rospy.logwarn("Unable to call syncthing")
-
+	# get syncthing id
 	def get_id(self):
 		try:
 			sub_call = subprocess.run(['syncthing', '-device-id'], capture_output=True, text=True)
 			return sub_call.stdout.rstrip()
 		except FileNotFoundError:
-			print("Unable to call syncthing, please check if it is installer")
+			print("Unable to call syncthing, please check if it is installed")
 
+	# Make a POST request to syncthings REST API
 	def _post(self, url, data):
 		try:
-			result = req.post(self.host + url, headers = {
+			req.post(self.host + url, headers = {
 				"X-API-Key": self.api_key
 			}, data=json.dumps(data))
-			# print(result)
-			# print(result.text)
 		except req.exceptions.RequestException:
 			print("POST ERROR")
 			self._error_pub.publish("syncthing not running")
 
+	# Make a GET request to syncthings REST API
 	def _get(self, url):
 		try:
 			result = req.get(self.host + url, headers={
@@ -83,12 +74,15 @@ class Syncthing:
 
 		return result.json()
 
+	# pause syncthing
 	def pause(self):
 		self._post("/rest/system/pause", None)
 
+	# resume syncthing
 	def resume(self):
 		self._post("/rest/system/resume", None)
 
+	# Listen for events in syncthing
 	def get_event(self, last_id):
 		response = self._get("/rest/events?events=DeviceConnected,DeviceDisconnected&limit=1&since="+str(last_id))
 		
@@ -96,6 +90,7 @@ class Syncthing:
 			return None
 		return response[0]
 
+	# get list of connected devices in syncthing
 	def get_devices(self):
 		devices = self._get("/rest/config/devices")
 
