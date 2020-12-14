@@ -59,7 +59,6 @@ class Syncthing:
 				"X-API-Key": self.api_key
 			}, data=json.dumps(data))
 		except req.exceptions.RequestException:
-			print("POST ERROR")
 			self._error_pub.publish("syncthing not running")
 
 	# Make a GET request to syncthings REST API

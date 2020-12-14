@@ -27,7 +27,6 @@ home_dir = str(Path.home())
 tdlib_dir = home_dir + '/.tdlib_admin'
 identifiers_file = home_dir + '/Sync/identifiers.json'
 self_id = home_dir + '/.self_id'
-# valid_ids_file = home_dir + '/.valid_ids'
 
 if __name__ == '__main__':
 	td = Td(tdlib_dir)

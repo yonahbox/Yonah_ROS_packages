@@ -29,10 +29,10 @@ from syncthing import Syncthing
 
 def st_cb(command, st):
 	if command.data == "pause":
-		rospy.loginfo("[Syncthing] Pauseing syncthing")
+		rospy.loginfo("[Syncthing] Pausing syncthing")
 		st.pause()
 	elif command.data == "resume":
-		rospy.loginfo("[Syncthing] resuming syncthing")
+		rospy.loginfo("[Syncthing] Resuming syncthing")
 		st.resume()
 
 def st_events():
