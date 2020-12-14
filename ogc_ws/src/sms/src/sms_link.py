@@ -20,6 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Standard Library
 import paramiko
+import socketserver
+import urllib.parse
+import threading
 
 # ROS/Third-Party
 import rospy
@@ -32,6 +35,24 @@ from identifiers.srv import CheckSender, GetDetails
 import RuTOS
 import sys
 import timeoutscript
+
+
+class MsgHandler(socketserver.BaseRequestHandler):    
+    def handle(self):
+        self.data = self.request.recv(1024).strip().decode('utf-8')
+        sender = urllib.parse.unquote(self.data.split()[1].split('&')[0][12:])
+        print(sender)
+        msg = urllib.parse.unquote(self.data.split()[1].split('&')[1][4:])
+        print(msg)
+        rospy.loginfo("Received sms from " + sender)
+        # Ensure sender is whitelisted before extracting message
+        is_valid_sender = run._identifiers_valid_sender(1, sender)
+        if is_valid_sender.result:
+            rospy.loginfo('Command from '+ sender)
+            run.pub_to_despatcher.publish(msg)
+        else:
+            rospy.logwarn('Rejected msg from unknown sender ' + sender)
+        RuTOS.delete_msg(run.ssh, 1) # Delete the existing SMS
 
 
 class SMSrx():
@@ -92,18 +113,18 @@ class SMSrx():
                 continue
         rospy.loginfo("Purge complete!")
 
-    def _wait_out_timeout(self):
-        """
-        We need to wait out the timeout of the router as if we continue pinging the router, it 
-        will always return timeout and our SMS link will be permanently down
-        """
-        self.message_checker.shutdown()
-        rospy.logwarn("SMS link shut down for 3 minutes")
-        self.is_online = False
-        rospy.sleep(180)
-        rospy.loginfo("SMS link back online")
-        self.is_online = True
-        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+    # def _wait_out_timeout(self):
+    #     """
+    #     We need to wait out the timeout of the router as if we continue pinging the router, it 
+    #     will always return timeout and our SMS link will be permanently down
+    #     """
+    #     self.message_checker.shutdown()
+    #     rospy.logwarn("SMS link shut down for 3 minutes")
+    #     self.is_online = False
+    #     rospy.sleep(180)
+    #     rospy.loginfo("SMS link back online")
+    #     self.is_online = True
+    #     self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
 
     #########################################
     # Handle incoming/outgoing SMS messages
@@ -137,44 +158,52 @@ class SMSrx():
                 self.pub_to_timeout.publish(ack)
             self.pub_to_switcher.publish("Success")
     
-    def recv_sms(self, data):
-        '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
-        # Read an SMS received by the air router
-        self._msglist = RuTOS.extract_msg(self.ssh, 1)
-        if 'no message\n' in self._msglist:
-            pass
-        elif 'N/A\n' in self._msglist:
-            pass
-        elif 'Timed out' in self._msglist:
-            rospy.logerr("No response from SIM card. Please wait.")
-            self._wait_out_timeout()
-        else:
-            # extract sender number (2nd word of 3rd line in msglist)
-            sender = self._msglist[2].split()[1]
-            rospy.loginfo("Received sms from " + sender)
-            # Ensure sender is whitelisted before extracting message
-            is_valid_sender = self._identifiers_valid_sender(1, sender)
-            if is_valid_sender.result:
-            # if self._ids.is_valid_sender(1, sender):
-                rospy.loginfo('Command from '+ sender)
-                # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
-                self._msg = self._msglist[4].split(' ', 1)[1].rstrip()
-                # Forward msg to air_despatcher
-                self.pub_to_despatcher.publish(self._msg)
-            else:
-                rospy.logwarn('Rejected msg from unknown sender ' + sender)
-            RuTOS.delete_msg(self.ssh, 1) # Delete the existing SMS
+    # def recv_sms(self, data):
+    #     '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
+    #     # Read an SMS received by the air router
+    #     self._msglist = RuTOS.extract_msg(self.ssh, 1)
+    #     if 'no message\n' in self._msglist:
+    #         pass
+    #     elif 'N/A\n' in self._msglist:
+    #         pass
+    #     elif 'Timed out' in self._msglist:
+    #         rospy.logerr("No response from SIM card. Please wait.")
+    #         self._wait_out_timeout()
+    #     else:
+    #         # extract sender number (2nd word of 3rd line in msglist)
+    #         sender = self._msglist[2].split()[1]
+    #         rospy.loginfo("Received sms from " + sender)
+    #         # Ensure sender is whitelisted before extracting message
+    #         is_valid_sender = self._identifiers_valid_sender(1, sender)
+    #         if is_valid_sender.result:
+    #         # if self._ids.is_valid_sender(1, sender):
+    #             rospy.loginfo('Command from '+ sender)
+    #             # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
+    #             self._msg = self._msglist[4].split(' ', 1)[1].rstrip()
+    #             # Forward msg to air_despatcher
+    #             self.pub_to_despatcher.publish(self._msg)
+    #         else:
+    #             rospy.logwarn('Rejected msg from unknown sender ' + sender)
+    #         RuTOS.delete_msg(self.ssh, 1) # Delete the existing SMS
     
     ############################
     # "Main" function
     ############################
     
+    def start_http_server(self):
+        with socketserver.TCPServer(('', 8000), MsgHandler) as server:
+            print("server started")
+            server.serve_forever()
+
     def client(self):
         """Main function to let aircraft receive SMS commands"""
         rospy.Subscriber("ogc/to_sms", LinkMessage, self.send_sms)
-        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+        http_check = threading.Thread(target = self.start_http_server())
+        http_check.start()
+        # self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
         rospy.spin()
-        self.message_checker.shutdown()
+        # self.message_checker.shutdown()
+        http_check.join()
 
 if __name__=='__main__':
     try:
