@@ -40,7 +40,6 @@ class PopupMessages(QWidget):
         message.uuid = timeoutscript.increment()
         message.id = destination_id
         message.data = data
-        # rospy.logwarn(message.uuid)
         self.command_publisher.publish(message)
 
     def user_input_textbox(self, title, message, id):
@@ -49,7 +48,7 @@ class PopupMessages(QWidget):
             self.input_text = [text, id]
         else:
             self.input_text = []
-    
+
     def emergency_disarm(self):
         num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
         if ok:
@@ -60,8 +59,8 @@ class PopupMessages(QWidget):
             self.create_link_message(num, data)
             rospy.logdebug("[AC %d EMERGENCY DISARM]", num)
     
-    def arm_window(self, id, message_type, title, message, text = "Do you still want to continue?"):
-        self.destination_id = id
+    def arm_window(self, sysid, message_type, title, message, text = "Do you still want to continue?"):
+        self.destination_id = sysid
         self.message = QMessageBox()
         self.has_message_opened = 1
         if message_type[1] == "Warning":
@@ -77,6 +76,16 @@ class PopupMessages(QWidget):
             self.message.buttonClicked.connect(self.arm_message)
         elif message_type[0] == "DISARM":
             self.message.buttonClicked.connect(self.disarm_message)
+        elif message_type[0] == "sync resume":
+            self.message.buttonClicked.connect(self.sync_resume)
+
+    def sync_resume(self, i):
+        if i.text() == '&Yes':
+            data = "syncthing resume"
+            statustext_message = "Aircraft {} Resume Syncthing command sent".format(self.destination_id)
+            self.create_link_message(self.destination_id, data)
+        else:
+            self.message.close()
 
     def arm_message(self, i):
         if i.text() == '&Yes':

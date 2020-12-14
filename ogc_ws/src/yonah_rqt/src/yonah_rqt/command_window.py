@@ -329,8 +329,13 @@ class CommandWindow(QWidget):
 
     def sync_resume(self):
         if self.arm_status.get('AC' + str(self.destination_id)) == "ARMED":
-            # Pop up window
-            data = "syncthing resume"
+            message = "Aircraft is ARMED"
+            text = "Are you sure you want to resume sync?"
+            message_type = ["sync resume", "Warning"]
+            title = "Sync Resume Warning"
+        self.PopupMessages.arm_window(self.destination_id, message_type, title, message, text)
+            
+        data = "syncthing resume"
         self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
