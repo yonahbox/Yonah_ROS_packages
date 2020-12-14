@@ -56,9 +56,9 @@ class ServiceHandler:
 
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
+		resp = GetAllDetailsResponse()
+
 		if device is not None:
-			# return GetAllDetailsResponse(label=device.label, number=device.number, imei=device.imei, rb_serial=device.rb_serial)
-			resp = GetAllDetailsResponse()
 			resp.label = device.label
 			resp.is_air = device.is_air
 			resp.id = device.id
@@ -68,9 +68,8 @@ class ServiceHandler:
 			resp.telegram_id = device.telegram_id
 			resp.syncthing_id = device.syncthing_id
 			return resp
-
 		else:
-			return None
+			return resp
 
 	def get_self_id(self, request):
 		return GetSelfDetailsResponse(data_int=self._ids.get_self_id())
