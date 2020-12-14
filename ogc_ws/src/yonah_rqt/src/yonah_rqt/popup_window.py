@@ -31,7 +31,7 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
-        # self.CommandWindow = CommandWindow()
+        self.windows_opened = {}
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
@@ -50,19 +50,20 @@ class PopupMessages(QWidget):
             self.input_text = []
 
     def emergency_disarm(self):
+        self.windows_opened["emergency disarm"] = True
         num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
+        
         if ok:
             data = "disarm"
             if num == 0:
                 rospy.logerr("Invalid Aircraft ID, Please input a valid Aircraft ID")
                 return 0
             self.create_link_message(num, data)
-            rospy.logdebug("[AC %d EMERGENCY DISARM]", num)
+            rospy.loginfo("[AC %d EMERGENCY DISARM]", num)
     
     def arm_window(self, sysid, message_type, title, message, text = "Do you still want to continue?"):
         self.destination_id = sysid
         self.message = QMessageBox()
-        self.has_message_opened = 1
         if message_type[1] == "Warning":
             self.message.setIcon(QMessageBox.Warning)
         elif message_type[1] == "Information":
@@ -86,6 +87,7 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
+        self.windows_opened["arm window"] = self.message.isVisible()
 
     def arm_message(self, i):
         if i.text() == '&Yes':
@@ -94,6 +96,7 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
+        self.windows_opened["arm window"] = self.message.isVisible()
 
     def disarm_message(self, i):
         if i.text() == '&Yes':
@@ -102,9 +105,11 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
-    
+        self.windows_opened["arm window"] = self.message.isVisible()
+
     def warning_message(self, heading, text):
         self.warning = QMessageBox()
+        self.windows_opened["arm window"] = self.message.isVisible()
         self.warning.setIcon(QMessageBox.Warning)
         self.warning.setText(heading)
         self.warning.setInformativeText(text)
@@ -112,3 +117,4 @@ class PopupMessages(QWidget):
         self.warning.setStandardButtons(QMessageBox.Ok)
         self.warning.buttonClicked.connect(self.warning.close)
         self.warning.show()
+        self.windows_opened["arm window"] = self.message.isVisible()

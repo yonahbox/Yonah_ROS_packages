@@ -50,7 +50,7 @@ class CommandWindow(QWidget):
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
-        self.windows_open = {}
+        self.windows_opened = {}
         # self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
@@ -233,7 +233,7 @@ class CommandWindow(QWidget):
         self.full_widget.setLayout(layout)
 
         self.full_widget.show()
-        self.windows_open["full_menu"] = self.full_widget.isVisible()
+        self.windows_opened["full_menu"] = self.full_widget.isVisible()
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
@@ -271,17 +271,17 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
-        # self.create_link_message(1,2,2) # this line is to destroy the rqt through TypeError
-        # while True: # Generate loop error
-        #     continue
+        self.windows_opened["arm window"] = True
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
             self.PopupMessages.arm_window(self.destination_id, ["ARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to ARM?")
+            
         if self.arm_status.get('AC' + str(self.destination_id)) == "DISARMED":
             pass
 
     def disarm(self):
+        self.windows_opened["disarm window"] = True
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go(self):
@@ -325,6 +325,7 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def checklist(self):
+        self.windows_opened["checklist window"] = True
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
     def sync_resume(self):
@@ -373,13 +374,13 @@ class CommandWindow(QWidget):
         layout.addWidget(edit_air)
 
         self.change_identifiers_dialog.show()
-        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
         # self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         self.add_identifiers_dialog = QDialog()
         self.add_identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
@@ -407,7 +408,7 @@ class CommandWindow(QWidget):
         identifiers_layout.addWidget(buttons)
         self.add_identifiers_dialog.setLayout(identifiers_layout)
         self.add_identifiers_dialog.show()
-        self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
+        self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def identifiers_input_field(self, field):
         self.name = QLabel("Label")
@@ -511,12 +512,12 @@ class CommandWindow(QWidget):
         add_identifier = self.add_new_device(new_identifier)
         rospy.loginfo(add_identifier.success)
         self.add_identifiers_dialog.close()
-        self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
+        self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def edit_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         ids_response = self.get_ids()
         self.air_ids = ids_response.air_ids
@@ -562,17 +563,17 @@ class CommandWindow(QWidget):
         self.changed()
         lay.addWidget(box)
         self.edit_identifiers_dialog.show()
-        self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
+        self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
 
     def close_identifiers(self, side):
         if side == "Edit":
             self.edit_identifiers_dialog.close()
-            self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
+            self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
         else:
             self.add_identifiers_dialog.close()
-            self.windows_open["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
+            self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
         self.change_identifiers_dialog.show()
-        self.windows_open["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
     def edit_identifiers_accept(self, side):
         if sum(self.check_validity) != 4:
@@ -593,7 +594,7 @@ class CommandWindow(QWidget):
         edit_result = self.edit_device(edit_identifiers)
         rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_identifiers_dialog.close()
-        self.windows_open["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
+        self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1 # Identifiers start with index 1
