@@ -77,6 +77,13 @@ if __name__ == '__main__':
 						td.add_contact(msg_json['number'], msg_json['label'])
 						time.sleep(1)
 						td.get_contacts()
+					elif msg_json['request'] == 'add_syncthing':
+						dev = ids.get_device_details(msg_json["device_id"], msg_json["is_air"])
+						dev.syncthing_id = msg_json["syncthing_id"]
+						ids.edit_device(dev.to_json())
+
+						st.add_device(dev.syncthing_id, dev.label)
+
 				except json.JSONDecodeError:
 					print('invalid message format')
 					continue
@@ -90,17 +97,17 @@ if __name__ == '__main__':
 				dev['telegram_id'] = event['id']
 
 				dev_id = 0
-				if dev.get('request') == 'add':
-					dev_id = ids.add_new_device(dev)
-				elif dev.get('request') == 'edit':
+				if dev.get('request') == 'edit':
 					ids.edit_device(dev)
-					dev_id = dev['id']
+				elif dev.get('request') == 'add':
+					dev_id = ids.add_new_device(dev)
 
-				if dev['is_air']:
 					msg = {
 						"request": "init_device",
 						"device_id": dev_id,
+						"is_air": dev["is_air"],
 						"admin_syncthing_id": st.get_id()
 					}
 					td.create_chat(event['id'])
+					time.sleep(1)
 					td.send_message(event['id'], json.dumps(msg))
