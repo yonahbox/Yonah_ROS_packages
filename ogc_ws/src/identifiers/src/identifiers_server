@@ -16,9 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from std_msgs.msg import String
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
@@ -38,6 +37,7 @@ class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
 		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin/edit_ids', String, queue_size=10)
+		self.valid_ids_pub = rospy.Publisher('ogc/identifiers/valid_ids', UInt8MultiArray, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -111,7 +111,9 @@ class ServiceHandler:
 		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
 
 	def set_valid_ids(self, request):
-		return SetIdsResponse(self._ids.set_valid_ids(request.ids))
+		resp = SetIdsResponse(self._ids.set_valid_ids(request.ids))
+		self.valid_ids_pub.publish(UInt8MultiArray(data=self._ids.get_valid_ids()))
+		return resp
 
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))

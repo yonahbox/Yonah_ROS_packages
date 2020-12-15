@@ -69,7 +69,7 @@ def tdlib_topic_cb(msg, args):
 		if msg.uuid > 0:
 			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
 			msg_success[msg.uuid].persec()
-		rospy.logerr("sending message to " + str(tele_id.data_int))
+		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
 		rospy.logerr("SENDING FILE")

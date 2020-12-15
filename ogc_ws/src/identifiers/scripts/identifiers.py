@@ -75,14 +75,18 @@ class Identifiers:
 	def parse_file(self):
 		self.file_busy = True
 
+		# clear the whitelists to prevent duplicates
+		self.whitelist.clear()
+		self.whitelist_nums.clear()
+		self.whitelist_rb_serial.clear()
+		self.whitelist_telegram_ids.clear()
+		self.valid_ids.clear()
 		# read valid ids from the valid_ids file
 		if self.valid_ids_file:
 			try:
 				with open(self.valid_ids_file, "r") as f:
-					valid_id = f.readline()
-					while valid_id == f.readline():
+					while valid_id := f.readline().rstrip():
 						self.valid_ids.append(int(valid_id))
-						print(int(valid_id))
 			except FileNotFoundError:
 				print("Valid ids file is not available")
 				print("please check that the telegram_bone script works properly")
@@ -96,12 +100,6 @@ class Identifiers:
 				# file does not contain valid json
 				print("invalid identifier file")
 				exit()
-
-		# clear the whitelists to prevent duplicates
-		self.whitelist.clear()
-		self.whitelist_nums.clear()
-		self.whitelist_rb_serial.clear()
-		self.whitelist_telegram_ids.clear()
 
 		# Runs on admin instance
 		if self.admin:
