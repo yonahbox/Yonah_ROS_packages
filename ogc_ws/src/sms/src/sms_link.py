@@ -114,6 +114,7 @@ class SMSrx():
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
         if not self.is_online:
+            rospy.logerr("Cannot send. SMS Link is down.")
             return
         rospy.loginfo("Sending SMS: " + data.data)
         number = self._identifiers_get_number(data.id)
@@ -131,6 +132,7 @@ class SMSrx():
         if "Timed out" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Check SIM card balance")
+            self.is_online = False
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -139,6 +141,9 @@ class SMSrx():
     
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
+        if not self.is_online:
+            rospy.logerr("Cannot receive. SMS Link is down.")
+            return
         # Read an SMS received by the air router
         self._msglist = RuTOS.extract_msg(self.ssh, 1)
         if 'no message\n' in self._msglist:
@@ -146,8 +151,9 @@ class SMSrx():
         elif 'N/A\n' in self._msglist:
             pass
         elif 'Timed out' in self._msglist:
-            rospy.logerr("No response from SIM card. Please wait.")
-            self._wait_out_timeout()
+            rospy.logerr("No response from SIM card.")
+            self.message_checker.shutdown()
+            self.is_online = False
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
