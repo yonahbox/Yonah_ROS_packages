@@ -187,7 +187,6 @@ if __name__=='__main__':
         run.client()
     except:
         rospy.logerr("Failed to start node")
-        raise
     else:
         run.ssh.close()
         rospy.loginfo("Connection to router closed")

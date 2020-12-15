@@ -186,7 +186,7 @@ def tdlib_recv():
 					try:
 						msg_success[success_uuid].timer.shutdown()
 						msg_success[success_uuid].pub_to_switcher.publish("Success")
-					except IndexError:
+					except KeyError:
 						pass
 
 
