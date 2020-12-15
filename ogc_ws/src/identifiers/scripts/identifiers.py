@@ -235,6 +235,10 @@ class Identifiers:
 			return False
 		self.parse_file()
 		return True
+
+	def clear_valid_ids(self):
+		open(self.valid_ids_file, "w").close()
+		
 	# request adding a new device to admin
 	def new_device_request(self, is_air, label, number, imei, rb_serial):
 		device = {

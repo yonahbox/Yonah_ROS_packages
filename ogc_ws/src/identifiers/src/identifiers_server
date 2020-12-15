@@ -125,6 +125,9 @@ class ServiceHandler:
 		if msg.data == "identifiers.json":
 			self._ids.parse_file()
 
+	def clear_valid_ids(self):
+		self._ids.clear_valid_ids()
+
 
 if __name__ == '__main__':
 	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
@@ -163,3 +166,4 @@ if __name__ == '__main__':
 	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
 	rospy.spin()
+	handler.clear_valid_ids()
