@@ -30,6 +30,8 @@ TELE = 0
 SMS = 1
 SBD = 2
 
+SMS_timedout = False
+
 class watchdog():
     '''An instance of watchdog should be created for each client'''
     def __init__(self, air_id):
@@ -47,6 +49,8 @@ class watchdog():
     
     def switch(self, target_link):
         '''Perform the link-switch action and notify despatcher'''
+        if target_link == 1 and SMS_timedout:
+            target_link = 2
         self._link = target_link
         self._watchdog[target_link] = self._max_time[target_link]
         rospy.logwarn("Aircraft " + str(self._air_id) +  " switching to link " + str(target_link))
@@ -87,8 +91,8 @@ class switcher():
     def _switch_all(self, link):
         '''Command ALL clients to switch to the target link (if not already on that link)'''
         for i in self._valid_ids:
+            rospy.logwarn(f"Switching all clients to {link}")
             if not (self._watchdogs[i].link_status() == link):
-                rospy.logwarn("Switching all clients")
                 self._watchdogs[i].switch(link)
 
     ###########################
@@ -151,6 +155,7 @@ class switcher():
             self._timeout_counter += 1
         elif data.data == "Success":
             self._timeout_counter = 0
+            
         if self._timeout_counter == 3:
             self._timeout_counter = 0
             rospy.logerr("Telegram is taking too long to send. Switching to SMS")
@@ -158,11 +163,8 @@ class switcher():
 
     def monitor_smsout(self, data):
         if data.data == "Timeout":
-            self._timeout_counter += 1
-        elif data.data == "Success":
-            self._timeout_counter = 0
-        if self._timeout_counter == 3:
-            rospy.logerr("SMS timed out. Switching to SBD")
+            rospy.logerr("SMS timed out. Link is no longer useable")
+            SMS_timedout = True
             self._switch_all(SBD)
 
     ###########################

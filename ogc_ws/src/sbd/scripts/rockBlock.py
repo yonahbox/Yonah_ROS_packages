@@ -102,7 +102,7 @@ class rockBlock(object):
                 self.ping() # KEEP SACRIFICIAL!
                 self.s.timeout = 60
                 if( self.ping() ):
-                    if(self.callback != None and callable(self.callback.rockBlockConnected) ):   
+                    if(self.callback != None and callable(self.callback.rockBlockConnected) ):
                         self.callback.rockBlockConnected()
                         return
             self.close()

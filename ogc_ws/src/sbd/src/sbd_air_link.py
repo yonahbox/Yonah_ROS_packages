@@ -44,9 +44,6 @@ class satcomms(rockBlockProtocol):
     def __init__(self):
         rospy.init_node('sbd_air_link', anonymous=False)
         
-        rospy.wait_for_service("identifiers/self/serial")
-        rospy.wait_for_service("identifiers/get/serial")
-        rospy.wait_for_service("identifiers/check/lazy")
         rospy.wait_for_service("identifiers/get/valid_ids")
 
         ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
@@ -64,6 +61,10 @@ class satcomms(rockBlockProtocol):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
 
         # Identifiers
+        rospy.wait_for_service("identifiers/self/serial")
+        rospy.wait_for_service("identifiers/get/serial")
+        rospy.wait_for_service("identifiers/check/lazy")
+
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
         self._get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
@@ -79,6 +80,7 @@ class satcomms(rockBlockProtocol):
         try:
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
+            rospy.logerr("Check rockBlock")
             rospy.signal_shutdown("rockBlock error")
         
         # Msg Type Prioritization. Higher number means higher priority
