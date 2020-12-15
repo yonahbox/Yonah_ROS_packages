@@ -152,6 +152,8 @@ class gnddespatcher():
             prefixes = ["i", self._is_air, self._id, data.uuid]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
             try:
+                rospy.loginfo(data.id)
+                rospy.loginfo(self._aircrafts)
                 link = self._aircrafts[data.id].link_status()
                 if link == TELE:
                     self.pub_to_telegram.publish(msg)

@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 <launch>
-	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
+	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib_gnd"/>
 	<arg name="log_output" default="screen"/>
   
 	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
@@ -55,7 +55,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 		<param name="interval_3" value="$(arg interval_3)" />
 	</node>
 	
-	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="log">
+	<node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui" respawn="true" respawn_delay="3" output="$(arg log_output)">
 		</node>
 
 	<!-- <node name="timeout" pkg="despatcher" type="timeout.py" respawn="true" respawn_delay="3" output="log">

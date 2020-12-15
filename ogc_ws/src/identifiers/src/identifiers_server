@@ -32,11 +32,12 @@ from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
 from identifiers.srv import SetDetails, SetDetailsResponse
 from identifiers.srv import GetId, GetIdResponse
+from identifiers.srv import SetIds, SetIdsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
-		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin', String, queue_size=10)
+		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin/edit_ids', String, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -84,13 +85,13 @@ class ServiceHandler:
 			return GetIdResponse(self._ids.get_system_id(request.type, request.data))
 
 	def add_new_device(self, request):
-		device= self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		device = self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		self.telegram_pub.publish(device)
 
 		return AddNewDeviceResponse(True)
 
 	def edit_device(self, request):
-		device= self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		device = self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		self.telegram_pub.publish(device)
 
 		return EditDeviceResponse(True)
@@ -108,6 +109,9 @@ class ServiceHandler:
 
 	def set_syncthing_id(self, request):
 		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
+
+	def set_valid_ids(self, request):
+		return SetIdsResponse(self._ids.set_valid_ids(request.ids))
 
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
@@ -149,7 +153,8 @@ if __name__ == '__main__':
 	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
 	set_syncthing_id_service = rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
-
+	rospy.Service("identifiers/set/valid_ids", SetIds, handler.set_valid_ids)
+	
 	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
 

@@ -36,7 +36,7 @@ from .summary_window import SummaryWindow
 from .command_window import CommandWindow
 from .popup_window import PopupMessages
 from .aircraft_info import AircraftInfo
-# from .valid_id_window import ValidIdWindow
+from .valid_id_window import ValidIdWindow
 
 class MyPlugin(Plugin):
     def __init__(self, context):
@@ -75,8 +75,8 @@ class MyPlugin(Plugin):
 
         self.create_layout()
         self.shortcuts()
-        # self.ValidIdWindow = ValidIdWindow()
-        # self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
+        self.ValidIdWindow = ValidIdWindow()
+        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
         
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)

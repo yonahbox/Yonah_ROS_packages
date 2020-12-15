@@ -21,7 +21,7 @@ import rospy
 from std_msgs.msg import UInt8MultiArray
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QLabel
 from python_qt_binding.QtCore import Qt
-from identifiers.srv import GetIds, GetAllDetails
+from identifiers.srv import GetIds, GetAllDetails, SetIds
 
 class ValidIdWindow (QDialog):
     def __init__(self):
@@ -32,12 +32,20 @@ class ValidIdWindow (QDialog):
         # Services Call
         rospy.wait_for_service("identifiers/get/ids")
         rospy.wait_for_service("identifiers/get/all")
+        rospy.wait_for_service("identifiers/set/valid_ids")
         self.get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
         self.get_all = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
+        self.set_ids = rospy.ServiceProxy("identifiers/set/valid_ids", SetIds)
+        
+        # needed for Ubuntu 16.04
         self.air_ids_encoded = self.get_ids().air_ids
-        self.air_ids = []
-        for i in self.air_ids_encoded:
-            self.air_ids.append(int(chr(ord(i) + 48)))
+        self.air_ids = [i for i in self.air_ids_encoded]
+        # for i in self.air_ids_encoded:
+            # self.air_ids.append(int(chr(i + 48)))
+
+        # needed to Ubuntu 20.04
+        # self.air_ids = self.get_ids().air_ids
+
         self.buttons_state = {} # Dictionary to store all the states of the Buttons
         self.pub_valid_ids = rospy.Publisher("ogc/to_telegram/admin/valid_ids", UInt8MultiArray, queue_size = 5)
 
@@ -65,6 +73,11 @@ class ValidIdWindow (QDialog):
     def accept(self):
         valid_ids = [x for x in self.buttons_state.keys() if self.buttons_state.get(x).isChecked()]
         array_valid_ids = UInt8MultiArray(data=valid_ids)
-        self.pub_valid_ids.publish(array_valid_ids)
         rospy.loginfo("Sent valid ids: " + str(valid_ids))
+
+        set_ids_ret = self.set_ids(ids=valid_ids)
+        if not set_ids_ret:
+            rospy.logerr("Failed to write valid ids file")
+
+        self.pub_valid_ids.publish(array_valid_ids)
         self.close()
