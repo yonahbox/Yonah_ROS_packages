@@ -141,14 +141,11 @@ class gnddespatcher():
             self._aircrafts[i] = aircraft(i)
 
     def update_valid_ids_cb(self, msg):
-        rospy.loginfo("valid ids updated")
         self._valid_ids = [i for i in msg.data]
-        rospy.loginfo(f"new valid ids: {self._valid_ids}")
 
         for j in self._aircrafts.keys():
-            rospy.logwarn(self._aircrafts[j])
-            rospy.logwarn(type(self._aircrafts[j]))
             self._aircrafts[j].kill_timers()
+            del self._aircrafts[j]
 
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
