@@ -44,7 +44,6 @@ class aircraft():
     
     def __init__(self, air_id):
         self._air_id = air_id
-        # self._valid_ids = rospy.get_param("~valid_ids")
         self._link = TELE
         self._tele_interval = rospy.get_param("~interval_1")
         self._sms_interval = rospy.get_param("~interval_2")
@@ -55,10 +54,7 @@ class aircraft():
         rospy.wait_for_service("identifiers/get/valid_ids")
         rospy.wait_for_service("identifiers/self/self_id")
 
-        # ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
         ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
-
-        # self._valid_ids = ids_get_valid_ids().ids
         self._id = ids_get_self_id().data_int
 
 
@@ -171,8 +167,6 @@ class gnddespatcher():
             prefixes = ["i", self._is_air, self._id, data.uuid]
             msg.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], data.data)
             try:
-                rospy.loginfo(data.id)
-                rospy.loginfo(self._aircrafts)
                 link = self._aircrafts[data.id].link_status()
                 if link == TELE:
                     self.pub_to_telegram.publish(msg)

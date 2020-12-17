@@ -97,7 +97,6 @@ class switcher():
 
         for i in self._watchdogs.keys():
             i.kill_timers()
-            # del i
 
         # clear and recrete self._watchdogs
         del self._watchdogs
