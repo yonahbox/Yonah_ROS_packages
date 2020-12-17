@@ -85,7 +85,7 @@ class Identifiers:
 		if self.valid_ids_file:
 			try:
 				with open(self.valid_ids_file, "r") as f:
-					while f.readline().rstrip():
+					while valid_id := f.readline().rstrip():
 						self.valid_ids.append(int(valid_id))
 			except FileNotFoundError:
 				print("Valid ids file is not available")
@@ -230,7 +230,7 @@ class Identifiers:
 		try:
 			with open(self.valid_ids_file, "w") as f:
 				for id_n in ids:
-					f.write(id_n+"\n")
+					f.write(f"{id_n}\n")
 		except:
 			return False
 		self.parse_file()

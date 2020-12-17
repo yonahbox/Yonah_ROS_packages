@@ -145,7 +145,10 @@ class gnddespatcher():
 
         for j in self._aircrafts.keys():
             self._aircrafts[j].kill_timers()
-            del self._aircrafts[j]
+
+        # clear and recreate self._aircrafts
+        del self._aircrafts
+        self._aircrafts = {}
 
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
