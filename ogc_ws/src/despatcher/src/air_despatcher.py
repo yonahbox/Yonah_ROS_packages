@@ -307,8 +307,8 @@ class airdespatcher():
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()
-        alerts.shutdown()
         self.tele_sender.shutdown()
+        alerts.shutdown()
 
 if __name__=='__main__':
     run = airdespatcher()

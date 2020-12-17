@@ -29,6 +29,19 @@ class Device:
 		self.telegram_id = telegram_id
 		self.syncthing_id = syncthing_id
 
+	# return the object as a dictionary
+	def to_json(self):
+		return {
+			"label": self.label,
+			"is_air": self.is_air,
+			"id": self.id,
+			"number": self.number,
+			"imei": self.imei,
+			"rb_serial": self.rb_serial,
+			"telegram_id": self.telegram_id,
+			"syncthing_id": self.syncthing_id
+		}
+
 class Identifiers:
 	def __init__(self, json_file, is_air, self_id_file, valid_ids_file):
 		self.json_file = json_file				# Location of identifiers file
@@ -39,10 +52,7 @@ class Identifiers:
 		self.valid_ids = []						# List of whitelisted ids as defined the identifiers file
 		self.admin = False
 
-		if not valid_ids_file:
-			self.admin = True
-
-		if not self.admin:
+		if valid_ids_file:
 			try:
 				with open(self_id_file, "r") as f:
 					self.self_id = int(f.readline().rstrip())
@@ -50,11 +60,14 @@ class Identifiers:
 				print("self_id file is not available")
 				print("Please ensure the device was properly set up")
 				exit()
+		else:
+			self.admin = True
 
 		self.whitelist = []					# List of whitelisted devices (contains instances of the Device class)
 		self.whitelist_nums = []			# List of whitelisted numbers (contains phone number of the whitelisted devices)
 		self.whitelist_rb_serial=[]			# List of whitelisted rb serial numbers (contains serial number for whitelisted rockblock modules)
 		self.whitelist_telegram_ids = []	# List of whitelisted telegram user ids
+		self.syncthing_ids = []				# List of syncthing ids
 
 		self.rock7_un = ""					# username for rockblock
 		self.rock7_pw = ""					# password for rockblock
@@ -72,6 +85,7 @@ class Identifiers:
 		# parse the identifiers file
 		self.parse_file()
 
+	# Parse the identifiers.json file
 	def parse_file(self):
 		self.file_busy = True
 
@@ -101,39 +115,40 @@ class Identifiers:
 				print("invalid identifier file")
 				exit()
 
-		# Runs on admin instance
-		if self.admin:
-			for obj in self.json_obj['ground']:
+		for obj in self.json_obj['ground']:
+			self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id'], obj.get("syncthing_id", None)))
+			# add all available syncthing ids
+			if obj.get('syncthing_id', None):
+				self.syncthing_ids.append(obj['syncthing_id'])
+				
+			# whitelist all telegram ids if admin
+			if self.admin:
 				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
-				self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
-			for obj in self.json_obj['air']:
-				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
-				self.air_devices.append(Device(obj['label'], True, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id']))
 
-		# Search file for all devices without a telegram user id
-		for obj in self.json_obj["ground"] + self.json_obj["air"]:
-			if "telegram_id" not in obj.keys():
-					self.telegram_unknown_ids.append((obj["label"], obj["number"]))
+		for obj in self.json_obj["air"]:
+			self.air_devices.append(Device(obj['label'], True, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id'], obj.get("syncthing_id", None)))
+			# add all available syncthing ids
+			if obj.get('syncthing_id', None):
+				self.syncthing_ids.append(obj['syncthing_id'])
+
+			# whitelist all telegram ids if admin
+			if self.admin:
+				self.whitelist_telegram_ids.append(str(obj['telegram_id']))
 
 		# For loop with ternary operator to decide which array to check from the json object
 		# add all whitelisted devices into the whitelist and required information to their respective whitelists
-		for obj in (self.json_obj["ground"] if self.is_air else self.json_obj["air"]):
-			if obj["id"] in self.valid_ids:
-				self.whitelist.append(Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None)))
-				self.whitelist_nums.append(obj["number"])
-				self.whitelist_rb_serial.append(obj["rb_serial"])
-				if "telegram_id" in obj.keys():
-					self.whitelist_telegram_ids.append(str(obj["telegram_id"]))
+		for obj in self.ground_devices if self.is_air else self.air_devices:
+			if obj.id in self.valid_ids:
+				self.whitelist.append(obj)
+				self.whitelist_nums.append(obj.number)
+				self.whitelist_rb_serial.append(obj.rb_serial)
+				self.whitelist_telegram_ids.append(str(obj.telegram_id))
 
 		# Get details about the device this is running on
 		for obj in (self.json_obj["air"] if self.is_air else self.json_obj["ground"]):
 			if obj["id"] == self.self_id:
-				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj.get("telegram_id", None), obj.get("syncthing_id", None))
+				self.self_device = Device(obj["label"], self.is_air, obj["id"], obj["number"], obj["imei"], obj["rb_serial"], obj["telegram_id"], obj.get("syncthing_id", None))
 				break
-
-		# for standalone numbers (not currently in use)
-		for num in self.json_obj["standalone"]:
-			self.whitelist_nums.append(num)
 
 		# Get remaining information for SBD link
 		self.rock7_un = self.json_obj["sbd_details"]["rock7_username"]
@@ -152,10 +167,11 @@ class Identifiers:
 
 	# return the device associated with the id from any device
 	def get_device_details(self, id_n, is_air):
-		device_list = self.json_obj["air"] if is_air else self.json_obj["ground"]
+		device_list = self.air_devices if is_air else self.ground_devices
 		for dev in device_list:
-			if dev["id"] == id_n:
-				return Device(dev["label"], is_air, id_n, dev["number"], dev["imei"], dev["rb_serial"], dev.get("telegram_id", None),  dev.get("syncthing_id", None))
+			if dev.id == id_n:
+				return dev
+
 		return None
 
 	# return phone number associated with id if it is whitelisted
@@ -198,6 +214,7 @@ class Identifiers:
 	def get_whitelist(self):
 		return self.whitelist_nums
 
+	# return the id of the device this run on
 	def get_self_id(self):
 		return self.self_id
 
@@ -209,13 +226,19 @@ class Identifiers:
 	def get_self_imei(self):
 		return self.self_device.imei
 
+	# return phone numebr of the device this runs on
 	def get_self_number(self):
-		return self.device.number
+		return self.self_device.number
 
+	# return the telegram_id associated with the specified id
 	def get_air_telegram_id(self, id_n):
 		for device in self.air_devices:
 			if device.id == id_n:
 				return device.telegram_id
+
+	# return all syncthing ids available in identifiers
+	def get_syncthing_ids(self):
+		return self.syncthing_ids
 
 	# return all the id numbers currently in use (device exists in identifiers file)
 	def get_active_ids(self):
@@ -223,6 +246,7 @@ class Identifiers:
 		ground_ids = [dev["id"] for dev in self.json_obj["ground"]]
 		return (air_ids, ground_ids)
 
+	# return all valid ids
 	def get_valid_ids(self):
 		return self.valid_ids
 
@@ -273,25 +297,22 @@ class Identifiers:
 	#	4: telegram_id
 	#	5: syncthing_id
 	def get_system_id(self, data_type, data):
-		for obj in self.json_obj["air"] + self.json_obj["ground"]:
-			val = None
-			if data_type == 0 and data == obj["label"]:
-				return obj["id"]
-			elif data_type == 1 and data == obj["number"]:
-				return obj["id"]
-			elif data_type == 2 and data == obj["imei"]:
-				return obj["id"]
-			elif data_type == 3 and data == obj["rb_serial"]:
-				return obj["id"]
-			elif data_type == 4 and data == obj.get("telegram_id", None):
-				return obj["id"]
-			elif data_type == 5 and data == obj.get("syncthing_id", None):
-				return obj["id"]
+		for obj in self.air_devices + self.ground_devices:
+			if data_type == 0 and data == obj.label:
+				return obj.is_air, obj.id
+			elif data_type == 1 and data == obj.number:
+				return obj.is_air, obj.id
+			elif data_type == 2 and data == obj.imei:
+				return obj.is_air, obj.id
+			elif data_type == 3 and data == obj.rb_serial:
+				return obj.is_air, obj.id
+			elif data_type == 4 and data == obj.telegram_id:
+				return obj.is_air, obj.id
+			elif data_type == 5 and data == obj.syncthing_id:
+				return obj.is_air, obj.id
 
-			if val == data:
-				return obj["id"]
-
-		return 0
+		print(f"Error {data_type} {data}")
+		return 0, 0
 
   # add new device to the identifiers file
 	def add_new_device(self, device):
@@ -350,6 +371,7 @@ class Identifiers:
 		selected_device["imei"] = device["imei"] if device["imei"] != ""else selected_device["imei"]
 		selected_device["rb_serial"] = device["rb_serial"] if device["rb_serial"] != "" else selected_device["rb_serial"]
 		selected_device["telegram_id"] = device["telegram_id"] if device["telegram_id"] != "" else selected_device["telegram_id"]
+		selected_device["syncthing_id"] = device["syncthing_id"] if device["syncthing_id"] != "" else selected_device["syncthing_id"]
 
 		#write details to file
 		with open(self.json_file, "w") as f:

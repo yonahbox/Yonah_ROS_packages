@@ -2,4 +2,5 @@ uint8 type
 string data
 int64 data_int
 ---
+bool is_air
 uint8 id

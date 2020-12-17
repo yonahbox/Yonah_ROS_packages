@@ -47,6 +47,7 @@ class SMSrx():
         self._msglist = "" # Raw incoming message extracted by router (see https://wiki.teltonika.lt/view/Gsmctl_commands#Read_SMS_by_index)
         self._msg = "" # Actual incoming message, located on 5th line of msglist
         self.interval = 1 # Time interval between each check of the router for incoming msgs
+        self.is_online = True
 
         # Initialise SSH
         try:
@@ -91,6 +92,19 @@ class SMSrx():
                 continue
         rospy.loginfo("Purge complete!")
 
+    # def _wait_out_timeout(self):
+    #     """
+    #     We need to wait out the timeout of the router as if we continue pinging the router, it 
+    #     will always return timeout and our SMS link will be permanently down
+    #     """
+    #     self.message_checker.shutdown()
+    #     rospy.logwarn("SMS link shut down for 3 minutes")
+    #     self.is_online = False
+    #     rospy.sleep(180)
+    #     rospy.loginfo("SMS link back online")
+    #     self.is_online = True
+    #     self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+
     #########################################
     # Handle incoming/outgoing SMS messages
     #########################################
@@ -99,6 +113,9 @@ class SMSrx():
         '''
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
+        if not self.is_online:
+            rospy.logerr("Cannot send. SMS Link is down.")
+            return
         rospy.loginfo("Sending SMS: " + data.data)
         number = self._identifiers_get_number(data.id)
         if number is None:
@@ -112,11 +129,10 @@ class SMSrx():
         if ack != None:
             self.pub_to_timeout.publish(ack)
 
-        if "Timeout\n" in sendstatus:
+        if "Timed out" in sendstatus:
             self.pub_to_switcher.publish("Timeout")
-            rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-        elif "Connection lost" in sendstatus:
-            rospy.logerr("Connection to router lost!")
+            rospy.logerr("Timeout: Check SIM card balance")
+            self.is_online = False
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -125,16 +141,19 @@ class SMSrx():
     
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
+        if not self.is_online:
+            rospy.logerr("Cannot receive. SMS Link is down.")
+            return
         # Read an SMS received by the air router
         self._msglist = RuTOS.extract_msg(self.ssh, 1)
         if 'no message\n' in self._msglist:
             pass
         elif 'N/A\n' in self._msglist:
             pass
-        elif 'Timeout.\n' in self._msglist:
-            rospy.logerr("Timeout: Aircraft SIM card isn't responding!")
-        elif 'Connection lost' in self._msglist:
-            rospy.logerr("Connection to router lost!")
+        elif 'Timed out' in self._msglist:
+            rospy.logerr("No response from SIM card.")
+            self.message_checker.shutdown()
+            self.is_online = False
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
@@ -142,7 +161,6 @@ class SMSrx():
             # Ensure sender is whitelisted before extracting message
             is_valid_sender = self._identifiers_valid_sender(1, sender)
             if is_valid_sender.result:
-            # if self._ids.is_valid_sender(1, sender):
                 rospy.loginfo('Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                 self._msg = self._msglist[4].split(' ', 1)[1].rstrip()
@@ -155,21 +173,20 @@ class SMSrx():
     ############################
     # "Main" function
     ############################
-    
+
     def client(self):
         """Main function to let aircraft receive SMS commands"""
         rospy.Subscriber("ogc/to_sms", LinkMessage, self.send_sms)
-        message_sender = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
         rospy.spin()
-        message_sender.shutdown()
+        self.message_checker.shutdown()
 
 if __name__=='__main__':
     try:
         run = SMSrx()
         run.client()
     except:
-        rospy.loginfo("Failed to start node")
-        raise
+        rospy.logerr("Failed to start node")
     else:
         run.ssh.close()
         rospy.loginfo("Connection to router closed")

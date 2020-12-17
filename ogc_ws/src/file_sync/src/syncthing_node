@@ -18,33 +18,99 @@
 from inotify.adapters import Inotify
 import re
 from threading import Thread
+import json
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8
+from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
+from identifiers.msg import DeviceId
 
 from syncthing import Syncthing
 
 def st_cb(command, st):
 	if command.data == "pause":
+		rospy.loginfo("[Syncthing] Pausing syncthing")
 		st.pause()
 	elif command.data == "resume":
+		rospy.loginfo("[Syncthing] Resuming syncthing")
 		st.resume()
+
+def st_events():
+	connected_pub = rospy.Publisher("ogc/files/connected", DeviceId, queue_size=5)
+	disconnected_pub = rospy.Publisher("ogc/files/disconnected", DeviceId, queue_size=5)
+	
+	rospy.wait_for_service("identifiers/get/id")
+	get_device_id = rospy.ServiceProxy("identifiers/get/id", GetId)
+
+	last_id = 0
+
+	while True:
+		rospy.loginfo("[Syncthing] Making request")
+		response = st.get_event(last_id)
+		if response is None:
+			continue
+
+		rospy.logdebug(response)
+		last_id = response["id"]
+		# print(json.dumps(response, sort_keys=True, indent=4))
+
+		device_id = response["data"]["id"]
+		system_id = get_device_id(data=device_id, type=5)
+		device = get_device(id=system_id.id, is_air=system_id.is_air)
+
+		msg = DeviceId()
+		msg.id = system_id.id
+		msg.is_air = system_id.is_air
+		msg.label = device.label
+
+		if response["type"] == "DeviceConnected":
+			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) connected')
+			connected_pub.publish(msg)
+		elif response["type"] == "DeviceDisconnected":
+			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
+			disconnected_pub.publish(msg)
+
 
 if __name__ == "__main__":
 	try:
 		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
 		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=5)
 		file_conflict_pub = rospy.Publisher("ogc/files/conflict", String, queue_size=5)
+		error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
 
 		watch_dir = rospy.get_param("~watch_dir")
 
-		st = Syncthing()
+		rospy.wait_for_service("identifiers/set/st_id")
+		rospy.wait_for_service("identifiers/get/syncthing_ids")
+		rospy.wait_for_service("identifiers/get/id")
+		rospy.wait_for_service("identifiers/get/all")
+
+		set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+		get_st_ids = rospy.ServiceProxy("identifiers/get/syncthing_ids", GetSyncthingIds)
+		get_system_id = rospy.ServiceProxy("identifiers/get/id", GetId)
+		get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
+
+		st = Syncthing(error_pub)
 		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 
-		event_thread = Thread(target=st.event_subscribe)
+		event_thread = Thread(target=st_events)
 		event_thread.daemon = True
 		event_thread.start()
 
+		# list of devices already added to syncthing
+		st_devices = st.get_devices()
+
+		# list of devices in identifers file
+		st_ids = get_st_ids().data.split(" ")[:-1]
+
+		for id_n in st_ids:
+			if id_n not in st_devices:
+				device_id = get_system_id(type=5, data=id_n)
+				device = get_device(is_air=device_id.is_air, id=device_id.id)
+				rospy.loginfo(f"Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id} to syncthing")
+				st.add_device(id_n, device.label)
+
+		# inotify, used to look for changes to any files in the Sync folder
 		inotify_adapter = Inotify()
 		inotify_adapter.add_watch(watch_dir)
 

@@ -33,6 +33,7 @@ from Td import Td
 
 msg_success = {}
 
+
 class TimeoutClass():
 	def __init__(self, uuid):
 		self.uuid = uuid
@@ -130,6 +131,8 @@ def tdlib_recv():
 
 	# Loop runs indefinitely, checking for any updates in telegram
 	while True: 
+		if stop_thread:
+			break
 		event = td.receive()
 		if event:
 			# print(event)
@@ -200,11 +203,12 @@ def tdlib_recv():
 						td.download_file(file_id)
 						file_locations[file_id] = final_path
 
-			# if event['@type'] == 'updateMessageSendSucceeded':
-			# 	success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
-			# 	if success_uuid > 0:
-			# 		msg_success[success_uuid].timer.shutdown()
-			# 		msg_success[success_uuid].pub_to_switcher.publish("Success")
+			if event['@type'] == 'updateMessageSendSucceeded':
+				success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
+				if success_uuid > 0:
+					if msg_success.get(success_uuid, False):
+						msg_success[success_uuid].timer.shutdown()
+						msg_success[success_uuid].pub_to_switcher.publish("Success")
 
 
 if __name__ == '__main__':
@@ -230,6 +234,7 @@ if __name__ == '__main__':
 
 
 		# Creates a new thread for running the receive function
+		stop_thread = False
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True
 		recv_thread.start()
@@ -248,10 +253,14 @@ if __name__ == '__main__':
 
 	except rospy.ROSInterruptException:
 		sys.stdout.flush()
+		stop_thread = True
+		recv_thread.join()
 		td.destroy()
 		exit()
 	except KeyboardInterrupt:
 		sys.stdout.flush()
+		stop_thread = True
+		recv_thread.join()
 		td.destroy()
 		exit()
 	

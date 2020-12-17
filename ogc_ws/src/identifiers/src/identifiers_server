@@ -32,6 +32,7 @@ from identifiers.srv import GetIds, GetIdsResponse
 from identifiers.srv import SetDetails, SetDetailsResponse
 from identifiers.srv import GetId, GetIdResponse
 from identifiers.srv import SetIds, SetIdsResponse
+from identifiers.srv import GetSyncthingIds, GetSyncthingIdsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
@@ -56,10 +57,20 @@ class ServiceHandler:
 
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
+		resp = GetAllDetailsResponse()
+
 		if device is not None:
-			return GetAllDetailsResponse(label=device.label, number=device.number, imei=device.imei, rb_serial=device.rb_serial)
+			resp.label = device.label
+			resp.is_air = device.is_air
+			resp.id = device.id
+			resp.number = device.number
+			resp.imei = device.imei
+			resp.rb_serial = device.rb_serial
+			resp.telegram_id = device.telegram_id
+			resp.syncthing_id = device.syncthing_id
+			return resp
 		else:
-			return None
+			return resp
 
 	def get_self_id(self, request):
 		return GetSelfDetailsResponse(data_int=self._ids.get_self_id())
@@ -79,10 +90,8 @@ class ServiceHandler:
 		return GetIdsResponse(ids=self._ids.get_valid_ids())
 
 	def get_system_id(self, request):
-		if request.type == 4:
-			return GetIdResponse(self._ids.get_system_id(request.type, request.data_int))
-		else:
-			return GetIdResponse(self._ids.get_system_id(request.type, request.data))
+		is_air, id_n = self._ids.get_system_id(request.type, (request.data_int if request.type == 4 else request.data))
+		return GetIdResponse(is_air=is_air, id=id_n)
 
 	def add_new_device(self, request):
 		device = self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
@@ -106,6 +115,14 @@ class ServiceHandler:
 		response.air_ids = air_ids
 		response.ground_ids = ground_ids
 		return response
+
+	def get_syncthing_ids(self, request):
+		ids = self._ids.get_syncthing_ids()
+		final_str = ""
+		for id_n in ids:
+			final_str += id_n + " "
+
+		return GetSyncthingIdsResponse(data=final_str)
 
 	def set_syncthing_id(self, request):
 		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
@@ -138,30 +155,31 @@ if __name__ == '__main__':
 
 	handler = ServiceHandler(identifiers_file, is_air, self_id_file, valid_ids_file)
 
-	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
-	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
-	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
-	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
-	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
-	admin_id_service = rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
-	valid_ids_servuce = rospy.Service("identifiers/get/valid_ids", GetIds, handler.get_valid_ids)
-	system_id_server = rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
+	rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
+	rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
+	rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
+	rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
+	rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
+	rospy.Service("identifiers/get/valid_ids", GetIds, handler.get_valid_ids)
+	rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
+	rospy.Service("identifiers/get/syncthing_ids", GetSyncthingIds, handler.get_syncthing_ids)
 
-	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
-
-	self_id_service = rospy.Service("identifiers/self/self_id", GetSelfDetails, handler.get_self_id)
-	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
-	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
-	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
-
-	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
-	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
-	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
-	set_syncthing_id_service = rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
-	rospy.Service("identifiers/set/valid_ids", SetIds, handler.set_valid_ids)
+	rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
 	
-	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
-	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
+	rospy.Service("identifiers/self/self_id", GetSelfDetails, handler.get_self_id)
+	rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
+	rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
+	rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
+	
+	rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
+	rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
+	rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
+	rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
+	rospy.Service("identifiers/set/valid_ids", SetIds, handler.set_valid_ids)
+
+	rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
+	rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
 
 	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
