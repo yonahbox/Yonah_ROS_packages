@@ -75,9 +75,7 @@ class MyPlugin(Plugin):
 
         self.create_layout()
         self.shortcuts()
-        self.ValidIdWindow = ValidIdWindow()
-        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
-        
+        self.CommandWindow.change_valid_ids()
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)

@@ -71,7 +71,7 @@ class CommandWindow(QWidget):
         self.create_layout(active_aircrafts)
         self.PopupMessages = PopupMessages()
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
-
+        self.ValidIdWindow = ValidIdWindow()
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
 
         self.arm_button.pressed.connect(self.arm)
@@ -247,8 +247,8 @@ class CommandWindow(QWidget):
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
 
     def change_valid_ids(self):
-        self.ValidIdWindow = ValidIdWindow()
-        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
+        self.ValidIdWindow.show()
+
     # Temporary place so that I dont have to scroll so far down
     def ros_log_parser(self):
         filenames = QFileDialog.getOpenFileNames(

@@ -50,7 +50,7 @@ class ValidIdWindow (QDialog):
         self.pub_valid_ids = rospy.Publisher("ogc/to_telegram/admin/valid_ids", UInt8MultiArray, queue_size = 5)
 
         self.populate_layout()
-    
+
     def populate_layout(self):
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         header = QLabel('Select Aircrafts you need: ')
@@ -66,11 +66,14 @@ class ValidIdWindow (QDialog):
             number = self.get_all(i, True).number
             self.buttons_state[i] = QCheckBox(label + " - " + str(number))
             self.layout.addWidget(self.buttons_state.get(i))
-        
+
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
     def accept(self):
+        for i in self.air_ids:
+            if self.buttons_state[i].isChecked() == True:
+                self.buttons_state[i].setEnabled(False)
         valid_ids = [x for x in self.buttons_state.keys() if self.buttons_state.get(x).isChecked()]
         array_valid_ids = UInt8MultiArray(data=valid_ids)
         rospy.loginfo("Sent valid ids: " + str(valid_ids))
@@ -80,4 +83,7 @@ class ValidIdWindow (QDialog):
             rospy.logerr("Failed to write valid ids file")
 
         self.pub_valid_ids.publish(array_valid_ids)
-        self.close()
+        self.hide()
+
+    def reject(self):
+        self.hide()
