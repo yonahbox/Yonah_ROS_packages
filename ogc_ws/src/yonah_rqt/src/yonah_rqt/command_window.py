@@ -40,6 +40,7 @@ from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import PopupMessages
 from .log_window import LogWindow
+from .valid_id_window import ValidIdWindow
 
 class CommandWindow(QWidget):
     def __init__(self, active_aircrafts):
@@ -156,7 +157,6 @@ class CommandWindow(QWidget):
     def full_window(self):
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
-        
 
         layout = QGridLayout()
         self.ping_row = QFormLayout()
@@ -176,7 +176,8 @@ class CommandWindow(QWidget):
         self.mission_next_button = QPushButton('Mission Next')
         self.waypoint_load_button = QPushButton('Load Waypoint')
         self.sync_pause_button = QPushButton('Pause Sync')
-        self.sync_resume_button = QPushButton('Resume Sync')
+        self.sync_resume_button = QPushButton('Resume Sync') 
+        self.valid_ids_button = QPushButton('Change Valid IDs')
         top_row = 60        # Minimum height for the top row buttons
         bottom_row = 40     # Minimum height for the bottom row buttons
 
@@ -191,6 +192,7 @@ class CommandWindow(QWidget):
         self.waypoint_load_button.setMinimumHeight(bottom_row)
         self.sync_pause_button.setMinimumHeight(bottom_row)
         self.sync_resume_button.setMinimumHeight(bottom_row)
+        self.valid_ids_button.setMinimumHeight(bottom_row)
 
         self.change_mode_button.pressed.connect(self.change_mode)
         self.change_identifiers_button.pressed.connect(self.change_identifiers)
@@ -202,6 +204,7 @@ class CommandWindow(QWidget):
         self.mission_next_button.pressed.connect(self.mission_next)
         self.sync_pause_button.pressed.connect(self.sync_pause)
         self.sync_resume_button.pressed.connect(self.sync_resume)
+        self.valid_ids_button.pressed.connect(self.change_valid_ids)
         self.custom_ping_combobox.currentIndexChanged.connect(self.custom_ping_change)
 
         identifiers = group_titles.index("Identifiers")
@@ -221,6 +224,7 @@ class CommandWindow(QWidget):
         layout.addWidget(self.change_mode_button, 3, mission)   
         
         layout.addWidget(self.change_identifiers_button, 1, identifiers)
+        layout.addWidget(self.valid_ids_button, 2, identifiers)
         layout.addWidget(self.ros_reader, 1, log)
 
         layout.addWidget(self.direct_sync, 1, sync)
@@ -242,6 +246,9 @@ class CommandWindow(QWidget):
             self.combo_box.addItem('Aircraft ' + str(j))
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
 
+    def change_valid_ids(self):
+        self.ValidIdWindow = ValidIdWindow()
+        self.ValidIdWindow.show() # Put Valid ID after create_layout so that the window is spawned in front
     # Temporary place so that I dont have to scroll so far down
     def ros_log_parser(self):
         filenames = QFileDialog.getOpenFileNames(
