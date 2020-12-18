@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import LinkMessage
-from identifiers.srv import GetDetails, AddTelegramId, CheckSender
+from identifiers.srv import GetDetails, AddTelegramId, CheckSender, GetSelfDetails
 from telegram.msg import ContactInfo
 
 import timeoutscript
@@ -27,6 +27,7 @@ import os
 from pathlib import Path
 from threading import Thread
 import json
+import time
 
 from Td import Td
 
@@ -69,10 +70,10 @@ def tdlib_topic_cb(msg, args):
 		if msg.uuid > 0:
 			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
 			msg_success[msg.uuid].persec()
-		rospy.logerr("sending message to " + str(tele_id.data_int))
+		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.logerr("SENDING FILE")
+		rospy.loginfo("SENDING FILE")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
@@ -90,10 +91,32 @@ def tdlib_add_contact_cb(contact, td):
 		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
 	td.get_contacts()									# refresh contacts to get the user ids
 
-def tdlib_admin_cb(msg, td):
+def tdlib_admin_cb(msg, args):
+	td = args[0]
 	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
-	admin_id = get_admin_id()
-	td.send_message(admin_id.data_int, msg.data)
+	get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+	admin_id = get_admin_id().data_int
+	self_id = get_self_id().data_int
+	# args[1] contains the type of message to send
+	#	0: request changes to identifers file
+	#	1: set gcs_ids for the valid bones
+
+	td.create_chat(admin_id)
+	time.sleep(1)
+
+	if args[1] == 0:
+		td.send_message(admin_id, msg.data)
+	elif args[1] == 1:
+		data = [i for i in msg.data]
+		cmd = {
+			"request": "set_gcs",
+			"air_ids": data,
+			"ground_ids": [self_id]
+		}
+
+		rospy.loginfo(f"sending message to admin: {json.dumps(cmd)}")
+		td.send_message(admin_id, json.dumps(cmd))
+
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
@@ -198,10 +221,10 @@ if __name__ == '__main__':
 		rospy.wait_for_service("identifiers/add/telegram_id")
 		rospy.wait_for_service("identifiers/check/proper")
 		rospy.wait_for_service("identifiers/get/admin_id")
+		rospy.wait_for_service("identifiers/self/self_id")
 
 		# Service to get the telegram user id from identifiers
 		identifiers_get_telegram_id = rospy.ServiceProxy("identifiers/get/telegram_id", GetDetails)
-
 		# Initialize Td class, handles all the telegram actions for the node
 		td = Td(tdlib_dir)
 
@@ -219,8 +242,10 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
 		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
+		rospy.Subscriber('ogc/to_telegram/admin/edit_ids', String, tdlib_admin_cb, (td, 0))
+		rospy.Subscriber('ogc/to_telegram/admin/valid_ids', UInt8MultiArray, tdlib_admin_cb, (td, 1))
+		
 		pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
-		rospy.Subscriber('ogc/to_telegram/admin', String, tdlib_admin_cb, td)
 		# inform all valid nodes that the link is up
 		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 

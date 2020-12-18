@@ -35,7 +35,7 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from statustext.msg import YonahStatusText
 from despatcher.msg import LinkMessage
 
@@ -115,6 +115,11 @@ class airdespatcher():
 
         # syncthing controls
         self.syncthing_control = rospy.Publisher("ogc/files/syncthing", String, queue_size=5)
+        rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+
+    def update_valid_ids_cb(self, msg):
+        valid_ids = [i for i in msg.data]
+        self.ground_id = valid_ids[0]
 
     ###########################################
     # Handle Ground-to-Air (G2A) messages

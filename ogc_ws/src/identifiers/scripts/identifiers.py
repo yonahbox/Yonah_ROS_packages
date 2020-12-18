@@ -19,7 +19,7 @@ import json
 
 # helper class to hold information about the devices specified in the identifiers file
 class Device:
-	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id, syncthing_id):
+	def __init__(self, label, is_air, dev_id, number, imei, rb_serial, telegram_id, syncthing_id=None):
 		self.label = label
 		self.is_air = is_air
 		self.id = dev_id
@@ -44,24 +44,15 @@ class Device:
 
 class Identifiers:
 	def __init__(self, json_file, is_air, self_id_file, valid_ids_file):
-		self.json_file = json_file			# Location of identifiers file
-		self.is_air = is_air				# Boolean to know if it is running air side or ground side
-		self.self_id = 0	 				# id number as defined in the identifiers file of the device this runs on
-		self.self_device = None				# Information about the device this runs one
-		self.valid_ids = []					# List of whitelisted ids as defined the identifiers file
+		self.json_file = json_file				# Location of identifiers file
+		self.is_air = is_air					# Boolean to know if it is running air side or ground side
+		self.self_id = 0	 					# id number as defined in the identifiers file of the device this runs on
+		self.self_device = None					# Information about the device this runs one
+		self.valid_ids_file = valid_ids_file	# Location of valid ids file
+		self.valid_ids = []						# List of whitelisted ids as defined the identifiers file
 		self.admin = False
 
-		# read valid ids from the valid_ids file
 		if valid_ids_file:
-			try:
-				with open(valid_ids_file, "r") as f:
-					while valid_id := f.readline():
-						self.valid_ids.append(int(valid_id))
-			except FileNotFoundError:
-				print("Valid ids file is not available")
-				print("please check that the telegram_bone script works properly")
-				exit()
-
 			try:
 				with open(self_id_file, "r") as f:
 					self.self_id = int(f.readline().rstrip())
@@ -98,6 +89,23 @@ class Identifiers:
 	def parse_file(self):
 		self.file_busy = True
 
+		# clear the whitelists to prevent duplicates
+		self.whitelist.clear()
+		self.whitelist_nums.clear()
+		self.whitelist_rb_serial.clear()
+		self.whitelist_telegram_ids.clear()
+		self.valid_ids.clear()
+		# read valid ids from the valid_ids file
+		if self.valid_ids_file:
+			try:
+				with open(self.valid_ids_file, "r") as f:
+					while valid_id := f.readline().rstrip():
+						self.valid_ids.append(int(valid_id))
+			except FileNotFoundError:
+				print("Valid ids file is not available")
+				print("please check that the telegram_bone script works properly")
+				exit()
+
 		with open(self.json_file) as file:
 			try:
 				# read the file as a json object
@@ -107,16 +115,8 @@ class Identifiers:
 				print("invalid identifier file")
 				exit()
 
-		# clear the whitelists to prevent duplicates
-		self.whitelist.clear()
-		self.whitelist_nums.clear()
-		self.whitelist_rb_serial.clear()
-		self.whitelist_telegram_ids.clear()
-		self.syncthing_ids.clear()
-
 		for obj in self.json_obj['ground']:
 			self.ground_devices.append(Device(obj['label'], False, obj['id'], obj['number'], obj['imei'], obj['rb_serial'], obj['telegram_id'], obj.get("syncthing_id", None)))
-			
 			# add all available syncthing ids
 			if obj.get('syncthing_id', None):
 				self.syncthing_ids.append(obj['syncthing_id'])
@@ -250,6 +250,19 @@ class Identifiers:
 	def get_valid_ids(self):
 		return self.valid_ids
 
+	def set_valid_ids(self, ids):
+		try:
+			with open(self.valid_ids_file, "w") as f:
+				for id_n in ids:
+					f.write(f"{id_n}\n")
+		except:
+			return False
+		self.parse_file()
+		return True
+
+	def clear_valid_ids(self):
+		open(self.valid_ids_file, "w").close()
+		
 	# request adding a new device to admin
 	def new_device_request(self, is_air, label, number, imei, rb_serial):
 		device = {

@@ -21,7 +21,7 @@ switcher.py: Handle intelligent link-switching logic
 
 import rospy
 import RuTOS
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 
 import headers
 from identifiers.srv import GetIds
@@ -68,6 +68,9 @@ class watchdog():
     def link_status(self):
         return self._link
 
+    def kill_timers(self):
+        self.countdown_handler.shutdown()
+
 class switcher():
 
     def __init__(self):
@@ -81,6 +84,24 @@ class switcher():
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._timeout_counter = 0
         self._watchdogs = dict()
+        for i in self._valid_ids:
+            self._watchdogs[i] = watchdog(i)
+    
+        rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+
+    def update_valid_ids_cb(self, msg):
+        self._valid_ids = [i for i in msg.data]
+
+        del self._new_msg_chk
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+
+        for i in self._watchdogs.keys():
+            i.kill_timers()
+
+        # clear and recrete self._watchdogs
+        del self._watchdogs
+        self._watchdogs = {}
+
         for i in self._valid_ids:
             self._watchdogs[i] = watchdog(i)
 

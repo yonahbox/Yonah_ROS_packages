@@ -16,9 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from std_msgs.msg import String
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
@@ -32,12 +31,14 @@ from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
 from identifiers.srv import SetDetails, SetDetailsResponse
 from identifiers.srv import GetId, GetIdResponse
+from identifiers.srv import SetIds, SetIdsResponse
 from identifiers.srv import GetSyncthingIds, GetSyncthingIdsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
-		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin', String, queue_size=10)
+		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin/edit_ids', String, queue_size=10)
+		self.valid_ids_pub = rospy.Publisher('ogc/identifiers/valid_ids', UInt8MultiArray, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -93,13 +94,13 @@ class ServiceHandler:
 		return GetIdResponse(is_air=is_air, id=id_n)
 
 	def add_new_device(self, request):
-		device= self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		device = self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		self.telegram_pub.publish(device)
 
 		return AddNewDeviceResponse(True)
 
 	def edit_device(self, request):
-		device= self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		device = self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
 		self.telegram_pub.publish(device)
 
 		return EditDeviceResponse(True)
@@ -126,6 +127,11 @@ class ServiceHandler:
 	def set_syncthing_id(self, request):
 		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
 
+	def set_valid_ids(self, request):
+		resp = SetIdsResponse(self._ids.set_valid_ids(request.ids))
+		self.valid_ids_pub.publish(UInt8MultiArray(data=self._ids.get_valid_ids()))
+		return resp
+
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
@@ -135,6 +141,9 @@ class ServiceHandler:
 	def modified_cb(self, msg):
 		if msg.data == "identifiers.json":
 			self._ids.parse_file()
+
+	def clear_valid_ids(self):
+		self._ids.clear_valid_ids()
 
 
 if __name__ == '__main__':
@@ -162,14 +171,17 @@ if __name__ == '__main__':
 	rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
 	rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
 	rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
+	
 	rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
 	rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
 	rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
 	rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
-	
+	rospy.Service("identifiers/set/valid_ids", SetIds, handler.set_valid_ids)
+
 	rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
 	rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
 
 	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
 	rospy.spin()
+	handler.clear_valid_ids()

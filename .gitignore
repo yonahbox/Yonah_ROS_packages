@@ -25,3 +25,4 @@
 **/__pycache__
 *.pyc
 */rqt_log.txt
+.gitignore.save

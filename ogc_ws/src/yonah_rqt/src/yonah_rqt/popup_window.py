@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
-import sys
 import timeoutscript
 
 import threading
@@ -32,7 +31,7 @@ class PopupMessages(QWidget):
         super(PopupMessages, self).__init__()
         self.setWindowTitle("Command Window")
         self.move(700,400)
-        # self.CommandWindow = CommandWindow()
+        self.windows_opened = {}
         self.command_publisher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
     def create_link_message(self, destination_id, data):
@@ -41,7 +40,6 @@ class PopupMessages(QWidget):
         message.uuid = timeoutscript.increment()
         message.id = destination_id
         message.data = data
-        # rospy.logwarn(message.uuid)
         self.command_publisher.publish(message)
 
     def user_input_textbox(self, title, message, id):
@@ -50,21 +48,22 @@ class PopupMessages(QWidget):
             self.input_text = [text, id]
         else:
             self.input_text = []
-    
+
     def emergency_disarm(self):
+        self.windows_opened["emergency disarm"] = True
         num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
+        
         if ok:
             data = "disarm"
             if num == 0:
                 rospy.logerr("Invalid Aircraft ID, Please input a valid Aircraft ID")
                 return 0
             self.create_link_message(num, data)
-            rospy.logdebug("[AC %d EMERGENCY DISARM]", num)
+            rospy.loginfo("[AC %d EMERGENCY DISARM]", num)
     
-    def arm_window(self, id, message_type, title, message, text = "Do you still want to continue?"):
-        self.destination_id = id
+    def arm_window(self, sysid, message_type, title, message, text = "Do you still want to continue?"):
+        self.destination_id = sysid
         self.message = QMessageBox()
-        self.has_message_opened = 1
         if message_type[1] == "Warning":
             self.message.setIcon(QMessageBox.Warning)
         elif message_type[1] == "Information":
@@ -78,6 +77,17 @@ class PopupMessages(QWidget):
             self.message.buttonClicked.connect(self.arm_message)
         elif message_type[0] == "DISARM":
             self.message.buttonClicked.connect(self.disarm_message)
+        elif message_type[0] == "sync resume":
+            self.message.buttonClicked.connect(self.sync_resume)
+
+    def sync_resume(self, i):
+        if i.text() == '&Yes':
+            data = "syncthing resume"
+            statustext_message = "Aircraft {} Resume Syncthing command sent".format(self.destination_id)
+            self.create_link_message(self.destination_id, data)
+        else:
+            self.message.close()
+        self.windows_opened["arm window"] = self.message.isVisible()
 
     def arm_message(self, i):
         if i.text() == '&Yes':
@@ -86,6 +96,7 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
+        self.windows_opened["arm window"] = self.message.isVisible()
 
     def disarm_message(self, i):
         if i.text() == '&Yes':
@@ -94,9 +105,11 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
-    
+        self.windows_opened["arm window"] = self.message.isVisible()
+
     def warning_message(self, heading, text):
         self.warning = QMessageBox()
+        self.windows_opened["arm window"] = self.message.isVisible()
         self.warning.setIcon(QMessageBox.Warning)
         self.warning.setText(heading)
         self.warning.setInformativeText(text)
@@ -104,3 +117,4 @@ class PopupMessages(QWidget):
         self.warning.setStandardButtons(QMessageBox.Ok)
         self.warning.buttonClicked.connect(self.warning.close)
         self.warning.show()
+        self.windows_opened["arm window"] = self.message.isVisible()

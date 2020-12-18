@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # ROS/Third-Party
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import LinkMessage
 
 # Local
@@ -57,6 +57,13 @@ class satcomms(rockBlockProtocol):
         # Headers (for checking of switch cmds)
         self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
+        rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+    
+    def update_valid_ids_cb(self, msg):
+        _valid_ids = [i for i in msg.data]
+        del self._new_switch_cmd
+        self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
+
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
 

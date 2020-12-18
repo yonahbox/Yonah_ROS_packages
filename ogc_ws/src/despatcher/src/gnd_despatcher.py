@@ -24,7 +24,7 @@ import rospy
 import os
 import rospkg
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import RegularPayload
 from despatcher.msg import LinkMessage
 from identifiers.srv import GetSelfDetails, GetIds
@@ -44,7 +44,6 @@ class aircraft():
     
     def __init__(self, air_id):
         self._air_id = air_id
-        # self._valid_ids = rospy.get_param("~valid_ids")
         self._link = TELE
         self._tele_interval = rospy.get_param("~interval_1")
         self._sms_interval = rospy.get_param("~interval_2")
@@ -55,10 +54,7 @@ class aircraft():
         rospy.wait_for_service("identifiers/get/valid_ids")
         rospy.wait_for_service("identifiers/self/self_id")
 
-        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
         ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
-
-        self._valid_ids = ids_get_valid_ids().ids
         self._id = ids_get_self_id().data_int
 
 
@@ -94,13 +90,17 @@ class aircraft():
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self._send_heartbeat_sms)
         elif self._link == TELE:
             self._tele_interval = rospy.get_param("~interval_1")
-            try:
+            if hasattr(self, 'sms_sender'):
                 self.sms_sender.shutdown()
-            except:
-                pass
     
     def link_status(self):
         return self._link
+
+    def kill_timers(self):
+        rospy.loginfo("Destroying instance of aircraft")
+        self.tele_sender.shutdown()
+        if hasattr(self, 'sms_sender'):
+            self.sms_sender.shutdown()
 
 class gnddespatcher():
 
@@ -121,16 +121,31 @@ class gnddespatcher():
         ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
         ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
 
+        rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+
         # Gnd Identifiers and msg headers (attached to outgoing msgs)
         self._is_air = 0 # 1 = Aircraft, 0 = GCS. Obviously, gnd despatcher should be on a GCS...
         self._id = ids_get_self_id().data_int # Our GCS ID
         self._severity = "i" # Outgoing msg severity level
 
-        
         # Msg headers and valid aircrafts to send to
         self._valid_ids = ids_get_valid_ids().ids
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._aircrafts = dict()
+        rospy.logerr(self._valid_ids)
+        for i in self._valid_ids:
+            self._aircrafts[i] = aircraft(i)
+
+    def update_valid_ids_cb(self, msg):
+        self._valid_ids = [i for i in msg.data]
+
+        for j in self._aircrafts.keys():
+            self._aircrafts[j].kill_timers()
+
+        # clear and recreate self._aircrafts
+        del self._aircrafts
+        self._aircrafts = {}
+
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
 

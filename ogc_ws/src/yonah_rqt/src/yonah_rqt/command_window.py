@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import time
-import sys
 import timeoutscript
 
 from functools import partial
@@ -41,6 +40,7 @@ from .waypoint_window import WaypointWindow
 from .summary_window import SummaryWindow
 from .popup_window import PopupMessages
 from .log_window import LogWindow
+from .valid_id_window import ValidIdWindow
 
 class CommandWindow(QWidget):
     def __init__(self, active_aircrafts):
@@ -51,7 +51,8 @@ class CommandWindow(QWidget):
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
-        self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
+        self.windows_opened = {}
+        # self.is_window_open = [0,0,0] # Keeps record whether change identifier, add identifier, edit identifier windows are open
         self.active_aircrafts = active_aircrafts
         self.checklist_info = {}
         self.arm_status = {}
@@ -70,7 +71,7 @@ class CommandWindow(QWidget):
         self.create_layout(active_aircrafts)
         self.PopupMessages = PopupMessages()
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
-
+        self.ValidIdWindow = ValidIdWindow()
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
 
         self.arm_button.pressed.connect(self.arm)
@@ -114,7 +115,6 @@ class CommandWindow(QWidget):
         self.second_row = QHBoxLayout()
         self.third_row = QHBoxLayout()
         
-
         # Create the widgets
         self.combo_box = QComboBox()
 
@@ -157,13 +157,12 @@ class CommandWindow(QWidget):
     def full_window(self):
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
+
         layout = QGridLayout()
         self.ping_row = QFormLayout()
         group_titles = ["","Identifiers", "Sync", "Log", "Missions", "Ping"]
 
         self.custom_ping_combobox = QComboBox()
-
-        
         # Use a for loop to add items inside the drop down menu
         for i in (self.custom_ping_list):
             self.custom_ping_combobox.addItem(i)
@@ -177,7 +176,8 @@ class CommandWindow(QWidget):
         self.mission_next_button = QPushButton('Mission Next')
         self.waypoint_load_button = QPushButton('Load Waypoint')
         self.sync_pause_button = QPushButton('Pause Sync')
-        self.sync_resume_button = QPushButton('Resume Sync')
+        self.sync_resume_button = QPushButton('Resume Sync') 
+        self.valid_ids_button = QPushButton('Change Valid IDs')
         top_row = 60        # Minimum height for the top row buttons
         bottom_row = 40     # Minimum height for the bottom row buttons
 
@@ -192,6 +192,7 @@ class CommandWindow(QWidget):
         self.waypoint_load_button.setMinimumHeight(bottom_row)
         self.sync_pause_button.setMinimumHeight(bottom_row)
         self.sync_resume_button.setMinimumHeight(bottom_row)
+        self.valid_ids_button.setMinimumHeight(bottom_row)
 
         self.change_mode_button.pressed.connect(self.change_mode)
         self.change_identifiers_button.pressed.connect(self.change_identifiers)
@@ -203,6 +204,7 @@ class CommandWindow(QWidget):
         self.mission_next_button.pressed.connect(self.mission_next)
         self.sync_pause_button.pressed.connect(self.sync_pause)
         self.sync_resume_button.pressed.connect(self.sync_resume)
+        self.valid_ids_button.pressed.connect(self.change_valid_ids)
         self.custom_ping_combobox.currentIndexChanged.connect(self.custom_ping_change)
 
         identifiers = group_titles.index("Identifiers")
@@ -222,6 +224,7 @@ class CommandWindow(QWidget):
         layout.addWidget(self.change_mode_button, 3, mission)   
         
         layout.addWidget(self.change_identifiers_button, 1, identifiers)
+        layout.addWidget(self.valid_ids_button, 2, identifiers)
         layout.addWidget(self.ros_reader, 1, log)
 
         layout.addWidget(self.direct_sync, 1, sync)
@@ -234,6 +237,7 @@ class CommandWindow(QWidget):
         self.full_widget.setLayout(layout)
 
         self.full_widget.show()
+        self.windows_opened["full_menu"] = self.full_widget.isVisible()
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
@@ -241,6 +245,9 @@ class CommandWindow(QWidget):
         for j in active_aircrafts: 
             self.combo_box.addItem('Aircraft ' + str(j))
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
+
+    def change_valid_ids(self):
+        self.ValidIdWindow.show()
 
     # Temporary place so that I dont have to scroll so far down
     def ros_log_parser(self):
@@ -271,17 +278,17 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
-        # self.create_link_message(1,2,2) # this line is to destroy the rqt through TypeError
-        # while True: # Generate loop error
-        #     continue
+        self.windows_opened["arm window"] = True
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
             self.PopupMessages.arm_window(self.destination_id, ["ARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to ARM?")
+            
         if self.arm_status.get('AC' + str(self.destination_id)) == "DISARMED":
             pass
 
     def disarm(self):
+        self.windows_opened["disarm window"] = True
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go(self):
@@ -325,12 +332,18 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def checklist(self):
+        self.windows_opened["checklist window"] = True
         self.checklist_info.get("AC" + str(self.destination_id)).show()
 
     def sync_resume(self):
         if self.arm_status.get('AC' + str(self.destination_id)) == "ARMED":
-            # Pop up window
-            data = "syncthing resume"
+            message = "Aircraft is ARMED"
+            text = "Are you sure you want to resume sync?"
+            message_type = ["sync resume", "Warning"]
+            title = "Sync Resume Warning"
+            self.PopupMessages.arm_window(self.destination_id, message_type, title, message, text)
+            
+        data = "syncthing resume"
         self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
@@ -368,16 +381,16 @@ class CommandWindow(QWidget):
         layout.addWidget(edit_air)
 
         self.change_identifiers_dialog.show()
-        self.is_window_open[0] = 1
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
+        # self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.is_window_open[0] = 0
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         self.add_identifiers_dialog = QDialog()
         self.add_identifiers_dialog.setWindowTitle("Add {} Identifier".format(side))
-        self.is_window_open[1] = 1
 
         title = QLabel("Add New {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -402,6 +415,7 @@ class CommandWindow(QWidget):
         identifiers_layout.addWidget(buttons)
         self.add_identifiers_dialog.setLayout(identifiers_layout)
         self.add_identifiers_dialog.show()
+        self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def identifiers_input_field(self, field):
         self.name = QLabel("Label")
@@ -505,19 +519,18 @@ class CommandWindow(QWidget):
         add_identifier = self.add_new_device(new_identifier)
         rospy.loginfo(add_identifier.success)
         self.add_identifiers_dialog.close()
-        self.is_window_open[1] = 0
+        self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def edit_identifiers(self, side):
         self.side = side
         self.change_identifiers_dialog.close()
-        self.is_window_open[0] = 0
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
         ids_response = self.get_ids()
         self.air_ids = ids_response.air_ids
         self.ground_ids = ids_response.ground_ids
 
         self.edit_identifiers_dialog = QDialog()
-        self.is_window_open[2] = 1
         self.edit_identifiers_dialog.setWindowTitle("Edit {} Identifier".format(side))
         title = QLabel("Edit Existing {} Identifier".format(side))
         title.setFont(QFont("Ubuntu", 13, QFont.Bold))
@@ -529,12 +542,12 @@ class CommandWindow(QWidget):
         # Somehow get the current label inside it
         if side == "Air":
             for i in self.air_ids:
-                # self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
-                self.edit_combo_box.addItem(f"Aircraft {i}")
+                self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem(f"Aircraft {i}")
         else:
             for i in self.ground_ids:
-                # self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
-                self.edit_combo_box.addItem(f"GCS {i}")
+                self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
+                # self.edit_combo_box.addItem(f"GCS {i}")
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         self.check_validity = [0, 0, 0, 0]
@@ -557,16 +570,17 @@ class CommandWindow(QWidget):
         self.changed()
         lay.addWidget(box)
         self.edit_identifiers_dialog.show()
+        self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
 
     def close_identifiers(self, side):
         if side == "Edit":
             self.edit_identifiers_dialog.close()
-            self.is_window_open[2] = 0
+            self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
         else:
             self.add_identifiers_dialog.close()
-            self.is_window_open[1] = 0
+            self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
         self.change_identifiers_dialog.show()
-        self.is_window_open[0] = 1
+        self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
     def edit_identifiers_accept(self, side):
         if sum(self.check_validity) != 4:
@@ -587,7 +601,7 @@ class CommandWindow(QWidget):
         edit_result = self.edit_device(edit_identifiers)
         rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_identifiers_dialog.close()
-        self.is_window_open[2] = 0
+        self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
     
     def edit_identifiers_combo_box(self, i):
         self.edit_identifiers_id = i + 1 # Identifiers start with index 1
@@ -607,6 +621,7 @@ class CommandWindow(QWidget):
             self.edit_imei = new_edit_device.imei
             self.serial_lineedit.setText(str(new_edit_device.rb_serial))
             self.edit_serial = new_edit_device.rb_serial
+
         except rospy.ServiceException as e:
             self.edit_combo_box.setCurrentIndex(0)
             self.PopupMessages.warning_message("The ID you have selected is invalid", "Please select another ID")
