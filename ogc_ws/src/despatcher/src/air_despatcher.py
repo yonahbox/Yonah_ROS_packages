@@ -121,6 +121,10 @@ class airdespatcher():
         valid_ids = [i for i in msg.data]
         self.ground_id = valid_ids[0]
 
+        del self._new_msg_chk
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+
+
     ###########################################
     # Handle Ground-to-Air (G2A) messages
     ###########################################

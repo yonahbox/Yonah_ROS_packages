@@ -138,6 +138,10 @@ class gnddespatcher():
     def update_valid_ids_cb(self, msg):
         self._valid_ids = [i for i in msg.data]
 
+        del self._new_msg_chk
+        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+
+
         for j in self._aircrafts.keys():
             self._aircrafts[j].kill_timers()
 

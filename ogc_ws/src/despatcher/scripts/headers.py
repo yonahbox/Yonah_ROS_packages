@@ -40,7 +40,7 @@ class new_msg_chk():
         else:
             self._prev_transmit_time[sysid] = timestamp
             return True
-
+    
 ######################
 # Handle incoming msgs
 ######################

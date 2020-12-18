@@ -26,7 +26,7 @@ class MessageTimer():
     def __init__(self, message, message_id):
         self.message_id = message_id
         self.message = message
-        self.timeout = [5, 10]
+        self.timeout = [5, 10, 10] # timeout for acknowledged is 0
         self.status = 0 # status: 0 pending, 1 sent through links, 2 acknowledged
         self._watchdog = self.timeout
 
@@ -87,8 +87,7 @@ class Manager():
             elif data.data == "double tick":
                 self.messages[data.uuid].status = 2
                 self.messages[data.uuid].stop_timer()
-                self.messages[data.uuid].client()
-                rospy.loginfo("MESSAGE IS SUCCESSFULLY SENT")
+                rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
                 
             else:
                 rospy.logerr("Unknown message received: " + str(data))
