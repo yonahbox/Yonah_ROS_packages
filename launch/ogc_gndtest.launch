@@ -79,5 +79,8 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node>
 
+	<!-- timeout -->
+	<node name="timeout" pkg="despatcher" type="timeout.py" respawn="true" respawn_delay="3" output="log">
+    </node>
 
 </launch>
