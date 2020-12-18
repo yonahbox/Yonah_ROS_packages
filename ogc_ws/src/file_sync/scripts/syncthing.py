@@ -115,3 +115,20 @@ class Syncthing:
 		})
 
 		self._post("/rest/config/folders", folder)
+
+	def check_paused(self):
+		devices = self._get("/rest/config/devices")
+
+		if not devices:
+			return None
+
+		status = []
+		for device in devices:
+			status.append(device['paused'])
+
+		if all(status):
+			print("device paused")
+		else:
+			print("not paused")
+
+		return all(status)
