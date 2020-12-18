@@ -93,6 +93,9 @@ class Syncthing:
 	def get_devices(self):
 		devices = self._get("/rest/config/devices")
 
+		if not devices:
+			return None
+
 		known_devices = []
 		for device in devices:
 			known_devices.append(device["deviceID"])

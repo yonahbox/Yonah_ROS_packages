@@ -45,6 +45,7 @@ def st_events():
 	last_id = 0
 
 	while True:
+		rospy.logdebug("Making request")
 		response = st.get_event(last_id)
 		if response is None:
 			continue
@@ -91,12 +92,16 @@ if __name__ == "__main__":
 		st = Syncthing(error_pub)
 		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
 
+		# list of devices already added to syncthing
+		st_devices = st.get_devices()
+		if not st_devices:
+			rospy.logerr("Syncthing may not be running, please check")
+			# rospy.signal_shutdown("Syncthing not running")
+			exit()
+
 		event_thread = Thread(target=st_events)
 		event_thread.daemon = True
 		event_thread.start()
-
-		# list of devices already added to syncthing
-		st_devices = st.get_devices()
 
 		# list of devices in identifers file
 		st_ids = get_st_ids().data.split(" ")[:-1]
