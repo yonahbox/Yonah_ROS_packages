@@ -69,7 +69,7 @@ if __name__ == '__main__':
 							td.create_chat(telegram_id)
 							td.send_message(telegram_id, json.dumps(command_msg))
 					elif msg_json['request'] in ['add','edit']:
-						print(msg_json)
+						# print(msg_json)
 						print(f"adding contact {msg_json['number']} {msg_json['label']} ")
 
 						id_waitlist[msg_json['number']] = msg_json

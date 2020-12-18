@@ -400,7 +400,6 @@ class MyPlugin(Plugin):
         opened_CommandWindows = [x for x in self.CommandWindow.windows_opened.keys() if self.CommandWindow.windows_opened.get(x)]
         opened_PopupMessages = [x for x in self.PopupMessages.windows_opened.keys() if self.PopupMessages.windows_opened.get(x)]
         opened_windows = opened_CommandWindows + opened_PopupMessages
-        print(opened_windows)
         for i in opened_windows:
             if i == "full_menu":
                 self.CommandWindow.full_widget.close()
@@ -431,7 +430,6 @@ class MyPlugin(Plugin):
         filename = "rqt_log.txt"
         self.path = os.path.join(rospkg.RosPack().get_path("yonah_rqt"), "src/yonah_rqt", filename)
         file_exists = os.path.isfile(self.path) 
-        print(file_exists)
         if file_exists:
             with open(self.path, 'r') as lines:
                 data = lines.readlines()

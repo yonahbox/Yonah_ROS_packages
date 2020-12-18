@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import csv
 import os
 import rospkg
+import rospy
 from python_qt_binding.QtWidgets import QFileDialog, QWidget, QPushButton, QVBoxLayout
 from python_qt_binding.QtWidgets import QHBoxLayout, QTreeWidget, QTreeWidgetItem, QMessageBox
 from python_qt_binding.QtCore import Qt
@@ -43,7 +44,7 @@ class ChecklistWindow(QWidget):
             self.BPO_checklist = self.excel_parser(BPO_checklist_file)
             self.BTO_checklist = self.excel_parser(BTO_checklist_file)
         except:
-            print("\033[91m ERROR: Checklist files are missing or named wrongly. Please follow the original directory and naming")
+            rospy.logerr("Checklist files are missing or named wrongly. Please follow the original directory and naming")
             exit()
     
         # Create the layout
