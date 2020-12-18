@@ -97,13 +97,13 @@ def tdlib_admin_cb(msg, args):
 	get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
 	admin_id = get_admin_id().data_int
 	self_id = get_self_id().data_int
-	# args[1] contains the type of message to send
-	#	0: request changes to identifers file
-	#	1: set gcs_ids for the valid bones
 
 	td.create_chat(admin_id)
 	time.sleep(1)
 
+	# args[1] contains the type of message to send
+	#	0: request changes to identifers file
+	#	1: set gcs_ids for the valid bones
 	if args[1] == 0:
 		td.send_message(admin_id, msg.data)
 	elif args[1] == 1:
@@ -125,6 +125,9 @@ def tdlib_recv():
 	to_despatcher_pub = rospy.Publisher('ogc/ack_tele_file', String, queue_size=10)
 	identifiers_add_tele_id = rospy.ServiceProxy("identifiers/add/telegram_id", AddTelegramId)
 	is_valid_sender_service = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
+	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
+	admin_id = get_admin_id().data_int
+
 	boot_time = rospy.get_rostime().secs
 
 	file_locations = {}
@@ -135,7 +138,6 @@ def tdlib_recv():
 			break
 		event = td.receive()
 		if event:
-			# print(event)
 			rospy.logdebug(event)
 			# log details if there is an error
 			if event['@type'] == 'error':
@@ -186,7 +188,6 @@ def tdlib_recv():
 				message_type = event['message']['content']['@type']
 				if message_type == 'messageText':
 					message = event['message']['content']['text']['text']
-					# rospy.logwarn(message)
 					from_tele_pub.publish(message)
 
 					# Mark message as read
@@ -204,6 +205,10 @@ def tdlib_recv():
 						file_locations[file_id] = final_path
 
 			if event['@type'] == 'updateMessageSendSucceeded':
+				# ignore messages sent to admin
+				if event['message']['chat_id'] == admin_id:
+					continue
+
 				success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
 				if success_uuid > 0:
 					if msg_success.get(success_uuid, False):
@@ -246,8 +251,6 @@ if __name__ == '__main__':
 		rospy.Subscriber('ogc/to_telegram/admin/valid_ids', UInt8MultiArray, tdlib_admin_cb, (td, 1))
 		
 		pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
-		# inform all valid nodes that the link is up
-		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
 
 		rospy.spin()
 
