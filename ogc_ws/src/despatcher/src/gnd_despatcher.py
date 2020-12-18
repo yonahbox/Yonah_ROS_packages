@@ -132,7 +132,6 @@ class gnddespatcher():
         self._valid_ids = ids_get_valid_ids().ids
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
         self._aircrafts = dict()
-        rospy.logerr(self._valid_ids)
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
 
