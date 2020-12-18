@@ -87,7 +87,7 @@ class PopupMessages(QWidget):
             self.create_link_message(self.destination_id, data)
         else:
             self.message.close()
-        self.windows_opened["arm window"] = self.message.isVisible()
+        self.windows_opened["sync resume"] = self.message.isVisible()
 
     def arm_message(self, i):
         if i.text() == '&Yes':
