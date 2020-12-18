@@ -73,7 +73,7 @@ def tdlib_topic_cb(msg, args):
 		rospy.loginfo("sending message to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.logerr("SENDING FILE")
+		rospy.loginfo("SENDING FILE")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
