@@ -155,7 +155,7 @@ class airdespatcher():
             rospy.logerr("Invalid message format")
 
     def resume_syncthing(self, data):
-        if int(data.armed) == 0 and self.hop == False: 
+        if data.data == "hop False" and self.payloads.entries["arm"] == False: 
             self.syncthing_control.publish("resume")
 
 
@@ -290,7 +290,6 @@ class airdespatcher():
     
     def client(self):
         rospy.Subscriber("mavros/state", State, self.payloads.get_mode_and_arm_status)
-        rospy.Subscriber("mavros/state", State, self.resume_syncthing)
         rospy.Subscriber("mavros/vfr_hud", VFR_HUD, self.payloads.get_VFR_HUD_data)
         rospy.Subscriber("mavros/global_position/global", NavSatFix, self.payloads.get_GPS_coord)
         rospy.Subscriber("mavros/rc/out", RCOut, self.payloads.get_VTOL_mode)
@@ -304,6 +303,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
         rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
         rospy.Subscriber("ogc/ack_tele_file", String, self.acknowledge_file_download)
+        rospy.Subscriber('ogc/to_rff', String, self.resume_syncthing)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)
         rospy.spin()
