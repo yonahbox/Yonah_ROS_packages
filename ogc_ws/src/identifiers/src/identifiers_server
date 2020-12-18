@@ -67,7 +67,8 @@ class ServiceHandler:
 			resp.imei = device.imei
 			resp.rb_serial = device.rb_serial
 			resp.telegram_id = device.telegram_id
-			resp.syncthing_id = device.syncthing_id
+			if device.syncthing_id:
+				resp.syncthing_id = device.syncthing_id
 			return resp
 		else:
 			return resp
