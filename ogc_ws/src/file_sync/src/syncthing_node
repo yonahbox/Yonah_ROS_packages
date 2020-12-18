@@ -45,14 +45,12 @@ def st_events():
 	last_id = 0
 
 	while True:
-		rospy.loginfo("[Syncthing] Making request")
 		response = st.get_event(last_id)
 		if response is None:
 			continue
 
 		rospy.logdebug(response)
 		last_id = response["id"]
-		# print(json.dumps(response, sort_keys=True, indent=4))
 
 		device_id = response["data"]["id"]
 		system_id = get_device_id(data=device_id, type=5)
