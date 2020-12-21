@@ -52,8 +52,6 @@ class satcomms(rockBlockProtocol):
         self._init_variables()
         self._is_air = 1 # We are an air node!
         
-        # Put the publisher function here
-        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
         self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
@@ -66,6 +64,7 @@ class satcomms(rockBlockProtocol):
 
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
+        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 
         # Identifiers
         rospy.wait_for_service("identifiers/self/serial")

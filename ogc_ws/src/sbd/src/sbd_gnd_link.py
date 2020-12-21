@@ -149,7 +149,7 @@ class satcommsgnd(satcomms):
             reply = requests.post(url, data=self._mt_cred)
             rospy.loginfo(reply.text)
             if reply.text == "OK":
-                ack = timeoutscript.ack_converter(msg, 1)
+                ack = timeoutscript.ack_converter(data, 1)
                 if ack != None:
                     self.pub_to_timeout.publish(ack)
             return True
@@ -219,7 +219,7 @@ class satcommsgnd(satcomms):
     def send_msg(self, data):
         '''Handle outgoing msgs'''
         # Acknowledgment message sending
-        ack = timeout.ack_converter(msg, 0)
+        ack = timeoutscript.ack_converter(data, 0)
         if ack != None:
             self.pub_to_timeout.publish(ack)
         # Try sending through Rock 7 server first. If it fails, fallback to gnd rockBlock
