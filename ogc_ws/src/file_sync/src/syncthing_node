@@ -24,9 +24,10 @@ import rospy
 from std_msgs.msg import String, UInt8
 from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
 from identifiers.msg import DeviceId
-from file_sync.srv import GetStatus, GetStatusResponse
+# from file_sync.srv import GetStatus, GetStatusResponse
 
 from syncthing import Syncthing
+from syncthing.srv import GetStatus, GetStatusResponse
 
 def st_cb(command, st):
 	if command.data == "pause":
