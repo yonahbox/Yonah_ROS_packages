@@ -196,15 +196,18 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
+        rospy.loginfo(data)
         # data. data list is i 1 1 0 message
         data_list = data.data.split()
         msg = " ".join(data_list[4:-1])
         aircraft_id = data_list[2]
-        if "LinkSwitch" in msg:
-            self.link_status(aircraft_id, msg[-1])
-            return
         status = Communicate()
-        status.ondemand_signal.connect(self.ondemand_display)
+        if "LinkSwitch" in msg:
+            # link_status = Communicate()
+            status.ondemand_signal.connect(self.link_status)
+            # link_status.ondemand_signal.emit(msg, aircraft_id)
+        else:
+            status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
 
     def ondemand_sitl(self, data):
@@ -336,15 +339,17 @@ class MyPlugin(Plugin):
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
 
-    def link_status(self, aircraft_id, link):
+    def link_status(self, link, aircraft_id):
+        link = link[-1] # extract the status
+        rospy.loginfo(link)
         if int(link) == 0:
             link = "Telegram"
         elif int(link) == 1:
-            link == "SMS"
+            link = "SMS"
         elif int(link) == 2:
-            link == "SBD"
+            link = "SBD"
         else:
-            link == "ERR"
+            link = "ERR"
         self.WaypointWindow.waypoint_plaintext_dict.get("aircraftlink" + aircraft_id).setPlainText(link)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
         self.SummaryWindow.waypoint_plaintext_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
@@ -419,7 +424,7 @@ class MyPlugin(Plugin):
                 self.CommandWindow.PopupMessages.message.close()
             elif i == "checklist window":
                 self.CommandWindow.checklist_info.get("AC" + str(self.destination_id)).close()
-                
+
         self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
 
