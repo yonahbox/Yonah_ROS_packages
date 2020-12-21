@@ -148,7 +148,7 @@ class satcommsgnd(satcomms):
         try:
             reply = requests.post(url, data=self._mt_cred)
             rospy.loginfo(reply.text)
-            if reply.text == "OK":
+            if "OK" in reply.text:
                 ack = timeoutscript.ack_converter(data, 1)
                 if ack != None:
                     self.pub_to_timeout.publish(ack)
