@@ -82,6 +82,7 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
         rospy.Subscriber("ogc/feedback_to_rqt", LinkMessage, self.feedback_message)
+        rospy.Subscriber("ogc/stuff", String, self.link_status)
 
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.ondemand_sitl)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
@@ -199,6 +200,9 @@ class MyPlugin(Plugin):
         data_list = data.data.split()
         msg = " ".join(data_list[4:-1])
         aircraft_id = data_list[2]
+        if "LinkSwitch" in msg:
+            self.link_status(aircraft_id, msg[-1])
+            return
         status = Communicate()
         status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
@@ -319,10 +323,10 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText("00:00:00")
         else:
             self.time = AC_time # sync the UI time to the data time
-            self.time_in_seconds = int(self.time) - int(self.aircrafts_info.get("AC" + aircraft_id).initial_time)
-            minutes = str(self.time_in_seconds // 60)
-            hours = str(self.time_in_seconds // 3600)
-            seconds = str(self.time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
+            time_in_seconds = int(self.time) - int(self.aircrafts_info.get("AC" + aircraft_id).initial_time)
+            minutes = str(time_in_seconds // 60)
+            hours = str(time_in_seconds // 3600)
+            seconds = str(time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
             if int(seconds) < 10:
                 seconds = "0" + seconds
             if int(minutes) < 10:
@@ -331,6 +335,19 @@ class MyPlugin(Plugin):
                 hours = "0" + hours
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
+
+    def link_status(self, aircraft_id, link):
+        if int(link) == 0:
+            link = "Telegram"
+        elif int(link) == 1:
+            link == "SMS"
+        elif int(link) == 2:
+            link == "SBD"
+        else:
+            link == "ERR"
+        self.WaypointWindow.waypoint_plaintext_dict.get("aircraftlink" + aircraft_id).setPlainText(link)
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
+        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
 
     def status_text_display(self, status_text):
         status = status_text.split(",")
@@ -345,17 +362,6 @@ class MyPlugin(Plugin):
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
-        # if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
-        #     data = data.split(" ", 3)
-        #     if data[0] == "i":
-        #         status = "INFO"
-        #     elif data[0] == "w":
-        #         status = "WARN"
-        #     elif data[0] == "e":
-        #         status = "ERROR"
-        #     elif data[0] == "a":
-        #         status = "ACKNOWLEDGMENT"
-        #     data = data[3]
         text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)
@@ -445,11 +451,6 @@ class MyPlugin(Plugin):
             rospy.loginfo("rqt_log file doesn't exist, creating new rqt_log file")
             f = open(self.path, "w+")
             f.write("None")
-
-    # def trigger_configuration(self):
-    #     Comment in to signal that the plugin has a way to configure
-    #     This will enable a setting button (gear icon) in each dock widget title bar
-    #     Usually used to open a modal configuration dialog
    
 # Class that is responsible for signal and slot function
 class Communicate (QObject):
