@@ -85,20 +85,20 @@ class CommandWindow(QWidget):
         self.pub_to_despatcher = rospy.Publisher("ogc/to_despatcher", LinkMessage, queue_size = 5)
 
         # Service Command
-        # try:
-        #     rospy.wait_for_service("identifiers/get/imei", timeout= 5)
-        #     rospy.wait_for_service("identifiers/get/serial", timeout= 5)
-        #     rospy.wait_for_service("identifiers/get/all", timeout= 5)
-        #     rospy.wait_for_service("identifiers/get/number", timeout= 5)
+        try:
+            rospy.wait_for_service("identifiers/get/imei", timeout= 5)
+            rospy.wait_for_service("identifiers/get/serial", timeout= 5)
+            rospy.wait_for_service("identifiers/get/all", timeout= 5)
+            rospy.wait_for_service("identifiers/get/number", timeout= 5)
 
-        #     rospy.wait_for_service("identifiers/add/device", timeout= 5)
-        #     rospy.wait_for_service("identifiers/edit/device", timeout= 5)
-        #     rospy.wait_for_service("identifiers/get/ids", timeout= 5)
+            rospy.wait_for_service("identifiers/add/device", timeout= 5)
+            rospy.wait_for_service("identifiers/edit/device", timeout= 5)
+            rospy.wait_for_service("identifiers/get/ids", timeout= 5)
 
-        # except rospy.ROSException:
-        #     self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
-        #     self.identifiers_error = 1
-        #     rospy.logerr("Identifiers node is not initialised")
+        except rospy.ROSException:
+            self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
+            self.identifiers_error = 1
+            rospy.logerr("Identifiers node is not initialised")
             
         self.add_new_device = rospy.ServiceProxy("identifiers/add/device", AddNewDevice)
         self.edit_device = rospy.ServiceProxy("identifiers/edit/device", EditDevice)
@@ -248,6 +248,7 @@ class CommandWindow(QWidget):
 
     def change_valid_ids(self):
         self.ValidIdWindow.show()
+        self.windows_opened["change_valid_ids"] = self.ValidIdWindow.isVisible()
 
     # Temporary place so that I dont have to scroll so far down
     def ros_log_parser(self):

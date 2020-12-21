@@ -40,11 +40,6 @@ class ValidIdWindow (QDialog):
         # needed for Ubuntu 16.04
         self.air_ids_encoded = self.get_ids().air_ids
         self.air_ids = [i for i in self.air_ids_encoded]
-        # for i in self.air_ids_encoded:
-            # self.air_ids.append(int(chr(i + 48)))
-
-        # needed to Ubuntu 20.04
-        # self.air_ids = self.get_ids().air_ids
 
         self.buttons_state = {} # Dictionary to store all the states of the Buttons
         self.pub_valid_ids = rospy.Publisher("ogc/to_telegram/admin/valid_ids", UInt8MultiArray, queue_size = 5)
