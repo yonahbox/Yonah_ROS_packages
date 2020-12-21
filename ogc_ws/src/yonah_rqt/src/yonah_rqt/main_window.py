@@ -73,9 +73,10 @@ class MyPlugin(Plugin):
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
         self.CommandWindow = CommandWindow(self.aircraft_list)
 
+        self.CommandWindow.change_valid_ids()
         self.create_layout()
         self.shortcuts()
-        self.CommandWindow.change_valid_ids()
+
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
@@ -424,6 +425,8 @@ class MyPlugin(Plugin):
                 self.CommandWindow.PopupMessages.message.close()
             elif i == "checklist window":
                 self.CommandWindow.checklist_info.get("AC" + str(self.destination_id)).close()
+            elif i == "change_valid_ids":
+                self.CommandWindow.ValidIdWindow.close()
 
         self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
