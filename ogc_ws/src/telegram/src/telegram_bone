@@ -24,7 +24,7 @@ from Td import Td
 from identifiers import Identifiers
 
 home_dir = str(Path.home())
-tdlib_dir = home_dir + '/.tdlib_air'
+tdlib_dir = home_dir + '/.tdlib'
 identifiers_file = home_dir + '/Sync/identifiers.json'
 self_id = 0
 valid_ids_file = home_dir + '/.valid_ids'
