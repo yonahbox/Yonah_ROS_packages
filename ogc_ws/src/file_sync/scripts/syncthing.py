@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import rospy
-from std_msgs.msg import String, UInt8
-from identifiers.srv import SetDetails, GetId, GetIdRequest
-
 import requests as req
 import xml.etree.ElementTree as xml
 from pathlib import Path
