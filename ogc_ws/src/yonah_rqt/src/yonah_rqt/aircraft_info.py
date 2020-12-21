@@ -38,6 +38,7 @@ class AircraftInfo(QWidget):
         summarised_fields = [
             'Mode', 
             'Status', 
+            'Link Status',
             'Altitude', 
             'Airspeed',  
             'Groundspeed', 
@@ -75,7 +76,7 @@ class AircraftInfo(QWidget):
             subfield_label_mode = QLabel(i)
             subfield_label_mode.setFixedSize(120, 30)
 
-            # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
+            # Create an entry in the dictionary with name aircraftMode1 and set attributes of the name
             self.aircraft_info_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
             self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
             self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)

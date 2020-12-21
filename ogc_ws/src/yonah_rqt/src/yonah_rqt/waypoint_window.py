@@ -49,10 +49,18 @@ class WaypointWindow(QWidget):
         self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)] = QPlainTextEdit()
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setMaximumHeight(40)
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setReadOnly(True)
+
+        self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)] = QPlainTextEdit()
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumHeight(40)
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumWidth(100)
+
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setReadOnly(True)
+        
         self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)] = QProgressBar()
 
         waypoint_header_layout.addWidget(aircraft_label)
         waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)])
+        waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)])
         waypoint_layout.addLayout(waypoint_header_layout)
         waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
         
