@@ -37,11 +37,11 @@
 	</node>
 	
 	<!-- sbd link node -->
-	<!-- <node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
+	<node pkg="sbd" type="sbd_gnd_link.py" name="sbd_gnd_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="interval" value="$(arg interval_3)" />
 		<param name="portID" value="$(arg portID)" />
-	</node> -->
+	</node>
 
 	<!-- identifiers service node -->
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
