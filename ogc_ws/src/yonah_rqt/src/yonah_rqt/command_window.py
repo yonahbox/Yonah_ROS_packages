@@ -667,7 +667,7 @@ class CommandWindow(QWidget):
             # g = open(gndfolder + i, "r")
             # update_time = g.readlines()[-1].rstrip().split()[-1]
             # mission_msg.append(str(i) + " " + str(update_time))
-            mission_msg.append(str(i) + " " + str(int(path.getmtime(i))))
+            mission_msg.append(str(i) + " " + str(int(path.getmtime(gndfolder + i))))
         update = LinkMessage()
         update.uuid = timeoutscript.increment()
         update.id = self.destination_id

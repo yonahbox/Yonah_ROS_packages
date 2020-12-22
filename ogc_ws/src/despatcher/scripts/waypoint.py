@@ -79,7 +79,7 @@ def get_update_time(wpfolder):
     for i in files:
         # g = open(wpfolder + i, "r")
         # updatetime[i] = int(g.readlines()[-1].rstrip().split()[-1])
-        updatetime[i] = int(path.getmtime(i))
+        updatetime[i] = int(path.getmtime(wpfolder + i))
     return updatetime
 
 def compare_time(gndtime, airtime):
