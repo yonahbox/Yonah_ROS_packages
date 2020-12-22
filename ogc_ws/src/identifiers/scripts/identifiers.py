@@ -372,7 +372,6 @@ class Identifiers:
 		selected_device["rb_serial"] = device["rb_serial"] if device["rb_serial"] != "" else selected_device["rb_serial"]
 		selected_device["telegram_id"] = device["telegram_id"] if device["telegram_id"] != "" else selected_device["telegram_id"]
 		selected_device["syncthing_id"] = device["syncthing_id"] if device.get("syncthing_id", None) != "" else selected_device.get("syncthing_id", None)
-		# selected_device["syncthing_id"] = device["syncthing_id"] if device["syncthing_id"] != "" else selected_device["syncthing_id"]
 
 		#write details to file
 		with open(self.json_file, "w") as f:

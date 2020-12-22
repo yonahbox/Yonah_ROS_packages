@@ -109,7 +109,6 @@ class PopupMessages(QWidget):
 
     def warning_message(self, heading, text):
         self.warning = QMessageBox()
-        self.windows_opened["arm window"] = self.message.isVisible()
         self.warning.setIcon(QMessageBox.Warning)
         self.warning.setText(heading)
         self.warning.setInformativeText(text)
@@ -117,4 +116,4 @@ class PopupMessages(QWidget):
         self.warning.setStandardButtons(QMessageBox.Ok)
         self.warning.buttonClicked.connect(self.warning.close)
         self.warning.show()
-        self.windows_opened["arm window"] = self.message.isVisible()
+        self.windows_opened["warning window"] = self.warning.isVisible()

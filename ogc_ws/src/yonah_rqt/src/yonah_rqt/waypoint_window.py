@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from python_qt_binding.QtWidgets import QWidget, QLabel, QProgressBar, QPlainTextEdit, QVBoxLayout, QHBoxLayout
+from python_qt_binding.QtCore import Qt
 
 class WaypointWindow(QWidget):
     def __init__(self, active_aircrafts):
@@ -29,7 +30,7 @@ class WaypointWindow(QWidget):
         self.waypoint_plaintext_dict = {}
         self.main_layout = QHBoxLayout()
         self.progressbar_layout = QVBoxLayout()
-
+        self.progressbar_layout.setAlignment(Qt.AlignTop)
         # Why we separate this is so that we can refresh the layout
         self.create_layout(active_aircrafts)
 
@@ -39,6 +40,7 @@ class WaypointWindow(QWidget):
     def create_layout(self, active_aircrafts):
         for i in active_aircrafts:
             self.create_progressbar(i)
+        
 
     def create_progressbar(self, aircraft_no):
         waypoint_layout = QVBoxLayout()
@@ -49,14 +51,23 @@ class WaypointWindow(QWidget):
         self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)] = QPlainTextEdit()
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setMaximumHeight(40)
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setReadOnly(True)
+
+        self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)] = QPlainTextEdit()
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumHeight(40)
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumWidth(100)
+
+        self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setReadOnly(True)
+        
         self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)] = QProgressBar()
 
         waypoint_header_layout.addWidget(aircraft_label)
         waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + str(aircraft_no)])
+        waypoint_header_layout.addWidget(self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)])
         waypoint_layout.addLayout(waypoint_header_layout)
         waypoint_layout.addWidget(self.waypoint_plaintext_dict['progress_bar_aircraft' + str(aircraft_no)])
         
         self.progressbar_layout.addLayout(waypoint_layout)
+        
     
     def remove(self, layout):
         for i in reversed(range(layout.count())):

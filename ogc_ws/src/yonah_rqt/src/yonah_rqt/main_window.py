@@ -62,6 +62,7 @@ class MyPlugin(Plugin):
         self.time = 0
         self.proper_shutdown= 0
         self.destination_id = 1
+        self.is_refresh_tab_open = True
         self.aircraft_list = []
         self.aircrafts_info = {}
         self.checklist_info = {}
@@ -73,9 +74,10 @@ class MyPlugin(Plugin):
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
         self.CommandWindow = CommandWindow(self.aircraft_list)
 
+        self.CommandWindow.change_valid_ids()
         self.create_layout()
         self.shortcuts()
-        self.CommandWindow.change_valid_ids()
+
         # Subscriber lists
         rospy.Subscriber("ogc/from_despatcher/regular", RegularPayload, self.regular_payload)
         rospy.Subscriber("ogc/yonahtext", String, self.status_text)
@@ -101,7 +103,7 @@ class MyPlugin(Plugin):
         scroll.setWidget(self.WaypointWindow)
     
         # Create the tab windows for the aircraft-specific information
-        self.create_tab_windows()
+        self.create_tab_windows([])
         self.tab.currentChanged.connect(self.tab_change)
         
         # Add all 3 layouts into the main layout
@@ -109,43 +111,54 @@ class MyPlugin(Plugin):
         self._widget.verticalLayout2.addWidget(self.tab)
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
 
-    def create_tab_windows(self):
-        '''Create layout for Summary scroll window'''
-        summary_scroll = QScrollArea()
-        summary_scroll.setMinimumHeight(500)
-        summary_scroll.setMinimumWidth(600)
-        summary_scroll.setWidgetResizable(True)
-        summary_scroll.setWidget(self.SummaryWindow)
+    def create_tab_windows(self, active_aircrafts):
+        '''Create layout for Summary scroll window'''        
+        if active_aircrafts == []:
+            self.tab = QTabWidget()
+            summary_scroll = QScrollArea()
+            summary_scroll.setMinimumHeight(500)
+            summary_scroll.setMinimumWidth(600)
+            summary_scroll.setWidgetResizable(True)
+            summary_scroll.setWidget(self.SummaryWindow)
+            self.tab.addTab(summary_scroll, "Summary")
 
-        self.tab = QTabWidget()
-        self.tab.addTab(summary_scroll, "Summary")
-
-        if self.aircraft_list == []:
-            active_aircrafts = [x for x in range (1,10)]
-            self.SummaryWindow.create_layout(active_aircrafts)
-            self.CommandWindow.create_combobox(active_aircrafts)
-            self.WaypointWindow.create_layout(active_aircrafts)
-        else:
-            active_aircrafts = self.aircraft_list
+        self.SummaryWindow.create_layout(active_aircrafts)
+        self.CommandWindow.create_combobox(self.aircraft_list) #for checkbox, it needs to full list and not just the added aircraft
+        self.WaypointWindow.create_layout(active_aircrafts)
 
         for i in active_aircrafts:
             self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
             self.checklist_info["AC" + str(i)] = ChecklistWindow(i)
 
-            self.key = "aircraft" + str(i) + " scroll"
-            self.aircrafts_info[self.key] = QScrollArea()
-            self.aircrafts_info.get(self.key).setMinimumHeight(500)
-            self.aircrafts_info.get(self.key).setMinimumWidth(600)
-            self.aircrafts_info.get(self.key).setWidgetResizable(True)
-            self.aircrafts_info.get(self.key).setWidget(self.aircrafts_info.get("AC" + str(i)))
-            self.tab.addTab(self.aircrafts_info.get(self.key), "Aircraft " + str(i))
+            tab_key = "aircraft" + str(i) + " scroll"
+            self.aircrafts_info[tab_key] = QScrollArea()
+            self.aircrafts_info.get(tab_key).setMinimumHeight(500)
+            self.aircrafts_info.get(tab_key).setMinimumWidth(600)
+            self.aircrafts_info.get(tab_key).setWidgetResizable(True)
+            self.aircrafts_info.get(tab_key).setWidget(self.aircrafts_info.get("AC" + str(i)))
+            self.tab.addTab(self.aircrafts_info.get(tab_key), "Aircraft " + str(i))
+            self.tab.show()
+
+        if self.tab.count() == 1:
+            refresh = QScrollArea()
+            self.tab.addTab(refresh, "Refresh")
         self.tab.setMinimumHeight(500)
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
+        if self.is_refresh_tab_open:
+            self.tab.removeTab(1)
+            self.is_refresh_tab_open = False
+        active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
+        print("Activ acs: " + str(active_aircrafts))
+        diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
+        print("diff_active: " + str(diff_active))
+        if not diff_active == []:
+            self.aircraft_list = active_aircrafts
+            self.create_tab_windows(diff_active)
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
-        self.CommandWindow.combo_box.setCurrentIndex(i - 1)
+        self.CommandWindow.combo_box.setCurrentIndex(i-1)
 
     def feedback_message(self, data):
         status = Communicate()
@@ -159,13 +172,7 @@ class MyPlugin(Plugin):
     # Create Signal Slot functions #
     ################################
     def regular_payload(self, data):
-        aircraft_id = data.vehicle_no
-        # if aircraft_id not in self.aircraft_list:
-        #     self.aircraft_list.append(aircraft_id)
-        #     rospy.logwarn(self.aircraft_list)
-        #     self.aircraft_list.sort()
-        #     self.update_active_aircrafts(self.aircraft_list)
-        aircraft_id = str(aircraft_id)
+        aircraft_id = str(data.vehicle_no)
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)
@@ -195,12 +202,18 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
+        rospy.loginfo(data)
         # data. data list is i 1 1 0 message
         data_list = data.data.split()
         msg = " ".join(data_list[4:-1])
         aircraft_id = data_list[2]
         status = Communicate()
-        status.ondemand_signal.connect(self.ondemand_display)
+        if "LinkSwitch" in msg:
+            # link_status = Communicate()
+            status.ondemand_signal.connect(self.link_status)
+            # link_status.ondemand_signal.emit(msg, aircraft_id)
+        else:
+            status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
 
     def ondemand_sitl(self, data):
@@ -246,13 +259,13 @@ class MyPlugin(Plugin):
         airspeed = str(round(airspeed, 1)) + " m/s"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setStyleSheet("Color: rgb(255, 0, 0);")     
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftAirspeed" + aircraft_id).setPlainText(airspeed)
 
     def altitude_display(self, altitude, aircraft_id):
         self.aircrafts_flight_data['altitude' + aircraft_id] = altitude
         altitude = str(round(altitude, 1)) + " m"
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftAltitude" + aircraft_id).setPlainText(altitude)
 
     def arm_status_display(self, arm_status, aircraft_id):
         self.aircrafts_flight_data['status' + aircraft_id] = arm_status
@@ -264,7 +277,7 @@ class MyPlugin(Plugin):
             self.text_to_display = "ARMED"
         self.CommandWindow.arm_status['AC' + str(aircraft_id)] = self.text_to_display
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftStatus" + aircraft_id).setPlainText(self.text_to_display)        
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftStatus" + aircraft_id).setPlainText(self.text_to_display)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftStatus" + aircraft_id).setPlainText(self.text_to_display)
     
     def quad_batt_display(self, data, aircraft_id):
         self.aircrafts_flight_data['battery' + aircraft_id] = data
@@ -290,7 +303,7 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data['mode' + aircraft_id] = mode_status
         mode = self.CommandWindow.decoder[mode_status] # Convert the integer to its mode
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode)
     
     def throttle_display(self, data, aircraft_id):
         self.aircrafts_flight_data['throttle' + aircraft_id] = data
@@ -319,10 +332,10 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText("00:00:00")
         else:
             self.time = AC_time # sync the UI time to the data time
-            self.time_in_seconds = int(self.time) - int(self.aircrafts_info.get("AC" + aircraft_id).initial_time)
-            minutes = str(self.time_in_seconds // 60)
-            hours = str(self.time_in_seconds // 3600)
-            seconds = str(self.time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
+            time_in_seconds = int(self.time) - int(self.aircrafts_info.get("AC" + aircraft_id).initial_time)
+            minutes = str(time_in_seconds // 60)
+            hours = str(time_in_seconds // 3600)
+            seconds = str(time_in_seconds - (int(minutes) * 60) - (int(hours) * 3600))
             if int(seconds) < 10:
                 seconds = "0" + seconds
             if int(minutes) < 10:
@@ -331,6 +344,21 @@ class MyPlugin(Plugin):
                 hours = "0" + hours
             self.aircrafts_flight_data['time' + aircraft_id] = self.aircrafts_info.get("AC" + aircraft_id).initial_time
             self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftFlying Time" + aircraft_id).setPlainText(hours + ":" + minutes + ":" + seconds)
+
+    def link_status(self, link, aircraft_id):
+        link = link[-1] # extract the status
+        rospy.loginfo(link)
+        if int(link) == 0:
+            link = "Telegram"
+        elif int(link) == 1:
+            link = "SMS"
+        elif int(link) == 2:
+            link = "SBD"
+        else:
+            link = "ERR"
+        self.WaypointWindow.waypoint_plaintext_dict.get("aircraftlink" + aircraft_id).setPlainText(link)
+        self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
 
     def status_text_display(self, status_text):
         status = status_text.split(",")
@@ -345,17 +373,6 @@ class MyPlugin(Plugin):
 
     def ondemand_display(self, data, aircraft_id):
         status = ""
-        # if data[0] == "i" or data[0] =="w" or data[0] =="e" or data[0] =="a":
-        #     data = data.split(" ", 3)
-        #     if data[0] == "i":
-        #         status = "INFO"
-        #     elif data[0] == "w":
-        #         status = "WARN"
-        #     elif data[0] == "e":
-        #         status = "ERROR"
-        #     elif data[0] == "a":
-        #         status = "ACKNOWLEDGMENT"
-        #     data = data[3]
         text_to_display = "Aircraft {} {}: {}".format(aircraft_id, status, data)
         self.SummaryWindow.statustext.appendPlainText(text_to_display)
         self.aircrafts_info.get("AC" + aircraft_id).statustext.appendPlainText(text_to_display)
@@ -365,7 +382,7 @@ class MyPlugin(Plugin):
         self.aircrafts_flight_data['mode_sitl' + aircraft_id] = mode_status
         mode_status = str(mode_status)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
-        self.SummaryWindow.waypoint_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
+        self.SummaryWindow.summary_plaintext_dict.get("aircraftMode" + aircraft_id).setPlainText(mode_status)
         self.saved =  "[AC {} MODE display] {}".format(int(aircraft_id), mode_status)
    
     def waypoint_sitl_display(self, total, sequence, aircraft_id):
@@ -413,7 +430,9 @@ class MyPlugin(Plugin):
                 self.CommandWindow.PopupMessages.message.close()
             elif i == "checklist window":
                 self.CommandWindow.checklist_info.get("AC" + str(self.destination_id)).close()
-                
+            elif i == "change_valid_ids":
+                self.CommandWindow.ValidIdWindow.close()
+
         self.WaypointWindow.shutdown()
         self.SummaryWindow.shutdown()
 
@@ -445,11 +464,6 @@ class MyPlugin(Plugin):
             rospy.loginfo("rqt_log file doesn't exist, creating new rqt_log file")
             f = open(self.path, "w+")
             f.write("None")
-
-    # def trigger_configuration(self):
-    #     Comment in to signal that the plugin has a way to configure
-    #     This will enable a setting button (gear icon) in each dock widget title bar
-    #     Usually used to open a modal configuration dialog
    
 # Class that is responsible for signal and slot function
 class Communicate (QObject):
