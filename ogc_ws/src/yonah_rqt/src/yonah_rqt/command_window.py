@@ -664,9 +664,6 @@ class CommandWindow(QWidget):
         mission_msg = []
         for i in gndfiles:
             rospy.logwarn('gnd files')
-            # g = open(gndfolder + i, "r")
-            # update_time = g.readlines()[-1].rstrip().split()[-1]
-            # mission_msg.append(str(i) + " " + str(update_time))
             mission_msg.append(str(i) + " " + str(int(path.getmtime(gndfolder + i))))
         update = LinkMessage()
         update.uuid = timeoutscript.increment()

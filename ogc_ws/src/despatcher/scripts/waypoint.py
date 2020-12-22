@@ -77,8 +77,6 @@ def get_update_time(wpfolder):
     files = listdir(wpfolder)
     updatetime = {}
     for i in files:
-        # g = open(wpfolder + i, "r")
-        # updatetime[i] = int(g.readlines()[-1].rstrip().split()[-1])
         updatetime[i] = int(path.getmtime(wpfolder + i))
     return updatetime
 
