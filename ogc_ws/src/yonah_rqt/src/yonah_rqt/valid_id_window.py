@@ -69,15 +69,15 @@ class ValidIdWindow (QDialog):
         for i in self.air_ids:
             if self.buttons_state[i].isChecked() == True:
                 self.buttons_state[i].setEnabled(False)
-        valid_ids = [x for x in self.buttons_state.keys() if self.buttons_state.get(x).isChecked()]
-        array_valid_ids = UInt8MultiArray(data=valid_ids)
-        rospy.loginfo("Sent valid ids: " + str(valid_ids))
+        self.valid_ids = [x for x in self.buttons_state.keys() if self.buttons_state.get(x).isChecked()]
+        array_valid_ids = UInt8MultiArray(data=self.valid_ids)
+        rospy.loginfo("Sent valid ids: " + str(self.valid_ids))
 
-        set_ids_ret = self.set_ids(ids=valid_ids)
+        set_ids_ret = self.set_ids(ids=self.valid_ids)
         if not set_ids_ret:
             rospy.logerr("Failed to write valid ids file")
 
-        self.pub_valid_ids.publish(array_valid_ids)
+        # self.pub_valid_ids.publish(array_valid_ids)
         self.hide()
 
     def reject(self):

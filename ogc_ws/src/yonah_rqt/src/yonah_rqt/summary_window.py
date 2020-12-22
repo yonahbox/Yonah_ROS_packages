@@ -29,19 +29,17 @@ class SummaryWindow(QWidget):
         self.setWindowTitle("Summary Page")
 
         # Dictionary to store the textedit names
-        self.waypoint_plaintext_dict = {} 
+        self.summary_plaintext_dict = {} 
         # Declare the layouts
         self.main_layout = QVBoxLayout()
         self.summary_layout = QVBoxLayout()
         self.setLayout(self.main_layout) # Set main_layout as the layout that occupies the entire widget
-
         self.create_layout(active_aircrafts)
         self.statustext = QPlainTextEdit()
         self.statustext.setReadOnly(True)
         # add the widgets into the layouts
         self.main_layout.addWidget(self.statustext)
         self.main_layout.addLayout(self.summary_layout)
-        self.statustext.appendPlainText("in init")
 
     def create_layout(self, active_aircrafts):
         # Declare the widgets
@@ -63,12 +61,12 @@ class SummaryWindow(QWidget):
             self.subfield_label_mode.setFixedSize(80,20)
 
             # Create an entry in the dictionary with name aircraftMODE1 and set attributes of the name
-            self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
-            self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
-            self.waypoint_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
+            self.summary_plaintext_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
+            self.summary_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
+            self.summary_plaintext_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
 
             self.summary_fields_layout.addWidget(self.subfield_label_mode)
-            self.summary_fields_layout.addWidget(self.waypoint_plaintext_dict['aircraft' + i + str(aircraft_no)])
+            self.summary_fields_layout.addWidget(self.summary_plaintext_dict['aircraft' + i + str(aircraft_no)])
             self.summary_details_layout.addLayout(self.summary_fields_layout)
 
         self.summary_layout.addLayout(self.summary_details_layout)

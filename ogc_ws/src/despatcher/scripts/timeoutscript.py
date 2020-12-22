@@ -23,5 +23,4 @@ def increment():
     uuid += 1
     if uuid > 255:
         uuid = 1
-    rospy.logwarn("increment is called, UUID " + str(uuid))
     return uuid
