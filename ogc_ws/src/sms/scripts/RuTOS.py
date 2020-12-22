@@ -103,7 +103,10 @@ def get_rssi(ssh):
     res = stdout.readlines()[0].rstrip()
     if res == "Timeout.":
         return res
-    rssi = int(res)
+    try:
+        rssi = int(res)
+    except:
+        return
     return rssi
 
 def get_rsrp(ssh):
@@ -112,7 +115,10 @@ def get_rsrp(ssh):
     res = stdout.readlines()[0].rstrip()
     if res == "Timeout.":
         return res
-    rsrp = int(res)
+    try:
+        rsrp = int(res)
+    except:
+        return
     return rsrp
 
 def get_rsrq(ssh):
@@ -121,7 +127,10 @@ def get_rsrq(ssh):
     res = stdout.readlines()[0].rstrip()
     if res == "Timeout.":
         return res
-    rsrq = float(res)
+    try:
+        rsrq = float(res)
+    except:
+        return
     return rsrq
 
 def get_sinr(ssh):
@@ -130,5 +139,8 @@ def get_sinr(ssh):
     res = stdout.readlines()[0].rstrip()
     if res == "Timeout.":
         return res
-    sinr = float(res)
+    try:
+        sinr = float(res)
+    except:
+        return
     return sinr
