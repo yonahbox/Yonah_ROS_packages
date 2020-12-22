@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import rospy
-from std_msgs.msg import String, UInt8
-from identifiers.srv import SetDetails, GetId, GetIdRequest
-
 import requests as req
 import xml.etree.ElementTree as xml
 from pathlib import Path
@@ -115,3 +111,20 @@ class Syncthing:
 		})
 
 		self._post("/rest/config/folders", folder)
+
+	def check_paused(self):
+		devices = self._get("/rest/config/devices")
+
+		if not devices:
+			return None
+
+		status = []
+		for device in devices:
+			status.append(device['paused'])
+
+		if all(status):
+			print("device paused")
+		else:
+			print("not paused")
+
+		return all(status)

@@ -92,18 +92,20 @@ class SMSrx():
                 continue
         rospy.loginfo("Purge complete!")
 
-    # def _wait_out_timeout(self):
-    #     """
-    #     We need to wait out the timeout of the router as if we continue pinging the router, it 
-    #     will always return timeout and our SMS link will be permanently down
-    #     """
-    #     self.message_checker.shutdown()
-    #     rospy.logwarn("SMS link shut down for 3 minutes")
-    #     self.is_online = False
-    #     rospy.sleep(180)
-    #     rospy.loginfo("SMS link back online")
-    #     self.is_online = True
-    #     self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
+    def _wait_out_timeout(self):
+        """
+        We need to wait out the timeout of the router as if we continue pinging the router, it 
+        will always return timeout and our SMS link will be permanently down
+        """
+        self.message_checker.shutdown()
+        rospy.logwarn("SMS link shut down for 8 minutes")
+        self.pub_to_switcher.publish("Timeout")
+        self.is_online = False
+        rospy.sleep(480)
+        rospy.loginfo("SMS link back online")
+        self.pub_to_switcher.publish("Online")
+        self.is_online = True
+        self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
 
     #########################################
     # Handle incoming/outgoing SMS messages
@@ -130,9 +132,8 @@ class SMSrx():
             self.pub_to_timeout.publish(ack)
 
         if "Timed out" in sendstatus:
-            self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Check SIM card balance")
-            self.is_online = False
+            self._wait_out_timeout()
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -152,8 +153,7 @@ class SMSrx():
             pass
         elif 'Timed out' in self._msglist:
             rospy.logerr("No response from SIM card.")
-            self.message_checker.shutdown()
-            self.is_online = False
+            self._wait_out_timeout()
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
