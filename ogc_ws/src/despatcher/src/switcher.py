@@ -34,9 +34,9 @@ SMS_timedout = False
 
 class watchdog():
     '''An instance of watchdog should be created for each client'''
-    def __init__(self, air_id):
+    def __init__(self, client_id):
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
-        self._air_id = air_id
+        self._client_id = client_id
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
         self._max_time[TELE] = 20
@@ -53,8 +53,8 @@ class watchdog():
             target_link = 2
         self._link = target_link
         self._watchdog[target_link] = self._max_time[target_link]
-        rospy.logwarn("Aircraft " + str(self._air_id) +  " switching to link " + str(target_link))
-        self.pub_to_despatcher.publish(str(self._air_id) + " " + str(self._link))
+        rospy.logwarn("Switcher: Client " + str(self._client_id) +  " switching to link " + str(target_link))
+        self.pub_to_despatcher.publish(str(self._client_id) + " " + str(self._link))
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
