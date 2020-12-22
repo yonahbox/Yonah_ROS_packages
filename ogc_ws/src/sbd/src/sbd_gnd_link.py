@@ -55,7 +55,6 @@ class satcommsgnd(satcomms):
         rospy.wait_for_service("identifiers/check/proper")
         rospy.wait_for_service("identifiers/self/self_id")
 
-        self._get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
         self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
         self._is_valid_sender = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
         get_sbd_credentials = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
@@ -185,7 +184,7 @@ class satcommsgnd(satcomms):
 
     def _switch_cmd_handler(self):
         '''Send cmds to all aircraft, telling them to switch between server and RB-2-RB methods'''
-        air_ids = self._get_ids().air_ids
+        air_ids = self._get_valid_ids().ids
         switch_cmd = LinkMessage()
         switch_cmd.uuid = 0
         for i in air_ids:

@@ -47,13 +47,11 @@ class satcomms(rockBlockProtocol):
         
         rospy.wait_for_service("identifiers/get/valid_ids")
 
-        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
-        _valid_ids = ids_get_valid_ids().ids
-
         self._init_variables()
         self._is_air = 1 # We are an air node!
         
         # Headers (for checking of switch cmds)
+        _valid_ids = self._get_valid_ids().ids
         self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
         rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
@@ -75,6 +73,7 @@ class satcomms(rockBlockProtocol):
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
         self._get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
+        self._get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
 
         # Rockblock Comms
         self._buffer = local_mo_buffer()
