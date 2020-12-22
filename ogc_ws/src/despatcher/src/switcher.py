@@ -168,6 +168,8 @@ class switcher():
         elif connection == "GSM":
             rospy.logerr("No data connection, switching to SMS")
             self._switch_all(SMS) # Switch to SMS
+        elif rssi == "Timeout.":
+            return
         elif rssi <= -95: # To include RSRQ, RSRP, SINR in the future
             for i in self._valid_ids:
                 rospy.logerr("RSSI below threshold, switching link")

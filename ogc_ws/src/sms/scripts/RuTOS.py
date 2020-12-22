@@ -100,23 +100,35 @@ def get_conntype(ssh):
 def get_rssi(ssh):
     '''Get RSSI'''
     _, stdout, _ = ssh.exec_command("gsmctl -q")
-    rssi = int((stdout.readlines()[0].rstrip()))
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    rssi = int(res)
     return rssi
 
 def get_rsrp(ssh):
     '''Get RSRP'''
     _, stdout, _ = ssh.exec_command("gsmctl -W")
-    rsrp = int(stdout.readlines()[0].rstrip())
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    rsrp = int(res)
     return rsrp
 
 def get_rsrq(ssh):
     '''Get RSRQ'''
     _, stdout, _ = ssh.exec_command("gsmctl -M")
-    rsrq = float(stdout.readlines()[0].rstrip())
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    rsrq = float(res)
     return rsrq
 
 def get_sinr(ssh):
     '''Get SINR'''
     _, stdout, _ = ssh.exec_command("gsmctl -Z")
-    sinr = float(stdout.readlines()[0].rstrip())
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    sinr = float(res)
     return sinr

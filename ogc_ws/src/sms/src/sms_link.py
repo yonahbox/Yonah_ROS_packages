@@ -99,6 +99,7 @@ class SMSrx():
         """
         self.message_checker.shutdown()
         rospy.logwarn("SMS link shut down for 8 minutes")
+        self.pub_to_switcher.publish("Timeout")
         self.is_online = False
         rospy.sleep(480)
         rospy.loginfo("SMS link back online")
@@ -131,10 +132,8 @@ class SMSrx():
             self.pub_to_timeout.publish(ack)
 
         if "Timed out" in sendstatus:
-            self.pub_to_switcher.publish("Timeout")
             rospy.logerr("Timeout: Check SIM card balance")
             self._wait_out_timeout()
-            self.is_online = False
         else:
             ack = timeoutscript.ack_converter(data, 1)
             if ack != None:
@@ -155,7 +154,6 @@ class SMSrx():
         elif 'Timed out' in self._msglist:
             rospy.logerr("No response from SIM card.")
             self._wait_out_timeout()
-            self.is_online = False
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
