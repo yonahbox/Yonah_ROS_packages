@@ -84,7 +84,6 @@ class MyPlugin(Plugin):
         rospy.Subscriber("ogc/from_despatcher/ondemand", String, self.ondemand)
         rospy.Subscriber("ogc/files/conflict", String, self.syncthing)
         rospy.Subscriber("ogc/feedback_to_rqt", LinkMessage, self.feedback_message)
-        rospy.Subscriber("ogc/stuff", String, self.link_status)
 
         rospy.Subscriber("mavros/statustext/recv", StatusText, self.ondemand_sitl)
         rospy.Subscriber("mavros/state", State, self.mode_status_sitl)
