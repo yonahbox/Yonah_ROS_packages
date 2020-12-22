@@ -112,9 +112,7 @@ class MyPlugin(Plugin):
         self._widget.verticalLayout2.addWidget(self.CommandWindow)
 
     def create_tab_windows(self, active_aircrafts):
-        '''Create layout for Summary scroll window'''
-        self.previous_aircrafts = active_aircrafts
-        
+        '''Create layout for Summary scroll window'''        
         if active_aircrafts == []:
             self.tab = QTabWidget()
             summary_scroll = QScrollArea()
@@ -124,13 +122,9 @@ class MyPlugin(Plugin):
             summary_scroll.setWidget(self.SummaryWindow)
             self.tab.addTab(summary_scroll, "Summary")
 
-        if self.aircraft_list == []:
-            print("self.aircraft_list is empty")
-            self.SummaryWindow.create_layout(active_aircrafts)
-            self.CommandWindow.create_combobox(active_aircrafts)
-            self.WaypointWindow.create_layout(active_aircrafts)
-        else:
-            active_aircrafts = self.aircraft_list
+        self.SummaryWindow.create_layout(active_aircrafts)
+        self.CommandWindow.create_combobox(self.aircraft_list) #for checkbox, it needs to full list and not just the added aircraft
+        self.WaypointWindow.create_layout(active_aircrafts)
 
         for i in active_aircrafts:
             self.aircrafts_info["AC" + str(i)] = AircraftInfo(i)
@@ -157,8 +151,11 @@ class MyPlugin(Plugin):
         '''Changes the command_window drop-down menu to follow the change in tab'''
         # self.tab.removeTab(1)
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
-        diff_active = list(set(active_aircrafts) - set(self.previous_aircrafts))
+        print("Activ acs: " + str(active_aircrafts))
+        diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
+        print("diff_active: " + str(diff_active))
         if not diff_active == []:
+            self.aircraft_list = active_aircrafts
             self.create_tab_windows(diff_active)
         if i == 0 or i == 1: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 2

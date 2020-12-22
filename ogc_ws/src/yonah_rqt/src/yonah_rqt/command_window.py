@@ -241,6 +241,7 @@ class CommandWindow(QWidget):
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
+            print(f"remove {i}")
             self.combo_box.removeItem(i)
         for j in active_aircrafts: 
             self.combo_box.addItem('Aircraft ' + str(j))
