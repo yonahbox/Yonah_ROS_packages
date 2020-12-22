@@ -77,7 +77,7 @@ class ValidIdWindow (QDialog):
         if not set_ids_ret:
             rospy.logerr("Failed to write valid ids file")
 
-        # self.pub_valid_ids.publish(array_valid_ids)
+        self.pub_valid_ids.publish(array_valid_ids)
         self.hide()
 
     def reject(self):
