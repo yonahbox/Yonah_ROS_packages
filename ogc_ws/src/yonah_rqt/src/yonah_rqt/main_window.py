@@ -62,6 +62,7 @@ class MyPlugin(Plugin):
         self.time = 0
         self.proper_shutdown= 0
         self.destination_id = 1
+        self.is_refresh_tab_open = True
         self.aircraft_list = []
         self.aircrafts_info = {}
         self.checklist_info = {}
@@ -138,9 +139,6 @@ class MyPlugin(Plugin):
             self.aircrafts_info.get(tab_key).setWidget(self.aircrafts_info.get("AC" + str(i)))
             self.tab.addTab(self.aircrafts_info.get(tab_key), "Aircraft " + str(i))
             self.tab.show()
-            # print(str(self.tab.count()) + " tabs exist")
-            # print(str(self.aircrafts_info.get(tab_key)))
-            # print(str("Checkolist info dict: " + str(self.checklist_info)))
 
         if self.tab.count() == 1:
             refresh = QScrollArea()
@@ -149,7 +147,9 @@ class MyPlugin(Plugin):
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
-        # self.tab.removeTab(1)
+        if self.is_refresh_tab_open:
+            self.tab.removeTab(1)
+            self.is_refresh_tab_open = False
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
         print("Activ acs: " + str(active_aircrafts))
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
@@ -157,9 +157,9 @@ class MyPlugin(Plugin):
         if not diff_active == []:
             self.aircraft_list = active_aircrafts
             self.create_tab_windows(diff_active)
-        if i == 0 or i == 1: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
-            i = 2
-        self.CommandWindow.combo_box.setCurrentIndex(i-2)
+        if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
+            i = 1
+        self.CommandWindow.combo_box.setCurrentIndex(i-1)
 
     def feedback_message(self, data):
         status = Communicate()
@@ -173,13 +173,7 @@ class MyPlugin(Plugin):
     # Create Signal Slot functions #
     ################################
     def regular_payload(self, data):
-        aircraft_id = data.vehicle_no
-        # if aircraft_id not in self.aircraft_list:
-        #     self.aircraft_list.append(aircraft_id)
-        #     rospy.logwarn(self.aircraft_list)
-        #     self.aircraft_list.sort()
-        #     self.update_active_aircrafts(self.aircraft_list)
-        aircraft_id = str(aircraft_id)
+        aircraft_id = str(data.vehicle_no)
         status = Communicate()
         status.airspeed_signal.connect(self.airspeed_display)
         status.airspeed_signal.emit(data.airspeed, aircraft_id)
