@@ -81,7 +81,9 @@ class switcher():
         self._valid_ids = ids_get_valid_ids().ids
         self._username = rospy.get_param("~router_username","root")
         self._ip = rospy.get_param("~router_ip","192.168.1.1")
+        self._ssh = RuTOS.start_client(self._ip, self._username)
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+        self.SMS_timedout = False
         self._timeout_counter = 0
         self._watchdogs = dict()
         for i in self._valid_ids:
@@ -95,7 +97,7 @@ class switcher():
         del self._new_msg_chk
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
 
-        for i in self._watchdogs.keys():
+        for i in self._watchdogs.values():
             i.kill_timers()
 
         # clear and recrete self._watchdogs
@@ -156,16 +158,19 @@ class switcher():
             self._monitor_common(sender_sysid, SMS)
 
     def monitor_router(self, data):
-        ssh = RuTOS.start_client(self._ip, self._username)
-        connection = RuTOS.get_conntype(ssh)
-        rssi = RuTOS.get_rssi(ssh)
+        if self.SMS_timedout:
+            return
+        connection = RuTOS.get_conntype(self._ssh)
+        rssi = RuTOS.get_rssi(self._ssh)
         if connection == "NOSERVICE":
             rospy.logerr("Router has no service. Switching to SBD")
             self._switch_all(SBD) # Switch to SBD immediately
         elif connection == "GSM":
             rospy.logerr("No data connection, switching to SMS")
             self._switch_all(SMS) # Switch to SMS
-        elif rssi <= -85: # To include RSRQ, RSRP, SINR in the future
+        elif rssi == "Timeout.":
+            return
+        elif rssi <= -95: # To include RSRQ, RSRP, SINR in the future
             for i in self._valid_ids:
                 rospy.logerr("RSSI below threshold, switching link")
                 old_link = self._watchdogs[i].link_status()
@@ -185,8 +190,10 @@ class switcher():
     def monitor_smsout(self, data):
         if data.data == "Timeout":
             rospy.logerr("SMS timed out. Link is no longer useable")
-            SMS_timedout = True
+            self.SMS_timedout = True
             self._switch_all(SBD)
+        if data.data == "Online":
+            self.SMS_timedout = False
 
     ###########################
     # "Main" function
@@ -197,9 +204,9 @@ class switcher():
         rospy.Subscriber("ogc/from_telegram", String, self.monitor_tele)
         rospy.Subscriber('ogc/to_switcher_tele', String, self.monitor_teleout)
         rospy.Subscriber('ogc/to_switcher_sms', String, self.monitor_smsout)
-        # router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
+        router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
-        # router_monitor.shutdown()
+        router_monitor.shutdown()
 
 if __name__=='__main__':
     run = switcher()

@@ -38,6 +38,7 @@ class local_mo_buffer():
         self.msgtype = "r" # Msg type of the message that is already in the buffer
         self.write_time = rospy.get_rostime().secs # Time which msg is written to buffer
         self.target_id = 1 # ID of the client which we are sending to
+        self.uuid = 0 # Feedback message system (timeout node) UUID
 
 class satcomms(rockBlockProtocol):
 
@@ -46,15 +47,11 @@ class satcomms(rockBlockProtocol):
         
         rospy.wait_for_service("identifiers/get/valid_ids")
 
-        ids_get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
-        _valid_ids = ids_get_valid_ids().ids
-
         self._init_variables()
         self._is_air = 1 # We are an air node!
         
-        # Put the publisher function here
-        self.pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
         # Headers (for checking of switch cmds)
+        _valid_ids = self._get_valid_ids().ids
         self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
     
         rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
@@ -66,6 +63,7 @@ class satcomms(rockBlockProtocol):
 
     def _init_variables(self):
         self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
+        self._pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 
         # Identifiers
         rospy.wait_for_service("identifiers/self/serial")
@@ -75,6 +73,7 @@ class satcomms(rockBlockProtocol):
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
         self._get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
+        self._get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
 
         # Rockblock Comms
         self._buffer = local_mo_buffer()
@@ -152,10 +151,15 @@ class satcomms(rockBlockProtocol):
         rospy.logwarn("SBD: Msg not sent: " + momsg)
         self._msg_send_success = -1
 
-    def rockBlockTxSuccess(self,momsn, momsg):
+    def rockBlockTxSuccess(self,momsg,target_id,uuid):
+        # Acknowledgment message sending. Create a LinkMessage to be compatible with timeoutscript's ack converter
+        msg = LinkMessage()
+        msg.data = momsg
+        msg.id = target_id
+        msg.uuid = uuid
         ack = timeoutscript.ack_converter(msg, 1)
         if ack != None:
-            self.pub_to_timeout.publish(ack)
+            self._pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)
         self._msg_send_success = 1
 
@@ -203,6 +207,7 @@ class satcomms(rockBlockProtocol):
         self._buffer.msgtype = incoming_msgtype
         self._buffer.write_time = rospy.get_rostime().secs
         self._buffer.target_id = data.id
+        self._buffer.uuid = data.uuid
     
     def sbd_check_mailbox(self, data):
         '''
@@ -223,7 +228,8 @@ class satcomms(rockBlockProtocol):
         if self._buffer.data.startswith("r "):
             mo_is_regular = True
         try:
-            self._sbdsession.messageCheck(self._buffer.data, client_serial, self._thr_server, mo_is_regular)
+            self._sbdsession.messageCheck(self._buffer.data, self._buffer.target_id, self._buffer.uuid, \
+                client_serial, self._thr_server, mo_is_regular)
         except rockBlockException:
             # Restart the node if error occurs
             rospy.signal_shutdown("rockBlock error")

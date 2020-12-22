@@ -24,6 +24,7 @@ import rospy
 from std_msgs.msg import String, UInt8
 from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
 from identifiers.msg import DeviceId
+from file_sync.srv import GetStatus, GetStatusResponse
 
 from syncthing import Syncthing
 
@@ -69,6 +70,9 @@ def st_events():
 			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
 			disconnected_pub.publish(msg)
 
+def get_status(request):
+	return GetStatusResponse(status=st.check_paused)
+
 
 if __name__ == "__main__":
 	try:
@@ -91,7 +95,7 @@ if __name__ == "__main__":
 
 		st = Syncthing(error_pub)
 		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
-
+		rospy.Service("syncthing/get/status", GetStatus, get_status)
 		# list of devices already added to syncthing
 		st_devices = st.get_devices()
 		if not st_devices:
