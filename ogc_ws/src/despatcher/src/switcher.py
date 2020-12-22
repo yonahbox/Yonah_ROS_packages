@@ -97,7 +97,7 @@ class switcher():
         del self._new_msg_chk
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
 
-        for i in self._watchdogs.keys():
+        for i in self._watchdogs.values():
             i.kill_timers()
 
         # clear and recrete self._watchdogs
