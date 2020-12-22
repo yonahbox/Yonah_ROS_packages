@@ -63,8 +63,8 @@ class rockBlockProtocol(object):
      
     #MO
     def rockBlockTxStarted(self):pass
-    def rockBlockTxFailed(self, momsg):pass
-    def rockBlockTxSuccess(self,momsn, momsg):pass
+    def rockBlockTxFailed(self,momsg):pass
+    def rockBlockTxSuccess(self,momsg,target_id,mo_uuid):pass
     def rockBlockTxBlankMsg(self):pass
     
 class rockBlockException(Exception):
@@ -137,13 +137,16 @@ class rockBlock(object):
         return -1   
      
     
-    def messageCheck(self, momsg, client_serial, thr_server, mo_is_regular):
+    def messageCheck(self, momsg, target_id, mo_uuid, client_serial, thr_server, mo_is_regular):
         '''
         Check SBD mailbox for incoming MT msgs, and send MO msgs if MO buffer is not empty
         Arguments:
         momsg: Mobile Originated (MO) msg
+        target_id = System ID of the client
+        mo_uuid = UUID of MO msg
+        client_serial = Rockblock serial of client
         thr_server: True if communicating through web server. False if communicating through ground Rockblock
-        mo_is_regular: True if the momsg is a regular payload 
+        mo_is_regular: True if the MO msg is a regular payload 
         '''
         self._ensureConnectionStatus()
         if(self.callback != None and callable(self.callback.rockBlockRxStarted) ):
@@ -157,7 +160,7 @@ class rockBlock(object):
             self.mo_msg = momsg
             if self._queueMessage(client_serial, thr_server, mo_is_regular):
                 have_queued_msg = True # msg was successfully queued
-        if( self._attemptConnection() and self._attemptSession(have_queued_msg) ):
+        if( self._attemptConnection() and self._attemptSession(have_queued_msg, target_id, mo_uuid) ):
             return True
         else:
             if(self.callback != None and callable(self.callback.rockBlockRxFailed) ):
@@ -322,7 +325,7 @@ class rockBlock(object):
         return False
                  
                  
-    def _attemptSession(self, have_queued_msg):
+    def _attemptSession(self, have_queued_msg, target_id, mo_uuid):
         '''
         Try to establish an Iridium SBD session and perform mailbox check. Works for both MO and MT msgs
         have_queued_msg determines whether there are MO msgs (that are successfully queued) waiting to be sent
@@ -360,7 +363,7 @@ class rockBlock(object):
                     if(moStatus <= 4 and have_queued_msg):
                         self._clearMoBuffer()
                         if(self.callback != None and callable(self.callback.rockBlockTxSuccess) ):   
-                            self.callback.rockBlockTxSuccess( moMsn, self.mo_msg )
+                            self.callback.rockBlockTxSuccess(self.mo_msg, target_id, mo_uuid)
                         pass
                     elif (moStatus <= 4 and not have_queued_msg):
                         if(self.callback != None and callable(self.callback.rockBlockTxBlankMsg) ):   
@@ -381,7 +384,7 @@ class rockBlock(object):
                     #There are additional MT messages to queued to download
                     if(mtQueued > 0 and self.autoSession == True):
                         self.mo_msg = "" # Clear MO buffer to avoid sending same MO msg twice
-                        self._attemptSession(False)
+                        self._attemptSession(False, target_id, mo_uuid)
                     
                     if(moStatus <= 4):                     
                         return True

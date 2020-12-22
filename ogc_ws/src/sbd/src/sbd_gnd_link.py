@@ -151,7 +151,7 @@ class satcommsgnd(satcomms):
             if "OK" in reply.text:
                 ack = timeoutscript.ack_converter(data, 1)
                 if ack != None:
-                    self.pub_to_timeout.publish(ack)
+                    self._pub_to_timeout.publish(ack)
             return True
         except:
             rospy.logerr("SBD: Cannot contact Rock 7 server")
@@ -221,7 +221,7 @@ class satcommsgnd(satcomms):
         # Acknowledgment message sending
         ack = timeoutscript.ack_converter(data, 0)
         if ack != None:
-            self.pub_to_timeout.publish(ack)
+            self._pub_to_timeout.publish(ack)
         # Try sending through Rock 7 server first. If it fails, fallback to gnd rockBlock
         if not self._server_send_msg(data):
             self.sbd_get_mo_msg(data)
