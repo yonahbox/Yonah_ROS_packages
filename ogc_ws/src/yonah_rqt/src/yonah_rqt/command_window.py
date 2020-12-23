@@ -47,7 +47,6 @@ class CommandWindow(QWidget):
         super(CommandWindow, self).__init__()
         self.setWindowTitle("Command Window")
         
-        self.destination_id = 1
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
@@ -270,7 +269,8 @@ class CommandWindow(QWidget):
         self.pub_to_despatcher.publish(message)
 
     def combo_box_change(self, i):
-        self.destination_id = i + 1
+        title = self.combo_box.currentText()[-1]
+        self.destination_id = int(title)
 
     def custom_ping_change(self, i):
         self.send_custom_ping = i
