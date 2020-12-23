@@ -24,10 +24,11 @@ from python_qt_binding.QtCore import Qt
 from identifiers.srv import GetIds, GetAllDetails, SetIds
 
 class ValidIdWindow (QDialog):
-    def __init__(self):
+    def __init__(self, refresh_callback):
         super(ValidIdWindow, self).__init__()
         self.setWindowTitle("Input Valid IDs")
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.callback = refresh_callback
 
         # Services Call
         rospy.wait_for_service("identifiers/get/ids")
@@ -78,6 +79,7 @@ class ValidIdWindow (QDialog):
             rospy.logerr("Failed to write valid ids file")
 
         self.pub_valid_ids.publish(array_valid_ids)
+        self.callback(0)
         self.hide()
 
     def reject(self):

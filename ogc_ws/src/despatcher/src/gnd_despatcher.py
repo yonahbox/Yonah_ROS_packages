@@ -32,7 +32,7 @@ from identifiers.srv import GetSelfDetails, GetIds
 # Local
 import regular
 import headers
-import timeoutscript
+import feedback_util
 from g2a import recognised_commands
 
 TELE = 0
@@ -216,7 +216,7 @@ class gnddespatcher():
                     ack_msg.uuid = uuid
                     ack_msg.data = ""
                     ack_msg.id = 1
-                    ack = timeoutscript.ack_converter(ack_msg, 2)
+                    ack = feedback_util.ack_converter(ack_msg, 2)
                     if ack != None:
                         self.pub_to_timeout.publish(ack)
                     return 0 # Prevent the message to get sent through ondemand

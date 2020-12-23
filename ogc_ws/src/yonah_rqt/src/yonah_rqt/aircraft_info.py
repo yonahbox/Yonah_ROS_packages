@@ -77,7 +77,11 @@ class AircraftInfo(QWidget):
             subfield_label_mode.setFixedSize(120, 30)
 
             # Create an entry in the dictionary with name aircraftMode1 and set attributes of the name
-            self.aircraft_info_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
+            if i == "Link Status":
+                # Initialise Link Status text with Telegram
+                self.aircraft_info_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit("Telegram")
+            else:
+                self.aircraft_info_dict['aircraft' + i + str(aircraft_no)] = QPlainTextEdit()
             self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setMaximumHeight(40)
             self.aircraft_info_dict.get('aircraft' + i + str(aircraft_no)).setReadOnly(True)
 

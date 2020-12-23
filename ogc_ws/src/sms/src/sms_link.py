@@ -31,7 +31,7 @@ from identifiers.srv import CheckSender, GetDetails
 # Local
 import RuTOS
 import sys
-import timeoutscript
+import feedback_util
 
 
 class SMSrx():
@@ -127,7 +127,7 @@ class SMSrx():
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
         
         # Send acknowledgment to timeout module
-        ack = timeoutscript.ack_converter(data, 0)
+        ack = feedback_util.ack_converter(data, 0)
         if ack != None:
             self.pub_to_timeout.publish(ack)
 
@@ -135,7 +135,7 @@ class SMSrx():
             rospy.logerr("SMS: Timeout. Check SIM card balance")
             self._wait_out_timeout()
         else:
-            ack = timeoutscript.ack_converter(data, 1)
+            ack = feedback_util.ack_converter(data, 1)
             if ack != None:
                 self.pub_to_timeout.publish(ack)
             self.pub_to_switcher.publish("Success")

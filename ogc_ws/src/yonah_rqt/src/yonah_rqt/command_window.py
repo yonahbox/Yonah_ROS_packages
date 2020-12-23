@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import time
-import timeoutscript
+import feedback_util
 
 from functools import partial
 from os import listdir, path
@@ -43,11 +43,11 @@ from .log_window import LogWindow
 from .valid_id_window import ValidIdWindow
 
 class CommandWindow(QWidget):
-    def __init__(self, active_aircrafts):
+    def __init__(self, active_aircrafts, refresh_callback):
         super(CommandWindow, self).__init__()
         self.setWindowTitle("Command Window")
         
-        self.destination_id = 1
+        self.callback = refresh_callback
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
@@ -71,7 +71,7 @@ class CommandWindow(QWidget):
         self.create_layout(active_aircrafts)
         self.PopupMessages = PopupMessages()
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
-        self.ValidIdWindow = ValidIdWindow()
+        self.ValidIdWindow = ValidIdWindow(self.callback)
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
 
         self.arm_button.pressed.connect(self.arm)
@@ -117,9 +117,7 @@ class CommandWindow(QWidget):
         
         # Create the widgets
         self.combo_box = QComboBox()
-
         self.create_combobox(active_aircrafts)
-        
         
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
@@ -241,7 +239,6 @@ class CommandWindow(QWidget):
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
-            print(f"remove {i}")
             self.combo_box.removeItem(i)
         for j in active_aircrafts: 
             self.combo_box.addItem('Aircraft ' + str(j))
@@ -265,12 +262,19 @@ class CommandWindow(QWidget):
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
         message.id = destination_id
-        message.uuid = timeoutscript.increment()
+        message.uuid = feedback_util.increment()
+        if "mission next" in data or "mission load" in data:
+            rospy.logwarn("rqt: mission next or mission load commands will not have acknowledgments")
+            message.uuid = 0
+        else:
+            message.uuid = feedback_util.increment()
         message.data = data
         self.pub_to_despatcher.publish(message)
 
     def combo_box_change(self, i):
-        self.destination_id = i + 1
+        if self.combo_box.currentText() != "":
+            title = self.combo_box.currentText()[-1]
+            self.destination_id = int(title)
 
     def custom_ping_change(self, i):
         self.send_custom_ping = i
@@ -344,9 +348,9 @@ class CommandWindow(QWidget):
             message_type = ["sync resume", "Warning"]
             title = "Sync Resume Warning"
             self.PopupMessages.arm_window(self.destination_id, message_type, title, message, text)
-            
-        data = "syncthing resume"
-        self.create_link_message(self.destination_id, data)
+        else:
+            data = "syncthing resume"
+            self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
         data = "syncthing pause"
@@ -384,7 +388,6 @@ class CommandWindow(QWidget):
 
         self.change_identifiers_dialog.show()
         self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
-        # self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
@@ -519,7 +522,6 @@ class CommandWindow(QWidget):
         else:
             new_identifier.is_air = False
         add_identifier = self.add_new_device(new_identifier)
-        rospy.loginfo(add_identifier.success)
         self.add_identifiers_dialog.close()
         self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
@@ -591,7 +593,7 @@ class CommandWindow(QWidget):
 
         edit_identifiers = EditDeviceRequest()
         edit_identifiers.id = self.edit_identifiers_id
-        rospy.loginfo("ID that is sent: " + str(edit_identifiers.id))
+        rospy.loginfo("rqt: ID that is sent: " + str(edit_identifiers.id))
         edit_identifiers.label = self.edit_label
         edit_identifiers.number = self.edit_phone
         edit_identifiers.imei = self.edit_imei
@@ -601,7 +603,6 @@ class CommandWindow(QWidget):
         else:
             edit_identifiers.is_air = False
         edit_result = self.edit_device(edit_identifiers)
-        rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_identifiers_dialog.close()
         self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
     
@@ -659,16 +660,14 @@ class CommandWindow(QWidget):
         self.change_mode_dialog.close()
 
     def direct_update(self):
-        rospy.logwarn('direct update pressed')
         home_dir = expanduser("~")
         gndfolder = home_dir + "/Sync/Waypoints/"
         gndfiles = listdir(gndfolder)
         mission_msg = []
         for i in gndfiles:
-            rospy.logwarn('gnd files')
             mission_msg.append(str(i) + " " + str(int(path.getmtime(gndfolder + i))))
         update = LinkMessage()
-        update.uuid = timeoutscript.increment()
+        update.uuid = feedback_util.increment()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
         time.sleep(1)

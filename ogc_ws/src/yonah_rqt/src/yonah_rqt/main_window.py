@@ -62,7 +62,6 @@ class MyPlugin(Plugin):
         self.time = 0
         self.proper_shutdown= 0
         self.destination_id = 1
-        self.is_refresh_tab_open = True
         self.aircraft_list = []
         self.aircrafts_info = {}
         self.checklist_info = {}
@@ -72,7 +71,7 @@ class MyPlugin(Plugin):
         self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.aircraft_list)
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
-        self.CommandWindow = CommandWindow(self.aircraft_list)
+        self.CommandWindow = CommandWindow(self.aircraft_list, self.tab_change)
 
         self.CommandWindow.change_valid_ids()
         self.create_layout()
@@ -139,26 +138,25 @@ class MyPlugin(Plugin):
             self.tab.addTab(self.aircrafts_info.get(tab_key), "Aircraft " + str(i))
             self.tab.show()
 
-        if self.tab.count() == 1:
-            refresh = QScrollArea()
-            self.tab.addTab(refresh, "Refresh")
         self.tab.setMinimumHeight(500)
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
-        if self.is_refresh_tab_open:
-            self.tab.removeTab(1)
-            self.is_refresh_tab_open = False
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
-        print("Activ acs: " + str(active_aircrafts))
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
-        print("diff_active: " + str(diff_active))
         if not diff_active == []:
             self.aircraft_list = active_aircrafts
             self.create_tab_windows(diff_active)
-        if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
-            i = 1
-        self.CommandWindow.combo_box.setCurrentIndex(i-1)
+        for i in range (self.tab.count()):
+            if self.tab.tabText(i) != "Summary":
+                aircraft_no = int(self.tab.tabText(i)[-1])
+                if aircraft_no < i:
+                    self.tab.tabBar().moveTab(i, aircraft_no)
+
+        command_window_index = self.tab.currentIndex() - 1
+        if command_window_index < 0:
+            command_window_index = 0 # If tab is at Summary page, set Combobox to 0th index
+        self.CommandWindow.combo_box.setCurrentIndex(command_window_index)
 
     def feedback_message(self, data):
         status = Communicate()
@@ -202,16 +200,13 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
-        rospy.loginfo(data)
         # data. data list is i 1 1 0 message
         data_list = data.data.split()
         msg = " ".join(data_list[4:-1])
         aircraft_id = data_list[2]
         status = Communicate()
         if "LinkSwitch" in msg:
-            # link_status = Communicate()
             status.ondemand_signal.connect(self.link_status)
-            # link_status.ondemand_signal.emit(msg, aircraft_id)
         else:
             status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
@@ -347,7 +342,6 @@ class MyPlugin(Plugin):
 
     def link_status(self, link, aircraft_id):
         link = link[-1] # extract the status
-        rospy.loginfo(link)
         if int(link) == 0:
             link = "Telegram"
         elif int(link) == 1:
@@ -461,7 +455,7 @@ class MyPlugin(Plugin):
                     msg = regular.convert_to_rosmsg(regpay)
                     self.regular_payload(msg)
         else:
-            rospy.loginfo("rqt_log file doesn't exist, creating new rqt_log file")
+            rospy.loginfo("rqt: rqt_log file doesn't exist, creating new rqt_log file")
             f = open(self.path, "w+")
             f.write("None")
    

@@ -31,7 +31,6 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        rospy.logwarn("COUNTDOWN STARTING: " + str(self._watchdog[self.status]))
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] == 0:
             self.stop_timer()
@@ -40,7 +39,7 @@ class MessageTimer():
             self.status = -1
             
         elif self._watchdog[self.status] < 0:
-            rospy.logerr("MESSAGE STATUS IS NEGATIVE")
+            rospy.logerr("rqt: Message status is negative")
 
     def stop_timer(self):
         self.watcher.shutdown()
@@ -57,25 +56,20 @@ class Manager():
     def watcher(self):
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.sent_commands)
         rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
-        # Put another subscriber in that listens to messages sent to rqt
         rospy.spin()
 
     def sent_commands(self, data):
-        commands = ["sms", "statustext", "arm", "mode", "wp"]
-        if data.uuid not in self.messages:
-            rospy.logwarn("CREATING NEW FIELD")
+        commands = ["sms", "statustext", "arm", "mode", "wp", "disarm"]
+        if data.uuid not in self.messages and data.data.split()[0] in commands:
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
         
-        elif data.data in commands:
-            rospy.logerr("REWRITING OLD FIELD")
+        elif data.data.split()[0] in commands:
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
 
         else:
-            rospy.logwarn("-----------" + str(data.data))
             if data.data == "pending":
-                rospy.logwarn("MESSAGE IS PENDING")
                 message = "Message pending"
                 send_to_rqt(data.uuid, message)
 
@@ -87,10 +81,12 @@ class Manager():
             elif data.data == "double tick":
                 self.messages[data.uuid].status = 2
                 self.messages[data.uuid].stop_timer()
-                rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
                 
             else:
-                rospy.logerr("Unknown message received: " + str(data))
+                # Ignore if it is a mission command as we don't do timeout for mision commands
+                if "mission" in data.data:
+                    return
+                rospy.logerr("rqt: Unknown message received: " + str(data))
 
 def send_to_rqt(message_id, data):
     message = LinkMessage()
