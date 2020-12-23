@@ -60,7 +60,7 @@ def split_headers(msg):
         timestamp = int(msglist[-1])
         return msgtype, devicetype, sysid, uuid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
     except:
-        rospy.logerr("Invalid format for split headers")
+        rospy.logerr("Headers: Cannot split headers")
         return None
     
 ######################
@@ -74,7 +74,7 @@ def attach_headers(prefixes, suffixes, msg):
     If prefixes/suffixes are invalid, return None
     '''
     if len(prefixes) != PREFIX_COUNT or len(suffixes) != SUFFIX_COUNT:
-        rospy.logerr("Prefix/suffix incorrect")
+        rospy.logerr("Headers: Incorrect number of headers")
         return ""
     prefix_string = " ".join(str(i) for i in prefixes)
     suffix_string = " ".join(str(i) for i in suffixes)
