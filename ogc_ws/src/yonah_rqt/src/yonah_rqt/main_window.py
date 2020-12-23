@@ -352,7 +352,6 @@ class MyPlugin(Plugin):
             link = "ERR"
         self.WaypointWindow.waypoint_plaintext_dict.get("aircraftlink" + aircraft_id).setPlainText(link)
         self.aircrafts_info.get("AC" + aircraft_id).aircraft_info_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
-        self.SummaryWindow.summary_plaintext_dict.get("aircraftLink Status" + aircraft_id).setPlainText(link)
 
     def status_text_display(self, status_text):
         status = status_text.split(",")
