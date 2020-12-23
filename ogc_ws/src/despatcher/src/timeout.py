@@ -31,7 +31,7 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        rospy.logwarn("COUNTDOWN STARTING: " + str(self._watchdog[self.status]))
+        rospy.loginfo("rqt: COUNTDOWN STARTING: " + str(self._watchdog[self.status]))
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] == 0:
             self.stop_timer()
@@ -61,21 +61,20 @@ class Manager():
         rospy.spin()
 
     def sent_commands(self, data):
-        commands = ["sms", "statustext", "arm", "mode", "wp"]
-        if data.uuid not in self.messages:
+        commands = ["sms", "statustext", "arm", "mode", "wp", "disarm"]
+        if data.uuid not in self.messages and data.data.split()[0] in commands:
             rospy.logwarn("CREATING NEW FIELD")
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
         
-        elif data.data in commands:
+        elif data.data.split()[0] in commands:
             rospy.logerr("REWRITING OLD FIELD")
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
 
         else:
-            rospy.logwarn("-----------" + str(data.data))
             if data.data == "pending":
-                rospy.logwarn("MESSAGE IS PENDING")
+                rospy.logwarn("rqt: MESSAGE IS PENDING")
                 message = "Message pending"
                 send_to_rqt(data.uuid, message)
 
@@ -87,9 +86,11 @@ class Manager():
             elif data.data == "double tick":
                 self.messages[data.uuid].status = 2
                 self.messages[data.uuid].stop_timer()
-                rospy.logwarn("MESSAGE IS SUCCESSFULLY SENT")
+                rospy.logwarn("rqt: MESSAGE IS SUCCESSFULLY SENT")
                 
             else:
+                if "mission" in data.data:
+                    return
                 rospy.logerr("Unknown message received: " + str(data))
 
 def send_to_rqt(message_id, data):
