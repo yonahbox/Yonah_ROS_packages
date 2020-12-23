@@ -182,7 +182,7 @@ class switcher():
         elif data.data == "Success":
             self._timeout_counter = 0
             
-        if self._timeout_counter == 3:
+        if self._timeout_counter == 5:
             self._timeout_counter = 0
             rospy.logerr("Switcher: Telegram send timeout")
             for i in self._valid_ids:

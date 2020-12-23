@@ -39,7 +39,7 @@ class LinkSwitchTimeout():
 	# Upon link failure, inform switcher node to trigger a link switch
 	def __init__(self, timestamp):
 		self.timestamp = timestamp
-		self.time = 5
+		self.time = 10
 		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
 
 	def countdown(self, data):
@@ -202,8 +202,10 @@ def tdlib_recv():
 				if event['message']['content']['@type'] == 'messageText':
 					if int(event["message"]["content"]["text"]["text"].split()[3]) == 0:
 						timestamp = int(event["message"]["content"]["text"]["text"].split()[-1])
-						tdtimeout[timestamp].timer.shutdown()
-						tdtimeout[timestamp].pub_to_switcher.publish("Success")
+						if hasattr(tdtimeout, str(timestamp)):
+							if hasattr(tdtimeout[timestamp],"timer"):
+								tdtimeout[timestamp].timer.shutdown()
+								tdtimeout[timestamp].pub_to_switcher.publish("Success")
 
 
 if __name__ == '__main__':
