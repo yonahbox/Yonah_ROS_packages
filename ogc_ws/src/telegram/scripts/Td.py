@@ -74,7 +74,7 @@ class Td():
 
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
-		print('TDLiB fatal error: ', error)
+		print('Td: TDLiB fatal error: ', error)
 
 	# Called for interacting with the telegram account
 	def _execute(self, query):
