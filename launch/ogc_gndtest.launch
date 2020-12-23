@@ -80,7 +80,7 @@
 	</node>
 
 	<!-- timeout -->
-	<node name="feedback timeout" pkg="despatcher" type="feedback_timeout.py" respawn="true" respawn_delay="3" output="log">
+	<node name="feedback_timeout" pkg="despatcher" type="feedback_timeout.py" respawn="true" respawn_delay="3" output="log">
     </node>
 
 </launch>
