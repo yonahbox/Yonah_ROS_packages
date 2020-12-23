@@ -155,7 +155,6 @@ class MyPlugin(Plugin):
         if not diff_active == []:
             self.aircraft_list = active_aircrafts
             self.create_tab_windows(diff_active)
-        rospy.logwarn(f"tab with current index {self.tab.currentIndex()} and title {self.tab.tabText(self.tab.currentIndex())}")
         for i in range (self.tab.count()):
             if self.tab.tabText(i) != "Summary":
                 aircraft_no = int(self.tab.tabText(i)[-1])
