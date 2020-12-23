@@ -216,7 +216,8 @@ class rockBlock(object):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
-        rockBlockLogMsg("SBD: Inserting MO msg: " + self.mo_msg,"info")
+        if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+            self.callback.rockBlockLogMsg("SBD: Inserting MO msg: " + self.mo_msg,"info")
 
         msg = ""
         msglen = 0
@@ -271,14 +272,18 @@ class rockBlock(object):
                 result = False
                 queuestatus = self.s.readline().strip().decode()
                 if queuestatus == "0":
-                    rockBlockLogMsg("SBD: MO msg queue success","info")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg queue success","info")
                     result = True
                 elif queuestatus == "1":
-                    rockBlockLogMsg("SBD: MO msg write timeout","warn")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg write timeout","warn")
                 elif queuestatus == "2":
-                    rockBlockLogMsg("SBD: MO msg corrupted","warn")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg corrupted","warn")
                 elif queuestatus == "3":
-                    rockBlockLogMsg("SBD: MO msg too big","warn")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg too big","warn")
                 self.s.readline().strip()  #BLANK
                 self.s.readline().strip() #OK
                 return result
@@ -408,8 +413,9 @@ class rockBlock(object):
         # Wait for valid Network Time
         while True:
             if(TIME_ATTEMPTS == 0):
-                rockBlockLogMsg("SBD: No Iridium Network Service!","err")
-                if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
+                if(self.callback != None and callable(self.callback.rockBlockSignalFail)\
+                    and callable(self.callback.rockBlockLogMsg) ): 
+                    self.callback.rockBlockLogMsg("SBD: No Iridium Network Service!","err")
                     self.callback.rockBlockSignalFail()
                 return False
             if( self._isNetworkTimeValid() ):
@@ -423,8 +429,9 @@ class rockBlock(object):
             if signal < 0:
                 raise rockBlockException("Signal read error; the pySerial readline order may have messed up!")
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
-                if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
-                    rockBlockLogMsg("SBD: Low signal: " + str(signal),"warn")
+                if(self.callback != None and callable(self.callback.rockBlockSignalFail)\
+                    and callable(self.callback.rockBlockLogMsg) ): 
+                    self.callback.rockBlockLogMsg("SBD: Low signal: " + str(signal),"warn")
                     self.callback.rockBlockSignalFail()
                 return False
             self.callback.rockBlockSignalUpdate( signal )
@@ -447,8 +454,10 @@ class rockBlock(object):
 
         if(response == b'OK'):
             # Blank msg
-            rockBlockLogMsg("SBD: No message content... strange!","warn")
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+            
+            if(self.callback != None and callable(self.callback.rockBlockRxReceived) \
+                and callable(self.callback.rockBlockLogMsg)): 
+                self.callback.rockBlockLogMsg("SBD: No message content... strange!","warn")
                 self.callback.rockBlockRxReceived(mtMsn, "")
             # Return early. Otherwise it will hit the last while statement and enter an infinite loop
             return
@@ -478,14 +487,17 @@ class rockBlock(object):
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                     self.callback.rockBlockRxReceived(mtMsn, content)
         except struct.error:
-            rockBlockLogMsg("SBD: Error when unpacking binary msg","err")
-            rockBlockLogMsg(response,"err")
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)): 
+                self.callback.rockBlockLogMsg("SBD: Error when unpacking binary msg","err")
+                self.callback.rockBlockLogMsg(response,"err")
         except IndexError:
-            rockBlockLogMsg("SBD: Binary msg is too short","err")
-            rockBlockLogMsg(response,"err")
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)):
+                self.callback.rockBlockLogMsg("SBD: Binary msg is too short","err")
+                self.callback.rockBlockLogMsg(response,"err")
         except UnicodeDecodeError:
-            rockBlockLogMsg("SBD: Error in decoding msg","err")
-            rockBlockLogMsg(response,"err")
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)):
+                self.callback.rockBlockLogMsg("SBD: Error in decoding msg","err")
+                self.callback.rockBlockLogMsg(response,"err")
         
         while True:
             # Exit when we see OK response, otherwise the serial readlines will go out of sync and
