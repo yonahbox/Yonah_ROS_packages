@@ -59,7 +59,7 @@ class Manager():
         rospy.spin()
 
     def sent_commands(self, data):
-        commands = ["sms", "statustext", "arm", "mode", "wp", "disarm"]
+        commands = ["sms", "statustext", "arm", "mode", "wp", "disarm", "sync"]
         if data.uuid not in self.messages and data.data.split()[0] in commands:
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
             self.messages[data.uuid].client()
