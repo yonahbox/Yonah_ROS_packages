@@ -55,26 +55,26 @@ class RFF:
 
 	def main(self):
 		if self.armStatus == True or self.hopStatus == False:
-			rospy.logwarn("Button disabled")
+			rospy.logwarn("RFF: Button disabled")
 			return
-		rospy.loginfo("Loading next set of waypoints.")
+		rospy.loginfo("RFF: Loading next set of waypoints.")
 		self.pub_to_aircraft.publish("i 0 10 mission next " + str(rospy.get_rostime().secs))
 		time.sleep(5)
 		if self.hopStatus == False or self.Ack == False:
-			rospy.loginfo("Unable to load")
+			rospy.loginfo("RFF: Unable to load")
 			return
 		mode = rospy.ServiceProxy('mavros/set_mode', SetMode)
 		while not mode(custom_mode = "AUTO").mode_sent:
-			rospy.logerr("Failed to set mode to AUTO. Trying again.")
+			rospy.logerr("RFF: Failed to set mode to AUTO. Trying again.")
 			time.sleep(3)
-		rospy.loginfo("MODE = AUTO")
-		rospy.loginfo("Arming in 10 seconds. Please stand clear.")
+		rospy.loginfo("RFF: MODE = AUTO")
+		rospy.loginfo("RFF: Arming in 10 seconds. Please stand clear.")
 		time.sleep(10)
 		arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 		while not arm(1).success:
-			rospy.logwarn("Failed to arm throttle. Trying again. Please continue to stay clear of aircraft.")
+			rospy.logwarn("RFF: Failed to arm throttle. Trying again. Please continue to stay clear of aircraft.")
 			time.sleep(3)
-		rospy.loginfo("THROTTLE ARMED")
+		rospy.loginfo("RFF: THROTTLE ARMED")
 		self.armStatus = True
 		self.Ack = False
 
@@ -97,7 +97,7 @@ class Button:
 		self.Button_State = False
 		self.stopwarn = False
 		self.ssh = RuTOS.start_client(self._ip, self._username)
-		rospy.loginfo("Monitoring button")
+		rospy.loginfo("RFF: Monitoring button")
 		RuTOS.button_on(self.ssh)
 
 	def blink(self):
@@ -114,7 +114,7 @@ class Button:
 			if digital_input == 0:
 				if self.Button_State == False:
 					timedown = time.time()
-					rospy.loginfo("Button pressed.")
+					rospy.loginfo("RFF: Button pressed")
 				self.Button_State = True
 
 			elif digital_input == 1:
@@ -128,13 +128,13 @@ class Button:
 						self.stopwarn = True
 						blinker.join()
 						break
-					rospy.loginfo("Button not held for at least 2 seconds. Continuing to monitor.")
+					rospy.loginfo("RFF: Button not held for at least 2 seconds. Continuing to monitor.")
 				self.Button_State = False
 
 			time.sleep(0.5)
 
 		self.ssh.close()
-		rospy.loginfo("Disconnected from button.")
+		rospy.loginfo("RFF: Disconnected from button")
 
 if __name__ == "__main__":
 	rospy.init_node('rff', anonymous=False, disable_signals=True)
@@ -145,13 +145,13 @@ if __name__ == "__main__":
 			# Do nothing while aircraft is not in hop mode
 			while not rff.hopStatus:
 				time.sleep(5)
-			rospy.loginfo("Plane is now in hop mode")
+			rospy.loginfo("RFF: Plane is now in hop mode")
 			# Do nothing if aircraft is armed
 			while rff.armStatus:
 				time.sleep(5)
-			rospy.loginfo("Plane has been disarmed.")
+			rospy.loginfo("RFF: Plane has been disarmed")
 			button = Button()
 			button.press()
 
 	except KeyboardInterrupt:
-		rospy.signal_shutdown("Shutting down")
+		rospy.signal_shutdown("RFF: Shutting down")
