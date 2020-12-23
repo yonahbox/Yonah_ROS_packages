@@ -31,8 +31,8 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        self._watchdog[self.status] -= 1
-        if self._watchdog[self.status] == 0:
+        self._watchdog[self.status] -= 1 # perform countdown
+        if self._watchdog[self.status] == 0: # stop when reaches 0
             self.stop_timer()
             data = "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status)
             send_to_rqt(self.message_id, data)
@@ -42,6 +42,7 @@ class MessageTimer():
             rospy.logerr("rqt: Message status is negative")
 
     def stop_timer(self):
+        '''Stop timer'''
         self.watcher.shutdown()
 
     '''Main Function'''
@@ -51,14 +52,16 @@ class MessageTimer():
 class Manager():
     def __init__(self):
         rospy.init_node('timeout', anonymous=False)
-        self.messages = {}
+        self.messages = {} # Stores all the messages MessageTimer classes
     
     def watcher(self):
+        '''Main function'''
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.sent_commands)
         rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
         rospy.spin()
 
     def sent_commands(self, data):
+        '''checks for every acknowledgment message received through the topics'''
         commands = ["sms", "statustext", "arm", "mode", "wp", "disarm"]
         if data.uuid not in self.messages and data.data.split()[0] in commands:
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
