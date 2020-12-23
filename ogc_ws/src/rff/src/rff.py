@@ -51,14 +51,14 @@ class RFF:
 		rospy.wait_for_service('mavros/set_mode')
 		rospy.wait_for_service('mavros/cmd/arming')
 
-		self.pub_to_aircraft = rospy.Publisher('ogc/from_telegram', String, queue_size = 5)
+		self.pub_to_aircraft = rospy.Publisher('ogc/from_rff', String, queue_size = 5)
 
 	def main(self):
 		if self.armStatus == True or self.hopStatus == False:
 			rospy.logwarn("RFF: Button disabled")
 			return
 		rospy.loginfo("RFF: Loading next set of waypoints.")
-		self.pub_to_aircraft.publish("i 0 10 mission next " + str(rospy.get_rostime().secs))
+		self.pub_to_aircraft.publish("rff mission next")
 		time.sleep(5)
 		if self.hopStatus == False or self.Ack == False:
 			rospy.loginfo("RFF: Unable to load")
