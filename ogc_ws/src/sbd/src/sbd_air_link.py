@@ -166,7 +166,7 @@ class satcomms(rockBlockProtocol):
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
 
-    def rockBlockTxLogMsg(self,msg,severity):
+    def rockBlockLogMsg(self,msg,severity):
         if severity == "debug":
             rospy.logdebug(msg)
         elif severity == "info":
