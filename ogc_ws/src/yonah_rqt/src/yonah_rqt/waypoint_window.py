@@ -52,7 +52,7 @@ class WaypointWindow(QWidget):
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setMaximumHeight(40)
         self.waypoint_plaintext_dict.get('aircraft' + str(aircraft_no)).setReadOnly(True)
 
-        self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)] = QPlainTextEdit()
+        self.waypoint_plaintext_dict['aircraftlink' + str(aircraft_no)] = QPlainTextEdit("Telegram")
         self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumHeight(40)
         self.waypoint_plaintext_dict.get('aircraftlink' + str(aircraft_no)).setMaximumWidth(100)
 
