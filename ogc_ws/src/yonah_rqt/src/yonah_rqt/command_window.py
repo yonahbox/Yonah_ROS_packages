@@ -268,10 +268,10 @@ class CommandWindow(QWidget):
         self.pub_to_despatcher.publish(message)
 
     def combo_box_change(self, i):
-        if self.combo_box.currentText != "":
+        if self.combo_box.currentText() != "":
             title = self.combo_box.currentText()[-1]
             rospy.logerr(f"Sending command to: {title}")
-        self.destination_id = int(title)
+            self.destination_id = int(title)
 
     def custom_ping_change(self, i):
         self.send_custom_ping = i
