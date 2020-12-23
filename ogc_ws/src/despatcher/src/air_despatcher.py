@@ -122,7 +122,7 @@ class airdespatcher():
         self.ground_id = valid_ids[0]
 
         del self._new_msg_chk
-        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+        self._new_msg_chk = headers.new_msg_chk(self.ground_id)
 
 
     ###########################################
@@ -132,7 +132,7 @@ class airdespatcher():
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
-            rospy.loginfo("Received \"" + data.data + "\"")
+            rospy.loginfo("Despatcher: Received \"" + data.data + "\"")
             # Handle msg headers
             msgtype, devicetype, sysid, uuid, timestamp, self._recv_msg \
                 = headers.split_headers(data.data)
@@ -154,9 +154,13 @@ class airdespatcher():
             elif "syncthing" in self._recv_msg:
                 g2a.handle_syncthing(self, uuid)
         except(rospy.ServiceException):
-            rospy.logwarn("Service Call Failed")
+            rospy.logwarn("Despatcher: Mavros service call failed")
         except (ValueError, IndexError, TypeError):
-            rospy.logerr("Invalid message format")
+            rospy.logerr("Despatcher: Invalid message format")
+
+    def handle_internal(self,data):
+        if data.data == "rff mission next":
+            g2a.mission_next(self)
 
     def resume_syncthing(self, data):
         if data.data == "hop False" and self.payloads.entries["arm"] == False: 
@@ -307,6 +311,7 @@ class airdespatcher():
         rospy.Subscriber("ogc/files/modified", String, self._handle_modified)
         rospy.Subscriber("ogc/to_despatcher/error", String, self._handle_error)
         rospy.Subscriber("ogc/ack_tele_file", String, self.acknowledge_file_download)
+        rospy.Subscriber("ogc/from_rff", String, self.handle_internal)
         rospy.Subscriber('ogc/to_rff', String, self.resume_syncthing)
         alerts = rospy.Timer(rospy.Duration(1), self.check_alerts)
         self.tele_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_tele)

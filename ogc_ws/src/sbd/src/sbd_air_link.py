@@ -86,7 +86,7 @@ class satcomms(rockBlockProtocol):
         try:
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
-            rospy.logerr("Check rockBlock")
+            rospy.logerr("SBD: Check if rockBlock is connected")
             rospy.signal_shutdown("rockBlock error")
         
         # Msg Type Prioritization. Higher number means higher priority
@@ -165,6 +165,16 @@ class satcomms(rockBlockProtocol):
 
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
+
+    def rockBlockLogMsg(self,msg,severity):
+        if severity == "debug":
+            rospy.logdebug(msg)
+        elif severity == "info":
+            rospy.loginfo(msg)
+        elif severity == "warn":
+            rospy.logwarn(msg)
+        elif severity == "err":
+            rospy.logerr(msg)
 
     ############################
     # Check for switch cmds

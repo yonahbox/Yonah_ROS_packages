@@ -36,9 +36,8 @@ from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds, GetS
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
-# TODO remove this
-
 import feedback_util
+import headers
 
 class satcommsgnd(satcomms):
 
@@ -187,16 +186,17 @@ class satcommsgnd(satcomms):
         air_ids = self._get_valid_ids().ids
         switch_cmd = LinkMessage()
         switch_cmd.uuid = 0
+        prefixes = ["e", 0, self._id, switch_cmd.uuid]
         for i in air_ids:
             switch_cmd.id = i
             rospy.loginfo("SBD: Sending switch cmd to aircraft " + str(i))
             if self._thr_server:
-                switch_cmd.data = "e 0 " + str(self._id) + " 0 sbd switch 1 " + str(rospy.get_rostime().secs)
+                switch_cmd.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], "sbd switch 1")
                 self._server_send_msg(switch_cmd)
             else:
                 # Sending from gnd Rockblock is likely to fail. We need to ensure that all switch cmds are sent
                 while not self._msg_send_success == 1:
-                    switch_cmd.data = "e 0 " + str(self._id) + " 0 sbd switch 0 " + str(rospy.get_rostime().secs)
+                    switch_cmd.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], "sbd switch 0")
                     self.sbd_get_mo_msg(switch_cmd)
                     self.sbd_check_mailbox("")
 

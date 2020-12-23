@@ -62,7 +62,7 @@ class watchdog():
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
         if self._watchdog[self._link] <= 0:
-            rospy.logwarn("Watchdog expired, switching")
+            rospy.logwarn(f"Switcher: {self._link} watchdog expired")
             self.switch(self._link + 1)
     
     def link_status(self):
@@ -114,7 +114,7 @@ class switcher():
     def _switch_all(self, link):
         '''Command ALL clients to switch to the target link (if not already on that link)'''
         for i in self._valid_ids:
-            rospy.logwarn(f"Switching all clients to {link}")
+            rospy.logwarn(f"Switcher: Switching all clients to {link}")
             if not (self._watchdogs[i].link_status() == link):
                 self._watchdogs[i].switch(link)
 
@@ -163,16 +163,16 @@ class switcher():
         connection = RuTOS.get_conntype(self._ssh)
         rssi = RuTOS.get_rssi(self._ssh)
         if connection == "NOSERVICE":
-            rospy.logerr("Router has no service. Switching to SBD")
+            rospy.logerr("Switcher: No service, switching to SBD")
             self._switch_all(SBD) # Switch to SBD immediately
         elif connection == "GSM":
-            rospy.logerr("No data connection, switching to SMS")
+            rospy.logerr("Switcher: No data connection, switching to SMS")
             self._switch_all(SMS) # Switch to SMS
         elif rssi == "Timeout." or rssi == None:
             return
         elif rssi <= -95: # To include RSRQ, RSRP, SINR in the future
             for i in self._valid_ids:
-                rospy.logerr("RSSI below threshold, switching link")
+                rospy.logerr("Switcher: Low RSSI, switching link")
                 old_link = self._watchdogs[i].link_status()
                 self._watchdogs[i].switch(old_link + 1) # In 4G mode, switch at low rssi
     
@@ -184,12 +184,14 @@ class switcher():
             
         if self._timeout_counter == 3:
             self._timeout_counter = 0
-            rospy.logerr("Telegram is taking too long to send. Switching to SMS")
-            self._switch_all(SMS)
+            rospy.logerr("Switcher: Telegram send timeout")
+            for i in self._valid_ids:
+                if self._watchdogs[i].link_status() == TELE:
+                    self._watchdogs[i].switch(SMS)
 
     def monitor_smsout(self, data):
         if data.data == "Timeout":
-            rospy.logerr("SMS timed out. Link is no longer useable")
+            rospy.logerr("Switcher: SMS timeout. Link will restart in 8 minutes")
             self.SMS_timedout = True
             self._switch_all(SBD)
         if data.data == "Online":

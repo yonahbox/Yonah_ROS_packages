@@ -30,10 +30,10 @@ from syncthing import Syncthing
 
 def st_cb(command, st):
 	if command.data == "pause":
-		rospy.loginfo("[Syncthing] Pausing syncthing")
+		rospy.loginfo("Syncthing: Pausing")
 		st.pause()
 	elif command.data == "resume":
-		rospy.loginfo("[Syncthing] Resuming syncthing")
+		rospy.loginfo("Syncthing: Resuming")
 		st.resume()
 
 def st_events():
@@ -46,7 +46,7 @@ def st_events():
 	last_id = 0
 
 	while True:
-		rospy.logdebug("Making request")
+		rospy.logdebug("Syncthing: Making request")
 		response = st.get_event(last_id)
 		if response is None:
 			continue
@@ -64,10 +64,10 @@ def st_events():
 		msg.label = device.label
 
 		if response["type"] == "DeviceConnected":
-			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) connected')
+			rospy.loginfo(f'Syncthing: {device.label} ({1 if system_id.is_air else 0} {system_id.id}) connected')
 			connected_pub.publish(msg)
 		elif response["type"] == "DeviceDisconnected":
-			rospy.loginfo(f'device {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
+			rospy.loginfo(f'Syncthing: {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
 			disconnected_pub.publish(msg)
 
 def get_status(request):
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 		# list of devices already added to syncthing
 		st_devices = st.get_devices()
 		if not st_devices:
-			rospy.logerr("Syncthing may not be running, please check")
+			rospy.logerr("Syncthing: Syncthing may not be running, please check")
 			# rospy.signal_shutdown("Syncthing not running")
 			exit()
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 			if id_n not in st_devices:
 				device_id = get_system_id(type=5, data=id_n)
 				device = get_device(is_air=device_id.is_air, id=device_id.id)
-				rospy.loginfo(f"Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id} to syncthing")
+				rospy.loginfo(f"Syncthing: Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id}")
 				st.add_device(id_n, device.label)
 
 		# inotify, used to look for changes to any files in the Sync folder
@@ -129,11 +129,11 @@ if __name__ == "__main__":
 
 			if event[1][0] == "IN_MOVED_TO":
 				if ".sync-conflict-" in event[3]:
-					rospy.loginfo("File conflict found " + event[3])
+					rospy.loginfo("Syncthing: File conflict found " + event[3])
 					filename= re.sub("sync-conflict-[0-9]{8}-[0-9]{6}-[A-Z0-9]{7}[.]", "", event[3])
 					file_conflict_pub.publish(filename)
 				elif event[3] in modified_list:
-					rospy.loginfo("File " + event[3] + " modified through syncthing")
+					rospy.loginfo("Syncthing: File " + event[3] + " modified through syncthing")
 					file_modify_pub.publish(event[3])
 					modified_list.remove(event[3])
 				
