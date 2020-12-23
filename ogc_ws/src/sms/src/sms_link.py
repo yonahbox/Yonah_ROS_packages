@@ -152,7 +152,7 @@ class SMSrx():
         elif 'N/A\n' in self._msglist:
             pass
         elif 'Timed out' in self._msglist:
-            rospy.logerr("SMS: No response from SIM card.")
+            rospy.logerr("SMS: No response from SIM card")
             self._wait_out_timeout()
         else:
             # extract sender number (2nd word of 3rd line in msglist)

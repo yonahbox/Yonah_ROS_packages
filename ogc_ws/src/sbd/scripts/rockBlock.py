@@ -40,7 +40,6 @@ import signal
 import struct
 import sys
 import time
-import rospy
 
 import serial
 
@@ -66,7 +65,10 @@ class rockBlockProtocol(object):
     def rockBlockTxFailed(self,momsg):pass
     def rockBlockTxSuccess(self,momsg,target_id,mo_uuid):pass
     def rockBlockTxBlankMsg(self):pass
-    
+
+    #MISC
+    def rockBlockLogMsg(self,msg,severity):pass
+
 class rockBlockException(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -214,7 +216,8 @@ class rockBlock(object):
         '''Prepare a Mobile-Originated (MO) msg'''
         self._ensureConnectionStatus()
 
-        rospy.loginfo("SBD: Inserting MO msg: " + self.mo_msg)
+        if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+            self.callback.rockBlockLogMsg("SBD: Inserting MO msg: " + self.mo_msg,"info")
 
         msg = ""
         msglen = 0
@@ -269,14 +272,18 @@ class rockBlock(object):
                 result = False
                 queuestatus = self.s.readline().strip().decode()
                 if queuestatus == "0":
-                    rospy.loginfo("SBD: MO msg queue success")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg queue success","info")
                     result = True
                 elif queuestatus == "1":
-                    rospy.logwarn("SBD: MO msg write timeout")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg write timeout","warn")
                 elif queuestatus == "2":
-                    rospy.logwarn("SBD: MO msg corrupted")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg corrupted","warn")
                 elif queuestatus == "3":
-                    rospy.logwarn("SBD: MO msg too big")
+                    if(self.callback != None and callable(self.callback.rockBlockLogMsg) ):
+                        self.callback.rockBlockLogMsg("SBD: MO msg too big","warn")
                 self.s.readline().strip()  #BLANK
                 self.s.readline().strip() #OK
                 return result
@@ -406,8 +413,9 @@ class rockBlock(object):
         # Wait for valid Network Time
         while True:
             if(TIME_ATTEMPTS == 0):
-                rospy.logerr("SBD: No Iridium Network Service!")
-                if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
+                if(self.callback != None and callable(self.callback.rockBlockSignalFail)\
+                    and callable(self.callback.rockBlockLogMsg) ): 
+                    self.callback.rockBlockLogMsg("SBD: No Iridium Network Service!","err")
                     self.callback.rockBlockSignalFail()
                 return False
             if( self._isNetworkTimeValid() ):
@@ -421,8 +429,9 @@ class rockBlock(object):
             if signal < 0:
                 raise rockBlockException("Signal read error; the pySerial readline order may have messed up!")
             if(SIGNAL_ATTEMPTS == 0 or signal < 0):   
-                if(self.callback != None and callable(self.callback.rockBlockSignalFail) ): 
-                    rospy.logwarn("SBD: Low signal: " + str(signal))
+                if(self.callback != None and callable(self.callback.rockBlockSignalFail)\
+                    and callable(self.callback.rockBlockLogMsg) ): 
+                    self.callback.rockBlockLogMsg("SBD: Low signal: " + str(signal),"warn")
                     self.callback.rockBlockSignalFail()
                 return False
             self.callback.rockBlockSignalUpdate( signal )
@@ -445,8 +454,10 @@ class rockBlock(object):
 
         if(response == b'OK'):
             # Blank msg
-            rospy.logwarn("SBD: No message content... strange!")
-            if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
+            
+            if(self.callback != None and callable(self.callback.rockBlockRxReceived) \
+                and callable(self.callback.rockBlockLogMsg)): 
+                self.callback.rockBlockLogMsg("SBD: No message content... strange!","warn")
                 self.callback.rockBlockRxReceived(mtMsn, "")
             # Return early. Otherwise it will hit the last while statement and enter an infinite loop
             return
@@ -476,14 +487,17 @@ class rockBlock(object):
                 if(self.callback != None and callable(self.callback.rockBlockRxReceived) ): 
                     self.callback.rockBlockRxReceived(mtMsn, content)
         except struct.error:
-            rospy.logerr("SBD: Error when unpacking binary msg")
-            rospy.logerr(response)
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)): 
+                self.callback.rockBlockLogMsg("SBD: Error when unpacking binary msg","err")
+                self.callback.rockBlockLogMsg(response,"err")
         except IndexError:
-            rospy.logerr("SBD: Binary msg is too short")
-            rospy.logerr(response)
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)):
+                self.callback.rockBlockLogMsg("SBD: Binary msg is too short","err")
+                self.callback.rockBlockLogMsg(response,"err")
         except UnicodeDecodeError:
-            rospy.logerr("SBD: Error in decoding msg")
-            rospy.logerr(response)
+            if(self.callback != None and callable(self.callback.rockBlockLogMsg)):
+                self.callback.rockBlockLogMsg("SBD: Error in decoding msg","err")
+                self.callback.rockBlockLogMsg(response,"err")
         
         while True:
             # Exit when we see OK response, otherwise the serial readlines will go out of sync and
