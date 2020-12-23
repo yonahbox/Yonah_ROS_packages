@@ -97,7 +97,7 @@ class aircraft():
         return self._link
 
     def kill_timers(self):
-        rospy.loginfo("Destroying instance of aircraft")
+        rospy.loginfo("Despatcher: Restarting aircraft timers")
         self.tele_sender.shutdown()
         if hasattr(self, 'sms_sender'):
             self.sms_sender.shutdown()
@@ -181,10 +181,10 @@ class gnddespatcher():
                     self.pub_to_sbd.publish(msg)
                     feedback_to_rqt = "Command sent to SBD: " + data.data
                 else:
-                    rospy.logerr("Error: Invalid Link")
+                    rospy.logerr("Despatcher: Invalid link")
                     feedback_to_rqt = "Invalid Link. Command " + data.data + " not sent"
             except KeyError:
-                rospy.logerr("Error: Invalid Aircraft ID")
+                rospy.logerr("Despatcher: Invalid aircraft ID")
                 feedback_to_rqt = "Invalid Aircraft ID. Command " + data.data + " not sent"
             self.pub_to_rqt_ondemand.publish(\
                 headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], feedback_to_rqt))
@@ -237,7 +237,7 @@ class gnddespatcher():
                 else:
                     self.pub_to_rqt_ondemand.publish(data.data)
         except (ValueError, IndexError, TypeError):
-            rospy.logerr("Invalid message format!")
+            rospy.logerr("Despatcher: Invalid message format")
     
     ####################################################
     # Handle Misc (e.g. switcher, rqt recovery) messages
@@ -257,7 +257,7 @@ class gnddespatcher():
                 headers.attach_headers(dummy_prefixes, [rospy.get_rostime().secs], "LinkSwitch " + str(link)))
 
         except:
-            rospy.logerr("Switcher: Invalid msg")
+            rospy.logerr("Despatcher: Invalid message")
 
     def rqt_recovery_log(self, reg_payload_list, aircraft_id):
         filename = "rqt_log.txt"
