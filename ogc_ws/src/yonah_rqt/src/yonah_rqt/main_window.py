@@ -149,13 +149,25 @@ class MyPlugin(Plugin):
         if self.is_refresh_tab_open:
             self.tab.removeTab(1)
             self.is_refresh_tab_open = False
+
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
-        print("Activ acs: " + str(active_aircrafts))
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
-        print("diff_active: " + str(diff_active))
         if not diff_active == []:
+            rospy.logerr(f"New AC added: {diff_active}")
             self.aircraft_list = active_aircrafts
+            rospy.logerr(f"newest ac_list: {self.aircraft_list}")
             self.create_tab_windows(diff_active)
+        rospy.logwarn(f"tab with current index {self.tab.currentIndex()} and title {self.tab.tabText(self.tab.currentIndex())}")
+        for i in range (self.tab.count()):
+            print(f"number of tabs: {self.tab.count()}")
+            if self.tab.tabText(i) != "Summary":
+                print("Not summary pages")
+                aircraft_no = int(self.tab.tabText(i)[-1])
+                print(f"aircraft no is: {aircraft_no}")
+                if aircraft_no < i:
+                    print(f"Moving aircraft {aircraft_no} from index {i} to {aircraft_no}")
+                    self.tab.tabBar().moveTab(i, aircraft_no)
+
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
         self.CommandWindow.combo_box.setCurrentIndex(i-1)
