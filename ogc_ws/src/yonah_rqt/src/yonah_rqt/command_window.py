@@ -116,9 +116,7 @@ class CommandWindow(QWidget):
         
         # Create the widgets
         self.combo_box = QComboBox()
-
         self.create_combobox(active_aircrafts)
-        
         
         self.arm_button = QPushButton('ARM')
         self.disarm_button = QPushButton('DISARM')
@@ -243,6 +241,7 @@ class CommandWindow(QWidget):
             print(f"remove {i}")
             self.combo_box.removeItem(i)
         for j in active_aircrafts: 
+            rospy.logwarn(f"generating new combo box: {active_aircrafts}")
             self.combo_box.addItem('Aircraft ' + str(j))
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
 
@@ -269,7 +268,9 @@ class CommandWindow(QWidget):
         self.pub_to_despatcher.publish(message)
 
     def combo_box_change(self, i):
-        title = self.combo_box.currentText()[-1]
+        if self.combo_box.currentText != "":
+            title = self.combo_box.currentText()[-1]
+            rospy.logerr(f"Sending command to: {title}")
         self.destination_id = int(title)
 
     def custom_ping_change(self, i):
