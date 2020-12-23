@@ -202,8 +202,9 @@ def tdlib_recv():
 				if event['message']['content']['@type'] == 'messageText':
 					if int(event["message"]["content"]["text"]["text"].split()[3]) == 0:
 						timestamp = int(event["message"]["content"]["text"]["text"].split()[-1])
-						tdtimeout[timestamp].timer.shutdown()
-						tdtimeout[timestamp].pub_to_switcher.publish("Success")
+						if tdtimeout[timestamp].hasattr("timer"):
+							tdtimeout[timestamp].timer.shutdown()
+							tdtimeout[timestamp].pub_to_switcher.publish("Success")
 
 
 if __name__ == '__main__':
