@@ -56,7 +56,7 @@ def tdlib_topic_cb(msg, args):
 	id_service = args[1]			# service proxy for identifers service to get the telegram user id
 	tele_id = id_service(msg.id)	# get the telegram user id to send the message to
 	if tele_id.data_int == 0:
-		rospy.logwarn("Invalid user id")
+		rospy.logwarn("Telegram: Invalid user id")
 		return
 
 	td.create_chat(tele_id.data_int)
@@ -71,10 +71,10 @@ def tdlib_topic_cb(msg, args):
 		if msg.uuid > 0:
 			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
 			msg_success[msg.uuid].persec()
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
+		rospy.loginfo("Telegram: sending to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.loginfo("SENDING FILE")
+		rospy.loginfo("Telegram: sending file")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
@@ -83,7 +83,7 @@ def tdlib_topic_cb(msg, args):
 
 # callback function run to add a contact to the telegram account
 def tdlib_add_contact_cb(contact, td):
-	rospy.loginfo("Received request to add contact " + contact.label + " " + contact.number)
+	rospy.loginfo("Telegram: Received request to add contact " + contact.label + " " + contact.number)
 
 	# check if the requested contact is the account itself
 	if contact.me:
@@ -115,7 +115,7 @@ def tdlib_admin_cb(msg, args):
 			"ground_ids": [self_id]
 		}
 
-		rospy.loginfo(f"sending message to admin: {json.dumps(cmd)}")
+		rospy.loginfo(f"Telegram: sending message to admin {json.dumps(cmd)}")
 		td.send_message(admin_id, json.dumps(cmd))
 
 
@@ -192,7 +192,7 @@ def tdlib_recv():
 
 					# Mark message as read
 					td.set_read(event["message"]["chat_id"], event["message"]["id"])
-					rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
+					rospy.loginfo("Telegram: Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 				elif message_type == 'messageDocument':
 					file_id = event['message']['content']['document']['document']['id']
