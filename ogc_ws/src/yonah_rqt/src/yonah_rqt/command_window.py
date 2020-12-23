@@ -153,6 +153,7 @@ class CommandWindow(QWidget):
         self.setLayout(self.main_layout) 
     
     def full_window(self):
+        '''Create the full menu window'''
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
 
@@ -260,6 +261,7 @@ class CommandWindow(QWidget):
         file.close()
 
     def create_link_message(self, destination_id, data):
+        '''Creates the link message'''
         message = LinkMessage()
         message.id = destination_id
         message.uuid = feedback_util.increment()
@@ -284,7 +286,9 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
+        '''Arms Aircraft'''
         self.windows_opened["arm window"] = True
+        # Arm command will be sent from PopupMessages
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
@@ -294,10 +298,13 @@ class CommandWindow(QWidget):
             pass
 
     def disarm(self):
+        '''Disarms Aircraft'''
         self.windows_opened["disarm window"] = True
+        # Disarm command will be sent from PopupMessages
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go(self):
+        '''Changes mode to Auto'''
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
         self.create_link_message(self.destination_id, data)
