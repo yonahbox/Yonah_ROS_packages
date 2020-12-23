@@ -160,8 +160,6 @@ def mission_load(self):
 		# Ignores # comments
 		if line.startswith('#'):
 			continue
-		elif line.startswith('Last update'):
-			continue
 		# Returns if a waypoint file is loaded instead
 		elif line.startswith("QGC WPL"):
 			self._msg = "This is a waypoint file. Please load a mission file."
@@ -188,8 +186,6 @@ def mission_load(self):
 	for line in f:
 		if line.startswith('#'):
 			continue
-		elif line.startswith('Last update'):
-			continue
 		self.missionlist.append(line.rstrip())
 	f.close()
 	# Prints the missions for operator to check
@@ -202,6 +198,10 @@ def mission_load(self):
 
 def mission_next(self):
 	# Message structure: wp next (no arguments)
+	if self.payloads.entries["arm"] == True:
+		self._msg = "Plane is armed. Unable to load next mission"
+		self.sendmsg("e")
+		return
 	if not self.hop: # Checks if hop mission
 		self._msg = "Please load a mission file"
 		self.sendmsg("e")
@@ -220,6 +220,8 @@ def mission_next(self):
 		waypoints = readwp.read(str(self.wpfolder + self.missionlist[self.current_mission]))
 		waypoint.push_waypoints(self, waypoints)
 		self.pub_to_rff.publish("ack")
+		self._msg = "Loaded next mission: " + str(self.missionlist[self.current_mission])
+		self.sendmsg("i")
 	# This error should never be raised if everything above works
 	except FileNotFoundError:
 		self._msg = "Specified file not found"

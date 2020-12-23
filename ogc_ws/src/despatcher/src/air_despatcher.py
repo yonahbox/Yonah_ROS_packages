@@ -122,7 +122,7 @@ class airdespatcher():
         self.ground_id = valid_ids[0]
 
         del self._new_msg_chk
-        self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
+        self._new_msg_chk = headers.new_msg_chk(self.ground_id)
 
 
     ###########################################
