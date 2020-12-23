@@ -263,6 +263,11 @@ class CommandWindow(QWidget):
         message = LinkMessage()
         message.id = destination_id
         message.uuid = timeoutscript.increment()
+        if "mission next" in data or "mission load" in data:
+            rospy.logwarn("rqt: mission next or mission load commands will not have acknowledgments")
+            message.uuid = 0
+        else:
+            message.uuid = timeoutscript.increment()
         message.data = data
         self.pub_to_despatcher.publish(message)
 
