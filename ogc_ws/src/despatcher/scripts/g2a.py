@@ -74,7 +74,7 @@ def check_statustext(self, uuid):
 
 def check_arming(self, uuid):
 	"""Check for Arm/Disarm commands from Ground Control"""
-	rospy.logwarn("trying to arm")
+	rospy.logwarn("G2A: Trying to arm")
 	arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 	if len(self._recv_msg) == 1:
 		if self._recv_msg[0] == "disarm":
@@ -225,13 +225,6 @@ def mission_next(self):
 	except FileNotFoundError:
 		self._msg = "Specified file not found"
 		self.sendmsg("e")
-
-def mission_write(self):
-	f = open(self.wpfolder + "missionlist.txt", "w")
-	for i in self._recv_msg[2:]:
-		f.write(i + "\n")
-	f.write("Last update: " + str(rospy.get_rostime().secs) + "\n")
-	f.close()
 
 def mission_update(self):
 	gndtime = {}
