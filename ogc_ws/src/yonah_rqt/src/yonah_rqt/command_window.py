@@ -43,10 +43,11 @@ from .log_window import LogWindow
 from .valid_id_window import ValidIdWindow
 
 class CommandWindow(QWidget):
-    def __init__(self, active_aircrafts):
+    def __init__(self, active_aircrafts, refresh_callback):
         super(CommandWindow, self).__init__()
         self.setWindowTitle("Command Window")
         
+        self.callback = refresh_callback
         self.edit_identifiers_id = 1
         self.identifiers_error = 0
         self.send_custom_ping = 0
@@ -70,7 +71,7 @@ class CommandWindow(QWidget):
         self.create_layout(active_aircrafts)
         self.PopupMessages = PopupMessages()
         self.SummaryWindow = SummaryWindow(self.active_aircrafts)
-        self.ValidIdWindow = ValidIdWindow()
+        self.ValidIdWindow = ValidIdWindow(self.callback)
         self.combo_box.currentIndexChanged.connect(self.combo_box_change)
 
         self.arm_button.pressed.connect(self.arm)

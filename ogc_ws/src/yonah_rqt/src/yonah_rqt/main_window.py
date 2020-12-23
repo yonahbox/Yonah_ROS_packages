@@ -72,7 +72,7 @@ class MyPlugin(Plugin):
         self.PopupMessages = PopupMessages()
         self.WaypointWindow = WaypointWindow(self.aircraft_list)
         self.SummaryWindow = SummaryWindow(self.aircraft_list)
-        self.CommandWindow = CommandWindow(self.aircraft_list)
+        self.CommandWindow = CommandWindow(self.aircraft_list, self.tab_change)
 
         self.CommandWindow.change_valid_ids()
         self.create_layout()
@@ -139,16 +139,16 @@ class MyPlugin(Plugin):
             self.tab.addTab(self.aircrafts_info.get(tab_key), "Aircraft " + str(i))
             self.tab.show()
 
-        if self.tab.count() == 1:
-            refresh = QScrollArea()
-            self.tab.addTab(refresh, "Refresh")
+        # if self.tab.count() == 1:
+        #     refresh = QScrollArea()
+        #     self.tab.addTab(refresh, "Refresh")
         self.tab.setMinimumHeight(500)
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
-        if self.is_refresh_tab_open:
-            self.tab.removeTab(1)
-            self.is_refresh_tab_open = False
+        # if self.is_refresh_tab_open:
+        #     self.tab.removeTab(1)
+        #     self.is_refresh_tab_open = False
 
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
