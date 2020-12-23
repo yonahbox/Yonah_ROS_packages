@@ -52,9 +52,9 @@ class SMSrx():
         # Initialise SSH
         try:
             self.ssh = RuTOS.start_client(self._ip, self._username)
-            rospy.loginfo("Connected to router")
+            rospy.loginfo("SMS: Connected to router")
         except:
-            rospy.logerr("Could not connect to the router")
+            rospy.logerr("SMS: Could not connect to the router")
             raise
 
         # Initialize publisher to despatcher nodes
@@ -82,7 +82,7 @@ class SMSrx():
         switches on (very dangerous if that SMS is an arm msg!)
         """
         count = 1
-        rospy.loginfo("Purging residual SMS, please wait...")
+        rospy.loginfo("SMS: Purging residual SMS, please wait...")
         while count <= 30:
             try:
                 RuTOS.delete_msg(self.ssh, count)
@@ -90,7 +90,7 @@ class SMSrx():
             except:
                 count += 1
                 continue
-        rospy.loginfo("Purge complete!")
+        rospy.loginfo("SMS: Purge complete")
 
     def _wait_out_timeout(self):
         """
@@ -98,11 +98,11 @@ class SMSrx():
         will always return timeout and our SMS link will be permanently down
         """
         self.message_checker.shutdown()
-        rospy.logwarn("SMS link shut down for 8 minutes")
+        rospy.logwarn("SMS: SMS link shut down for 8 minutes")
         self.pub_to_switcher.publish("Timeout")
         self.is_online = False
         rospy.sleep(480)
-        rospy.loginfo("SMS link back online")
+        rospy.loginfo("SMS: SMS link back online")
         self.pub_to_switcher.publish("Online")
         self.is_online = True
         self.message_checker = rospy.Timer(rospy.Duration(self.interval), self.recv_sms)
@@ -116,12 +116,12 @@ class SMSrx():
         Send msg from despatcher node (over ogc/to_sms topic) as an SMS
         '''
         if not self.is_online:
-            rospy.logerr("Cannot send. SMS Link is down.")
+            rospy.logerr("SMS: Unable to send. Link is down.")
             return
-        rospy.loginfo("Sending SMS: " + data.data)
+        rospy.loginfo("SMS: Sending: " + data.data)
         number = self._identifiers_get_number(data.id)
         if number is None:
-            rospy.logerr("Invalid ID number")
+            rospy.logerr("SMS: Invalid ID number")
             return
 
         sendstatus = RuTOS.send_msg(self.ssh, "+"+number.data, data.data)
@@ -132,7 +132,7 @@ class SMSrx():
             self.pub_to_timeout.publish(ack)
 
         if "Timed out" in sendstatus:
-            rospy.logerr("Timeout: Check SIM card balance")
+            rospy.logerr("SMS: Timeout. Check SIM card balance")
             self._wait_out_timeout()
         else:
             ack = feedback_util.ack_converter(data, 1)
@@ -143,7 +143,7 @@ class SMSrx():
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
         if not self.is_online:
-            rospy.logerr("Cannot receive. SMS Link is down.")
+            rospy.logerr("SMS: Unable to receive. Link is down")
             return
         # Read an SMS received by the air router
         self._msglist = RuTOS.extract_msg(self.ssh, 1)
@@ -152,22 +152,22 @@ class SMSrx():
         elif 'N/A\n' in self._msglist:
             pass
         elif 'Timed out' in self._msglist:
-            rospy.logerr("No response from SIM card.")
+            rospy.logerr("SMS: No response from SIM card")
             self._wait_out_timeout()
         else:
             # extract sender number (2nd word of 3rd line in msglist)
             sender = self._msglist[2].split()[1]
-            rospy.loginfo("Received sms from " + sender)
+            rospy.loginfo("SMS: Received from " + sender)
             # Ensure sender is whitelisted before extracting message
             is_valid_sender = self._identifiers_valid_sender(1, sender)
             if is_valid_sender.result:
-                rospy.loginfo('Command from '+ sender)
+                rospy.loginfo('SMS: Command from '+ sender)
                 # msg is located on the 5th line (minus first word) of msglist. It is converted to lowercase
                 self._msg = self._msglist[4].split(' ', 1)[1].rstrip()
                 # Forward msg to air_despatcher
                 self.pub_to_despatcher.publish(self._msg)
             else:
-                rospy.logwarn('Rejected msg from unknown sender ' + sender)
+                rospy.logwarn('SMS: Rejected msg from unknown sender ' + sender)
             RuTOS.delete_msg(self.ssh, 1) # Delete the existing SMS
     
     ############################
@@ -186,7 +186,7 @@ if __name__=='__main__':
         run = SMSrx()
         run.client()
     except:
-        rospy.logerr("Failed to start node")
+        rospy.logerr("SMS: Failed to start node")
     else:
         run.ssh.close()
-        rospy.loginfo("Connection to router closed")
+        rospy.loginfo("SMS: Connection to router closed")

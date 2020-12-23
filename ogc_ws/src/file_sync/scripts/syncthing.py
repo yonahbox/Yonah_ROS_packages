@@ -33,7 +33,7 @@ class Syncthing:
 		home_dir = str(Path.home())
 		config_path = home_dir + "/.config/syncthing/config.xml"
 		if not Path(config_path).is_file():
-			print("Error: file not found")
+			print("Syncthing: file not found")
 			exit()
 
 		root = xml.parse(config_path)
@@ -46,7 +46,7 @@ class Syncthing:
 			sub_call = subprocess.run(['syncthing', '-device-id'], capture_output=True, text=True)
 			return sub_call.stdout.rstrip()
 		except FileNotFoundError:
-			print("Unable to call syncthing, please check if it is installed")
+			print("Syncthing: Unable to call syncthing, please check if it is installed")
 
 	# Make a POST request to syncthings REST API
 	def _post(self, url, data):
@@ -55,7 +55,7 @@ class Syncthing:
 				"X-API-Key": self.api_key
 			}, data=json.dumps(data))
 		except req.exceptions.RequestException:
-			self._error_pub.publish("syncthing not running")
+			self._error_pub.publish("Syncthing: syncthing not running")
 
 	# Make a GET request to syncthings REST API
 	def _get(self, url):
@@ -64,7 +64,7 @@ class Syncthing:
 				"X-API-Key": self.api_key
 			})
 		except req.exceptions.RequestException:
-			self._error_pub.publish("syncthing not running")
+			self._error_pub.publish("Syncthing: syncthing not running")
 			return None
 
 		return result.json()
@@ -123,8 +123,8 @@ class Syncthing:
 			status.append(device['paused'])
 
 		if all(status):
-			print("device paused")
+			print("Syncthing: device paused")
 		else:
-			print("not paused")
+			print("Syncthing: device not paused")
 
 		return all(status)

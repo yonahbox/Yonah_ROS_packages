@@ -19,7 +19,6 @@ import rospy
 from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails, AddTelegramId, CheckSender, GetSelfDetails
-from telegram.msg import ContactInfo
 
 import feedback_util
 
@@ -35,7 +34,10 @@ from Td import Td
 msg_success = {}
 
 
-class TimeoutClass():
+class LinkSwitchTimeout():
+	# Checks if outgoing msgs take too long to reach the Tele Servers
+	# If enough outgoing msgs timeout, the tele link is assumed to have failed
+	# Upon link failure, inform switcher node to trigger a link switch
 	def __init__(self, uuid):
 		self.uuid = uuid
 		self.time = 5
@@ -56,7 +58,7 @@ def tdlib_topic_cb(msg, args):
 	id_service = args[1]			# service proxy for identifers service to get the telegram user id
 	tele_id = id_service(msg.id)	# get the telegram user id to send the message to
 	if tele_id.data_int == 0:
-		rospy.logwarn("Invalid user id")
+		rospy.logwarn("Telegram: Invalid user id")
 		return
 
 	td.create_chat(tele_id.data_int)
@@ -68,29 +70,18 @@ def tdlib_topic_cb(msg, args):
 	#	0: text
 	#	1: file
 	if args[2] == 0:
-		if msg.uuid > 0:
-			msg_success[msg.uuid] = TimeoutClass(msg.uuid)
+		if msg.uuid == 0:
+			msg_success[msg.uuid] = LinkSwitchTimeout(msg.uuid)
 			msg_success[msg.uuid].persec()
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
+		rospy.loginfo("Telegram: sending to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
-		rospy.loginfo("SENDING FILE")
+		rospy.loginfo("Telegram: sending file")
 		home_dir = str(Path.home())
 		file_path = home_dir + "/Sync/" + msg.data
 		td.send_file(tele_id.data_int, file_path, msg.data)
 	else:
 		rospy.logerr(args)
-
-# callback function run to add a contact to the telegram account
-def tdlib_add_contact_cb(contact, td):
-	rospy.loginfo("Received request to add contact " + contact.label + " " + contact.number)
-
-	# check if the requested contact is the account itself
-	if contact.me:
-		td.get_me()										# get information about this telegram account
-	else:
-		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
-	td.get_contacts()									# refresh contacts to get the user ids
 
 def tdlib_admin_cb(msg, args):
 	td = args[0]
@@ -115,7 +106,7 @@ def tdlib_admin_cb(msg, args):
 			"ground_ids": [self_id]
 		}
 
-		rospy.loginfo(f"sending message to admin: {json.dumps(cmd)}")
+		rospy.loginfo(f"Telegram: sending message to admin {json.dumps(cmd)}")
 		td.send_message(admin_id, json.dumps(cmd))
 
 
@@ -192,7 +183,7 @@ def tdlib_recv():
 
 					# Mark message as read
 					td.set_read(event["message"]["chat_id"], event["message"]["id"])
-					rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
+					rospy.loginfo("Telegram: Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 				elif message_type == 'messageDocument':
 					file_id = event['message']['content']['document']['document']['id']
@@ -247,7 +238,6 @@ if __name__ == '__main__':
 
 		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
 		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
-		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
 		rospy.Subscriber('ogc/to_telegram/admin/edit_ids', String, tdlib_admin_cb, (td, 0))
 		rospy.Subscriber('ogc/to_telegram/admin/valid_ids', UInt8MultiArray, tdlib_admin_cb, (td, 1))
 		

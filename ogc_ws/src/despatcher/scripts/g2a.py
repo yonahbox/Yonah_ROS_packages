@@ -74,7 +74,7 @@ def check_statustext(self, uuid):
 
 def check_arming(self, uuid):
 	"""Check for Arm/Disarm commands from Ground Control"""
-	rospy.logwarn("trying to arm")
+	rospy.logwarn("G2A: Trying to arm")
 	arm = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
 	if len(self._recv_msg) == 1:
 		if self._recv_msg[0] == "disarm":
@@ -103,7 +103,7 @@ def check_mission(self, uuid):
 		if self._recv_msg[1] == 'set':
 			wp_set(self, uuid)
 		elif self._recv_msg[1] == 'load':
-			wp_load(self)
+			wp_load(self, uuid)
 		else:
 			return
 
@@ -112,8 +112,6 @@ def check_mission(self, uuid):
 			mission_load(self)
 		elif self._recv_msg[1] == 'next':
 			mission_next(self)
-		elif self._recv_msg[1] == 'write':
-			mission_write(self)
 		elif self._recv_msg[1] == 'update':
 			mission_update(self)
 		else:
@@ -127,7 +125,7 @@ def wp_set(self, uuid):
 	if wp_set(wp_seq = int(seq_no)).success == True:
 		self._send_ack(uuid)
 
-def wp_load(self):
+def wp_load(self, uuid):
 	# Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
 	# Assume that wp file is located in Waypoints folder of Beaglebone
 	wp_file = self._recv_msg[2]
@@ -140,11 +138,11 @@ def wp_load(self):
 	try:
 		waypoints = readwp.read(str(self.wpfolder + wp_file))
 		waypoint.push_waypoints(self, waypoints)
+		self._send_ack(uuid)
 	except FileNotFoundError:
 		self._msg  = "Specified file not found"
 		self.sendmsg("e")
 	except:
-		raise
 		self._msg = "Invalid waypoint file"
 		self.sendmsg("e")
 
@@ -161,8 +159,6 @@ def mission_load(self):
 	for line in f:
 		# Ignores # comments
 		if line.startswith('#'):
-			continue
-		elif line.startswith('Last update'):
 			continue
 		# Returns if a waypoint file is loaded instead
 		elif line.startswith("QGC WPL"):
@@ -190,11 +186,10 @@ def mission_load(self):
 	for line in f:
 		if line.startswith('#'):
 			continue
-		elif line.startswith('Last update'):
-			continue
 		self.missionlist.append(line.rstrip())
 	f.close()
 	# Prints the missions for operator to check
+	self._send_ack(uuid)
 	self._msg = "Missions: " + ", ".join(self.missionlist)
 	self.sendmsg("i")
 	# Load first mission
@@ -203,6 +198,10 @@ def mission_load(self):
 
 def mission_next(self):
 	# Message structure: wp next (no arguments)
+	if self.payloads.entries["arm"] == True:
+		self._msg = "Plane is armed. Unable to load next mission"
+		self.sendmsg("e")
+		return
 	if not self.hop: # Checks if hop mission
 		self._msg = "Please load a mission file"
 		self.sendmsg("e")
@@ -221,17 +220,12 @@ def mission_next(self):
 		waypoints = readwp.read(str(self.wpfolder + self.missionlist[self.current_mission]))
 		waypoint.push_waypoints(self, waypoints)
 		self.pub_to_rff.publish("ack")
+		self._msg = "Loaded next mission: " + str(self.missionlist[self.current_mission])
+		self.sendmsg("i")
 	# This error should never be raised if everything above works
 	except FileNotFoundError:
 		self._msg = "Specified file not found"
 		self.sendmsg("e")
-
-def mission_write(self):
-	f = open(self.wpfolder + "missionlist.txt", "w")
-	for i in self._recv_msg[2:]:
-		f.write(i + "\n")
-	f.write("Last update: " + str(rospy.get_rostime().secs) + "\n")
-	f.close()
 
 def mission_update(self):
 	gndtime = {}
@@ -247,3 +241,4 @@ def handle_syncthing(self, uuid):
 	if self._recv_msg[0] == 'syncthing' and len(self._recv_msg) == 2:
 		if self._recv_msg[1] in ["pause", "resume"]:
 			self.syncthing_control.publish(self._recv_msg[1])
+			self._send_ack(uuid)
