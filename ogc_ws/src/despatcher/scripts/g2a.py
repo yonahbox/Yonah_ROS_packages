@@ -103,7 +103,7 @@ def check_mission(self, uuid):
 		if self._recv_msg[1] == 'set':
 			wp_set(self, uuid)
 		elif self._recv_msg[1] == 'load':
-			wp_load(self)
+			wp_load(self, uuid)
 		else:
 			return
 
@@ -112,8 +112,6 @@ def check_mission(self, uuid):
 			mission_load(self)
 		elif self._recv_msg[1] == 'next':
 			mission_next(self)
-		elif self._recv_msg[1] == 'write':
-			mission_write(self)
 		elif self._recv_msg[1] == 'update':
 			mission_update(self)
 		else:
@@ -127,7 +125,7 @@ def wp_set(self, uuid):
 	if wp_set(wp_seq = int(seq_no)).success == True:
 		self._send_ack(uuid)
 
-def wp_load(self):
+def wp_load(self, uuid):
 	# Message structure: wp load <wp file name.txt>; extract 3rd word to get wp file
 	# Assume that wp file is located in Waypoints folder of Beaglebone
 	wp_file = self._recv_msg[2]
@@ -140,11 +138,11 @@ def wp_load(self):
 	try:
 		waypoints = readwp.read(str(self.wpfolder + wp_file))
 		waypoint.push_waypoints(self, waypoints)
+		self._send_ack(uuid)
 	except FileNotFoundError:
 		self._msg  = "Specified file not found"
 		self.sendmsg("e")
 	except:
-		raise
 		self._msg = "Invalid waypoint file"
 		self.sendmsg("e")
 
@@ -195,6 +193,7 @@ def mission_load(self):
 		self.missionlist.append(line.rstrip())
 	f.close()
 	# Prints the missions for operator to check
+	self._send_ack(uuid)
 	self._msg = "Missions: " + ", ".join(self.missionlist)
 	self.sendmsg("i")
 	# Load first mission
@@ -240,3 +239,4 @@ def handle_syncthing(self, uuid):
 	if self._recv_msg[0] == 'syncthing' and len(self._recv_msg) == 2:
 		if self._recv_msg[1] in ["pause", "resume"]:
 			self.syncthing_control.publish(self._recv_msg[1])
+			self._send_ack(uuid)
