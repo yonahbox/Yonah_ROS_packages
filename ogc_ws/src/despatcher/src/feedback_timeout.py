@@ -31,7 +31,6 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        rospy.loginfo("rqt: COUNTDOWN STARTING: " + str(self._watchdog[self.status]))
         self._watchdog[self.status] -= 1
         if self._watchdog[self.status] == 0:
             self.stop_timer()
@@ -84,6 +83,7 @@ class Manager():
                 self.messages[data.uuid].stop_timer()
                 
             else:
+                # Ignore if it is a mission command as we don't do timeout for mision commands
                 if "mission" in data.data:
                     return
                 rospy.logerr("rqt: Unknown message received: " + str(data))
