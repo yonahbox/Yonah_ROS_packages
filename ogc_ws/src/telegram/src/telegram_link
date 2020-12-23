@@ -31,15 +31,14 @@ import sys
 
 from Td import Td
 
-msg_success = {}
-
+tdtimeout = {}
 
 class LinkSwitchTimeout():
 	# Checks if outgoing msgs take too long to reach the Tele Servers
 	# If enough outgoing msgs timeout, the tele link is assumed to have failed
 	# Upon link failure, inform switcher node to trigger a link switch
-	def __init__(self, uuid):
-		self.uuid = uuid
+	def __init__(self, timestamp):
+		self.timestamp = timestamp
 		self.time = 5
 		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
 
@@ -71,8 +70,9 @@ def tdlib_topic_cb(msg, args):
 	#	1: file
 	if args[2] == 0:
 		if msg.uuid == 0:
-			msg_success[msg.uuid] = LinkSwitchTimeout(msg.uuid)
-			msg_success[msg.uuid].persec()
+			timestamp = int(msg.data.split()[-1])
+			tdtimeout[timestamp] = LinkSwitchTimeout(timestamp)
+			tdtimeout[timestamp].persec()
 		rospy.loginfo("Telegram: sending to " + str(tele_id.data_int))
 		td.send_message(tele_id.data_int, msg.data)
 	elif args[2] == 1:
@@ -199,13 +199,11 @@ def tdlib_recv():
 				# ignore messages sent to admin
 				if event['message']['chat_id'] == admin_id:
 					continue
-				if event['message']['content']['@type'] != 'messageText':
-					continue
-				success_uuid = int(event["message"]["content"]["text"]["text"].split()[3])
-				if success_uuid == 0:
-					if msg_success.get(success_uuid, False):
-						msg_success[success_uuid].timer.shutdown()
-						msg_success[success_uuid].pub_to_switcher.publish("Success")
+				if event['message']['content']['@type'] == 'messageText':
+					if int(event["message"]["content"]["text"]["text"].split()[3]) == 0:
+						timestamp = int(event["message"]["content"]["text"]["text"].split()[-1])
+						tdtimeout[timestamp].timer.shutdown()
+						tdtimeout[timestamp].pub_to_switcher.publish("Success")
 
 
 if __name__ == '__main__':
