@@ -17,6 +17,8 @@
 
 import rospy
 
+from std_msgs.msg import String, UInt8MultiArray
+
 from identifiers import Identifiers
 from identifiers.srv import GetDetails, GetDetailsResponse
 from identifiers.srv import GetSelfDetails, GetSelfDetailsResponse
@@ -27,10 +29,16 @@ from identifiers.srv import EditDevice, EditDeviceResponse
 from identifiers.srv import AddTelegramId, AddTelegramIdResponse
 from identifiers.srv import GetAllDetails, GetAllDetailsResponse
 from identifiers.srv import GetIds, GetIdsResponse
+from identifiers.srv import SetDetails, SetDetailsResponse
+from identifiers.srv import GetId, GetIdResponse
+from identifiers.srv import SetIds, SetIdsResponse
+from identifiers.srv import GetSyncthingIds, GetSyncthingIdsResponse
 
 class ServiceHandler:
 	def __init__(self, identifiers_file, is_air, self_id, valid_ids):
 		self._ids = Identifiers(identifiers_file, is_air, self_id, valid_ids)
+		self.telegram_pub = rospy.Publisher('ogc/to_telegram/admin/edit_ids', String, queue_size=10)
+		self.valid_ids_pub = rospy.Publisher('ogc/identifiers/valid_ids', UInt8MultiArray, queue_size=10)
 
 	def get_phone_number(self, request):
 		return GetDetailsResponse(data=self._ids.get_number(request.id))
@@ -44,12 +52,29 @@ class ServiceHandler:
 	def get_telegram_id(self, request):
 		return GetDetailsResponse(data_int=self._ids.get_telegram_id(request.id))
 
+	def get_admin_id(self, request):
+		return GetDetailsResponse(data_int=self._ids.get_admin_id())
+
 	def get_device_details(self, request):
 		device = self._ids.get_device_details(request.id, request.is_air)
+		resp = GetAllDetailsResponse()
+
 		if device is not None:
-			return GetAllDetailsResponse(label=device.label, number=device.number, imei=device.imei, rb_serial=device.rb_serial)
+			resp.label = device.label
+			resp.is_air = device.is_air
+			resp.id = device.id
+			resp.number = device.number
+			resp.imei = device.imei
+			resp.rb_serial = device.rb_serial
+			resp.telegram_id = device.telegram_id
+			if device.syncthing_id:
+				resp.syncthing_id = device.syncthing_id
+			return resp
 		else:
-			return None
+			return resp
+
+	def get_self_id(self, request):
+		return GetSelfDetailsResponse(data_int=self._ids.get_self_id())
 
 	def get_self_imei(self, request):
 		return GetSelfDetailsResponse(data=self._ids.get_self_imei())
@@ -62,19 +87,24 @@ class ServiceHandler:
 		return GetSBDDetailsResponse(username=username, password=password, svr_hostname=svr_hostname,\
 			svr_ip=svr_ip)
 
-	def add_new_device(self, request):
-		result = self._ids.add_new_device(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to add information to identifiers file")
+	def get_valid_ids(self, request):
+		return GetIdsResponse(ids=self._ids.get_valid_ids())
 
-		return AddNewDeviceResponse(result)
+	def get_system_id(self, request):
+		is_air, id_n = self._ids.get_system_id(request.type, (request.data_int if request.type == 4 else request.data))
+		return GetIdResponse(is_air=is_air, id=id_n)
+
+	def add_new_device(self, request):
+		device = self._ids.new_device_request(label=request.label, is_air=request.is_air, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
+
+		return AddNewDeviceResponse(True)
 
 	def edit_device(self, request):
-		result = self._ids.edit_device(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
-		if not result:
-			rospy.logwarn("Failed to edit device in identifiers_file")
+		device = self._ids.edit_device_request(request.id, request.is_air, label=request.label, number=request.number, imei=request.imei, rb_serial=request.rb_serial)
+		self.telegram_pub.publish(device)
 
-		return EditDeviceResponse(result)
+		return EditDeviceResponse(True)
 
 	def add_telegram_id(self, request):
 		return AddTelegramIdResponse(self._ids.add_telegram_id(request.number, request.telegram_id))
@@ -87,39 +117,72 @@ class ServiceHandler:
 		response.ground_ids = ground_ids
 		return response
 
+	def get_syncthing_ids(self, request):
+		ids = self._ids.get_syncthing_ids()
+		final_str = ""
+		for id_n in ids:
+			final_str += id_n + " "
+
+		return GetSyncthingIdsResponse(data=final_str)
+
+	def set_syncthing_id(self, request):
+		return SetDetailsResponse(self._ids.set_syncthing_id(request.data))
+
+	def set_valid_ids(self, request):
+		resp = SetIdsResponse(self._ids.set_valid_ids(request.ids))
+		self.valid_ids_pub.publish(UInt8MultiArray(data=self._ids.get_valid_ids()))
+		return resp
+
 	def check_valid_message(self, request):
 		return CheckSenderResponse(self._ids.is_valid_sender(request.link, request.details))
 
 	def check_valid_message_lazy(self, request):
 		return CheckSenderResponse(self._ids.is_valid_message_lazy(request.details))
 
+	def modified_cb(self, msg):
+		if msg.data == "identifiers.json":
+			self._ids.parse_file()
+
+	def clear_valid_ids(self):
+		self._ids.clear_valid_ids()
+
 
 if __name__ == '__main__':
 	rospy.init_node("identifiers_server", anonymous=False, disable_signals=True)
 	identifiers_file = rospy.get_param("~identifiers_file")
 	is_air = rospy.get_param("~is_air")
-	self_id = rospy.get_param("~self_id")
-	valid_ids = rospy.get_param("~valid_ids")
+	self_id_file = rospy.get_param("~self_id_file")
+	valid_ids_file = rospy.get_param("~valid_ids_file")
 
-	handler = ServiceHandler(identifiers_file, is_air, self_id, valid_ids)
+	handler = ServiceHandler(identifiers_file, is_air, self_id_file, valid_ids_file)
 
-	number_service = rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
-	imei_service = rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
-	serial_service = rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
-	active_ids_service = rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
-	telegram_id_service = rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	rospy.Service("identifiers/get/number", GetDetails, handler.get_phone_number)
+	rospy.Service("identifiers/get/imei", GetDetails, handler.get_imei)
+	rospy.Service("identifiers/get/serial", GetDetails, handler.get_serial)
+	rospy.Service("identifiers/get/ids", GetIds, handler.get_ids)
+	rospy.Service("identifiers/get/telegram_id", GetDetails, handler.get_telegram_id)
+	rospy.Service("identifiers/get/admin_id", GetDetails, handler.get_admin_id)
+	rospy.Service("identifiers/get/valid_ids", GetIds, handler.get_valid_ids)
+	rospy.Service("identifiers/get/id", GetId, handler.get_system_id)
+	rospy.Service("identifiers/get/syncthing_ids", GetSyncthingIds, handler.get_syncthing_ids)
 
-	device_service = rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
+	rospy.Service("identifiers/get/all", GetAllDetails, handler.get_device_details)
+	
+	rospy.Service("identifiers/self/self_id", GetSelfDetails, handler.get_self_id)
+	rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
+	rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
+	rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
+	
+	rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
+	rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
+	rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
+	rospy.Service("identifiers/set/st_id", SetDetails, handler.set_syncthing_id)
+	rospy.Service("identifiers/set/valid_ids", SetIds, handler.set_valid_ids)
 
-	self_imei_service = rospy.Service("identifiers/self/imei", GetSelfDetails, handler.get_self_imei)
-	self_serial_service = rospy.Service("identifiers/self/serial", GetSelfDetails, handler.get_self_serial)
-	sbd_details_service = rospy.Service("identifiers/self/sbd", GetSBDDetails, handler.get_sbd_details)
+	rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
+	rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
 
-	add_device_service = rospy.Service("identifiers/add/device", AddNewDevice, handler.add_new_device)
-	edit_device_service = rospy.Service("identifiers/edit/device", EditDevice, handler.edit_device)
-	add_telegram_id_service = rospy.Service("identifiers/add/telegram_id", AddTelegramId, handler.add_telegram_id)
-
-	validity_checker_service = rospy.Service("identifiers/check/proper", CheckSender, handler.check_valid_message)
-	validity_checker_lazy_service = rospy.Service("identifiers/check/lazy", CheckSender, handler.check_valid_message_lazy)
+	rospy.Subscriber("ogc/files/modified", String, handler.modified_cb)
 
 	rospy.spin()
+	handler.clear_valid_ids()

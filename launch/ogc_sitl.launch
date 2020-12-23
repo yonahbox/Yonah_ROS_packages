@@ -7,7 +7,6 @@
 	<arg name="interval_3" default="5"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
-	<arg name="link_select" default="0" />
 	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
 	
 	<!-- identifiers args -->
@@ -41,6 +40,7 @@
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="portID" value="$(arg portID)" />
         <param name="interval" value="$(arg interval_3)" />
+		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 	<!-- identifiers service node -->
@@ -54,11 +54,11 @@
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
+        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
+		<param name="interval_3" value="$(arg interval_3)" />
 		<param name="self_id" value="$(arg self_id)" />
-		<param name="link_select" value="$(arg link_select)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
 	</node>
 
@@ -72,6 +72,12 @@
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
+	</node>
+
+	<!-- linkswitch -->
+	<node name="switcher" type="switcher.py" pkg="despatcher"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
+	<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 </launch>

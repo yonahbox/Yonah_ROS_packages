@@ -5,21 +5,20 @@
     <!-- screen = output to roslaunch screen for debug; log = log to rosout-->
     <arg name="log_output" default="screen"/>
 
-    <!-- Sleep interval between checks for MO msg -->
+    <!-- Sleep intervals -->
+    <arg name="interval_1" default="2"/>
+    <arg name="interval_2" default="4"/>
     <arg name="interval_3" default="5"/>
 
     <!-- Serial port that Rockblock is connected to-->
     <arg name="portID" default="/dev/ttyUSB0"/>
 
-    <!-- Which link we are using -->
-    <arg name="link_select" default="2" />
-
     <!-- 1 = Comms through server, 0 = Comms through gnd Rockblock -->
-    <arg name="thr_server" default="1" />
+    <arg name="thr_server" default="0" />
 
     <!-- Identifiers -->
     <arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-    <arg name="air_ids" default="[1,2]" />
+    <arg name="air_ids" default="[1]" />
     <arg name="self_id" default="1" />
     <arg name="is_air" default="False" />
 
@@ -44,8 +43,9 @@
     <node pkg="despatcher" type="gnd_despatcher.py" name="gnd_despatcher"
     respawn="true" respawn_delay="3" output="$(arg log_output)">
         <param name="self_id" value="$(arg self_id)" />
-        <!-- <rosparam param="air_ids" subst_value="True">$(arg air_ids)</rosparam> -->
-        <param name="link_select" value="$(arg link_select)" />
+        <rosparam param="valid_ids" subst_value="True">$(arg air_ids)</rosparam>
+        <param name="interval_1" value="$(arg interval_1)" />
+        <param name="interval_2" value="$(arg interval_2)" />
     </node>
 
     <!-- gnd statustext handler node -->
@@ -59,7 +59,7 @@
     </node>
 
     <!-- rqt node -->
-	<!-- <node name="rqt_mypkg" pkg="rqt_gui" type="rqt_gui"
+	<!-- <node name="yonah_rqt" pkg="rqt_gui" type="rqt_gui"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node> -->
 

@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from pathlib import Path
+import json
+import time
+import os
+
+from Td import Td
+from identifiers import Identifiers
+
+home_dir = str(Path.home())
+tdlib_dir = home_dir + '/.tdlib'
+identifiers_file = home_dir + '/Sync/identifiers.json'
+self_id = 0
+valid_ids_file = home_dir + '/.valid_ids'
+
+if __name__ == '__main__':
+	td = Td(tdlib_dir)
+	ids = Identifiers(identifiers_file, True, self_id, None)
+	boot_time = time.time()
+
+	admin_id = ids.get_admin_id()
+
+	while True:
+		event = td.receive()
+		if event:
+			if event['@type'] == 'error':
+				print(f"[Error] {json.dumps(event)}")
+				td.get_chats()
+
+			if event['@type'] == 'updateNewMessage':
+				print("message received")
+				if event['message']['is_outgoing'] or event['message']['date'] < boot_time:
+					continue
+
+				td.set_read(event['message']['chat_id'], event['message']['id'])
+				msg = event['message']['content']['text']['text']
+				if event['message']['sender_user_id'] == admin_id:
+					print("is admin")
+					try:
+						msg_json = json.loads(msg)
+						if msg_json['request'] == 'set_gcs_id':
+							gcs_ids = msg_json['ground_ids']
+							with open(valid_ids_file, "w") as f:
+								for id_n in gcs_ids:
+									f.write(f"{id_n}\n")
+							exit()
+					except json.JSONDecodeError:
+						print('invalid message format')
+						continue

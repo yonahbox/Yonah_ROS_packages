@@ -24,7 +24,7 @@ import rospy
 from mavros_msgs.msg import Waypoint
 from mavros_msgs.srv import WaypointSetCurrent
 from mavros_msgs.srv import WaypointPush
-from os import listdir
+from os import listdir, path
 
 class WP(object):
 
@@ -77,8 +77,7 @@ def get_update_time(wpfolder):
     files = listdir(wpfolder)
     updatetime = {}
     for i in files:
-        g = open(wpfolder + i, "r")
-        updatetime[i] = int(g.readlines()[-1].rstrip().split()[-1])
+        updatetime[i] = int(path.getmtime(wpfolder + i))
     return updatetime
 
 def compare_time(gndtime, airtime):

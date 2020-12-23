@@ -38,7 +38,7 @@ def send_msg(ssh, GCS_no, msg):
         _, stdout, _ = ssh.exec_command("gsmctl -S -s '%s %s'"%(GCS_no, msg), timeout=5)
         sendstatus = stdout.readlines()
     except:
-        sendstatus = "Connection lost"
+        sendstatus = "Timed out"
     return sendstatus
     
 def extract_msg(ssh, count):
@@ -47,7 +47,7 @@ def extract_msg(ssh, count):
         _, stdout, _ = ssh.exec_command("gsmctl -S -r %d"%(count), timeout=5)
         msglist = stdout.readlines()
     except:
-        msglist = "Connection lost"
+        msglist = "Timed out"
     return msglist
 
 def delete_msg(ssh, count):
@@ -55,11 +55,18 @@ def delete_msg(ssh, count):
     ssh.exec_command("gsmctl -S -d %d"%(count))
     return
 
-def blink_button(ssh):
-    ssh.exec_command("gpio.sh invert DOUT1")
-
 def button_on(ssh):
     ssh.exec_command("gpio.sh set DOUT1")
+    return
+
+def blink_button(ssh):
+    ssh.exec_command("gpio.sh invert DOUT1")
+    return
+    
+def button_off(ssh):
+    ssh.exec_command("gpio.sh set DOUT1")
+    ssh.exec_command("gpio.sh invert DOUT1")
+    return
 
 def check_button(ssh):
     _, stdout, _ = ssh.exec_command("gpio.sh get DIN1")
@@ -83,3 +90,57 @@ def get_gps_speed(ssh):
     _, stdout, _ = ssh.exec_command("gpsctl -v")
     speed = stdout.readlines()
     return speed
+
+def get_conntype(ssh):
+    '''Get type of connection'''
+    _, stdout, _ = ssh.exec_command("gpsctl -t")
+    conntype = stdout.readlines()[0]
+    return conntype
+
+def get_rssi(ssh):
+    '''Get RSSI'''
+    _, stdout, _ = ssh.exec_command("gsmctl -q")
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    try:
+        rssi = int(res)
+    except:
+        return
+    return rssi
+
+def get_rsrp(ssh):
+    '''Get RSRP'''
+    _, stdout, _ = ssh.exec_command("gsmctl -W")
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    try:
+        rsrp = int(res)
+    except:
+        return
+    return rsrp
+
+def get_rsrq(ssh):
+    '''Get RSRQ'''
+    _, stdout, _ = ssh.exec_command("gsmctl -M")
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    try:
+        rsrq = float(res)
+    except:
+        return
+    return rsrq
+
+def get_sinr(ssh):
+    '''Get SINR'''
+    _, stdout, _ = ssh.exec_command("gsmctl -Z")
+    res = stdout.readlines()[0].rstrip()
+    if res == "Timeout.":
+        return res
+    try:
+        sinr = float(res)
+    except:
+        return
+    return sinr

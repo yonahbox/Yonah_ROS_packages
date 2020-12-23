@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 Rumesh Sudhaharan
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from inotify.adapters import Inotify
+import re
+from threading import Thread
+import json
+
+import rospy
+from std_msgs.msg import String, UInt8
+from identifiers.srv import SetDetails, GetId, GetSyncthingIds, GetAllDetails
+from identifiers.msg import DeviceId
+from file_sync.srv import GetStatus, GetStatusResponse
+
+from syncthing import Syncthing
+
+def st_cb(command, st):
+	if command.data == "pause":
+		rospy.loginfo("Syncthing: Pausing")
+		st.pause()
+	elif command.data == "resume":
+		rospy.loginfo("Syncthing: Resuming")
+		st.resume()
+
+def st_events():
+	connected_pub = rospy.Publisher("ogc/files/connected", DeviceId, queue_size=5)
+	disconnected_pub = rospy.Publisher("ogc/files/disconnected", DeviceId, queue_size=5)
+	
+	rospy.wait_for_service("identifiers/get/id")
+	get_device_id = rospy.ServiceProxy("identifiers/get/id", GetId)
+
+	last_id = 0
+
+	while True:
+		rospy.logdebug("Syncthing: Making request")
+		response = st.get_event(last_id)
+		if response is None:
+			continue
+
+		rospy.logdebug(response)
+		last_id = response["id"]
+
+		device_id = response["data"]["id"]
+		system_id = get_device_id(data=device_id, type=5)
+		device = get_device(id=system_id.id, is_air=system_id.is_air)
+
+		msg = DeviceId()
+		msg.id = system_id.id
+		msg.is_air = system_id.is_air
+		msg.label = device.label
+
+		if response["type"] == "DeviceConnected":
+			rospy.loginfo(f'Syncthing: {device.label} ({1 if system_id.is_air else 0} {system_id.id}) connected')
+			connected_pub.publish(msg)
+		elif response["type"] == "DeviceDisconnected":
+			rospy.loginfo(f'Syncthing: {device.label} ({1 if system_id.is_air else 0} {system_id.id}) disconnected; Reason: {response["data"]["error"]}')
+			disconnected_pub.publish(msg)
+
+def get_status(request):
+	return GetStatusResponse(status=st.check_paused)
+
+
+if __name__ == "__main__":
+	try:
+		rospy.init_node("syncthing", anonymous=False, disable_signals=True)
+		file_modify_pub = rospy.Publisher("ogc/files/modified", String, queue_size=5)
+		file_conflict_pub = rospy.Publisher("ogc/files/conflict", String, queue_size=5)
+		error_pub = rospy.Publisher("ogc/to_despatcher/error", String, queue_size=5)
+
+		watch_dir = rospy.get_param("~watch_dir")
+
+		rospy.wait_for_service("identifiers/set/st_id")
+		rospy.wait_for_service("identifiers/get/syncthing_ids")
+		rospy.wait_for_service("identifiers/get/id")
+		rospy.wait_for_service("identifiers/get/all")
+
+		set_device = rospy.ServiceProxy("identifiers/set/st_id", SetDetails)
+		get_st_ids = rospy.ServiceProxy("identifiers/get/syncthing_ids", GetSyncthingIds)
+		get_system_id = rospy.ServiceProxy("identifiers/get/id", GetId)
+		get_device = rospy.ServiceProxy("identifiers/get/all", GetAllDetails)
+
+		st = Syncthing(error_pub)
+		rospy.Subscriber("ogc/files/syncthing", String, st_cb, st)
+		rospy.Service("syncthing/get/status", GetStatus, get_status)
+		# list of devices already added to syncthing
+		st_devices = st.get_devices()
+		if not st_devices:
+			rospy.logerr("Syncthing: Syncthing may not be running, please check")
+			# rospy.signal_shutdown("Syncthing not running")
+			exit()
+
+		event_thread = Thread(target=st_events)
+		event_thread.daemon = True
+		event_thread.start()
+
+		# list of devices in identifers file
+		st_ids = get_st_ids().data.split(" ")[:-1]
+
+		for id_n in st_ids:
+			if id_n not in st_devices:
+				device_id = get_system_id(type=5, data=id_n)
+				device = get_device(is_air=device_id.is_air, id=device_id.id)
+				rospy.loginfo(f"Syncthing: Adding {1 if device.is_air else 0} {device.id} {device.label} {device.syncthing_id}")
+				st.add_device(id_n, device.label)
+
+		# inotify, used to look for changes to any files in the Sync folder
+		inotify_adapter = Inotify()
+		inotify_adapter.add_watch(watch_dir)
+
+		modified_list = []
+
+		for event in inotify_adapter.event_gen(yield_nones=False):
+			if event[1][0] == "IN_MOVED_FROM" and event[3][:11] == ".syncthing." and event[3][-4:] == ".tmp":
+				modified_list.append(event[3][11:-4])
+
+			if event[1][0] == "IN_MOVED_TO":
+				if ".sync-conflict-" in event[3]:
+					rospy.loginfo("Syncthing: File conflict found " + event[3])
+					filename= re.sub("sync-conflict-[0-9]{8}-[0-9]{6}-[A-Z0-9]{7}[.]", "", event[3])
+					file_conflict_pub.publish(filename)
+				elif event[3] in modified_list:
+					rospy.loginfo("Syncthing: File " + event[3] + " modified through syncthing")
+					file_modify_pub.publish(event[3])
+					modified_list.remove(event[3])
+				
+
+	except rospy.ROSInterruptException:
+		exit()
+	except KeyboardInterrupt:
+		exit()

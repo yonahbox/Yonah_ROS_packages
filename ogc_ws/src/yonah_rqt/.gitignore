@@ -1,0 +1,4 @@
+#remove pyc files
+*.pyc
+*.cph
+*.txt

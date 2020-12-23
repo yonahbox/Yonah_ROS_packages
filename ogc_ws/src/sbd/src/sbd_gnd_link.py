@@ -31,11 +31,13 @@ import struct
 import rospy
 from std_msgs.msg import String
 from despatcher.msg import LinkMessage
-from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds
+from identifiers.srv import GetDetails, CheckSender, GetSBDDetails, GetIds, GetSelfDetails
 
 # Local
 from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
+import feedback_util
+import headers
 
 class satcommsgnd(satcomms):
 
@@ -50,17 +52,19 @@ class satcommsgnd(satcomms):
         rospy.wait_for_service("identifiers/get/imei")
         rospy.wait_for_service("identifiers/self/sbd")
         rospy.wait_for_service("identifiers/check/proper")
+        rospy.wait_for_service("identifiers/self/self_id")
 
-        self._get_ids = rospy.ServiceProxy("identifiers/get/ids", GetIds)
         self._get_imei = rospy.ServiceProxy("identifiers/get/imei", GetDetails)
         self._is_valid_sender = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
         get_sbd_credentials = rospy.ServiceProxy("identifiers/self/sbd", GetSBDDetails)
 
         self._init_variables()
 
+        ids_get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+        self._id = ids_get_self_id().data_int # Our GCS ID
+
         # Switch state: Temporary state where gnd node is switching between server and ground rockblock
         self._switch_state = False # True = switch state is active
-        self._id = rospy.get_param("~self_id") # Our GCS ID
         self._is_air = 0 # We are a ground node!
 
         # Three least significant bytes of own serial, used for binary unpack of regular payload
@@ -142,6 +146,10 @@ class satcommsgnd(satcomms):
         try:
             reply = requests.post(url, data=self._mt_cred)
             rospy.loginfo(reply.text)
+            if "OK" in reply.text:
+                ack = feedback_util.ack_converter(data, 1)
+                if ack != None:
+                    self._pub_to_timeout.publish(ack)
             return True
         except:
             rospy.logerr("SBD: Cannot contact Rock 7 server")
@@ -175,18 +183,20 @@ class satcommsgnd(satcomms):
 
     def _switch_cmd_handler(self):
         '''Send cmds to all aircraft, telling them to switch between server and RB-2-RB methods'''
-        air_ids = self._get_ids().air_ids
+        air_ids = self._get_valid_ids().ids
         switch_cmd = LinkMessage()
+        switch_cmd.uuid = 0
+        prefixes = ["e", 0, self._id, switch_cmd.uuid]
         for i in air_ids:
             switch_cmd.id = i
             rospy.loginfo("SBD: Sending switch cmd to aircraft " + str(i))
             if self._thr_server:
-                switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 1 " + str(rospy.get_rostime().secs)
+                switch_cmd.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], "sbd switch 1")
                 self._server_send_msg(switch_cmd)
             else:
                 # Sending from gnd Rockblock is likely to fail. We need to ensure that all switch cmds are sent
                 while not self._msg_send_success == 1:
-                    switch_cmd.data = "e 0 " + str(self._id) + " sbd switch 0 " + str(rospy.get_rostime().secs)
+                    switch_cmd.data = headers.attach_headers(prefixes, [rospy.get_rostime().secs], "sbd switch 0")
                     self.sbd_get_mo_msg(switch_cmd)
                     self.sbd_check_mailbox("")
 
@@ -207,6 +217,10 @@ class satcommsgnd(satcomms):
 
     def send_msg(self, data):
         '''Handle outgoing msgs'''
+        # Acknowledgment message sending
+        ack = feedback_util.ack_converter(data, 0)
+        if ack != None:
+            self._pub_to_timeout.publish(ack)
         # Try sending through Rock 7 server first. If it fails, fallback to gnd rockBlock
         if not self._server_send_msg(data):
             self.sbd_get_mo_msg(data)

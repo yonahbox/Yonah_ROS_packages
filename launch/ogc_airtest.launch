@@ -10,32 +10,33 @@
 	<arg name="respawn_mavros" default="true" />
 	
 	<!-- Common OGC args -->
-	<arg name="interval_1" default="10"/>
-	<arg name="interval_2" default="60"/>
-	<arg name="interval_3" default="5"/>
+	<arg name="interval_1" default="2"/>
+	<arg name="interval_2" default="10"/>
+	<arg name="interval_3" default="20"/>
 	<arg name="router_username" default="root" />
 	<arg name="router_ip" default="192.168.1.1" />
-	<arg name="link_select" default="0" />
-	<arg name="waypoint_folder" default="$(env HOME)/Waypoints/"/>
+	<arg name="waypoint_folder" default="$(env HOME)/Sync/Waypoints/"/>
 	
 	<!-- identifiers args -->
-	<arg name="identifiers_file" default="$(env HOME)/identifiers.json" />
-	<arg name="ground_ids" default="[1]" />
-	<arg name="self_id" default="1" />
+	<arg name="identifiers_file" default="$(env HOME)/Sync/identifiers.json" />
 	<arg name="is_air" default="True" />
-
+	<arg name="valid_ids_file" default="$(env HOME)/.valid_ids" />
+	<arg name="self_id_file" default="$(env HOME)/.self_id" />
+	
 	<!-- tele args -->
 	<arg name="tdlib_auth_dir" default="$(env HOME)/.tdlib"/>
 
 	<!-- sbd args -->
 	<arg name="portID" default="/dev/ttyUSB0"/>
 
+	<!-- file sync args -->
+	<arg name="watch_dir" default="$(env HOME)/Sync" />
+
 	<!-- MAVROS. Copy the pluginlist and config file from the same folder of this file -->
 	<!-- and put it in mavros workspace: /opt/ros/kinetic/share/mavros/launch/-->
 	<include file="$(find mavros)/launch/node.launch">
 		<arg name="pluginlists_yaml" value="$(find mavros)/launch/apm_pluginlists.yaml" />
 		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
-
 		<arg name="fcu_url" value="$(arg fcu_url)" />
 		<arg name="gcs_url" value="$(arg gcs_url)" />
 		<arg name="tgt_system" value="$(arg tgt_system)" />
@@ -49,7 +50,6 @@
 	<node pkg="telegram" type="telegram_link" name="telegram_link" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="tdlib_auth_dir" value="$(arg tdlib_auth_dir)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
 	</node>
 
 	<!-- sms_link node -->
@@ -60,7 +60,7 @@
 	</node>
 	
 	<!-- sbd link node -->
- 	<node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
+	<node pkg="sbd" type="sbd_air_link.py" name="sbd_air_link"
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
 		<param name="portID" value="$(arg portID)" />
         <param name="interval" value="$(arg interval_3)" />
@@ -70,18 +70,22 @@
 	<node pkg="identifiers" type="identifiers_server" name="identifiers_server" respawn="true" respawn_delay="3" output="$(arg log_output)" >
 		<param name="identifiers_file" value="$(arg identifiers_file)" />
 		<param name="is_air" value="$(arg is_air)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<rosparam param="valid_ids" subst_value="True">$(arg ground_ids)</rosparam>
+		<param name="self_id_file" value="$(arg self_id_file)" />
+		<param name="valid_ids_file" value="$(arg valid_ids_file)" />
+	</node>
+
+	<!-- syncthing node -->
+	<node pkg="file_sync" type="syncthing_node" name="syncthing_node" output="$(arg log_output)">
+		<param name="watch_dir" value="$(arg watch_dir)" />
 	</node>
 
 	<!-- air despatcher node -->
 	<node pkg="despatcher" type="air_despatcher.py" name="air_despatcher" 
 	respawn="true" respawn_delay="3" output="$(arg log_output)">
-        <rosparam param="ground_ids" subst_value="True">$(arg ground_ids)</rosparam>x
 		<param name="interval_1" value="$(arg interval_1)" />
 		<param name="interval_2" value="$(arg interval_2)" />
-		<param name="self_id" value="$(arg self_id)" />
-		<param name="link_select" value="$(arg link_select)" />
+		<param name="interval_3" value="$(arg interval_3)" />
+
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
 	</node>
 
@@ -95,6 +99,11 @@
         <param name="router_username" value="$(arg router_username)" />
         <param name="router_ip" value="$(arg router_ip)" />
 		<param name="waypoint_folder" value="$(arg waypoint_folder)"/>
+	</node>
+
+	<!-- linkswitch -->
+	<node name="switcher" type="switcher.py" pkg="despatcher"
+	respawn="true" respawn_delay="3" output="$(arg log_output)">
 	</node>
 
 </launch>

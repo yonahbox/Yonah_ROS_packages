@@ -36,11 +36,11 @@ class RegularPayloadException(Exception):
 # The regular payload should comprise only of short integers/characters
 # with the exception of the first (R msg prefix) and last (Unix timestamp)
 # Everything is standardized to big endian to keep in line with Rock 7's requirements'
-# Entries:         0 1 2 3  4   5 6 7 8  9 10   11  12   13 14 15 16 17 18 19
-# struct_cmd:      s B B B  h   B B B B  b h    b   h    B  B  B  B  H  b  I
-# Example payload: r 1 1 30 226 1 1 1 30 2 2315 102 6857 0  1  20 0  0  10 1591089280
+# Entries:         0 1 2 3   4  5   6 7 8 9  10 11   12  13   14 15 16 17 18 19 20
+# struct_cmd:      s B B B   B  h   B B B B  b  h    b   h    B  B  B  B  H  b  I
+# Example payload: r 1 1 255 30 226 1 1 1 30 2  2315 102 6857 0  1  20 0  0  10 1591089280
 
-struct_cmd = "> s B B B h B B B B b h b h B B B B H b I" 
+struct_cmd = "> s B B B B h B B B B b h b h B B B B H b I" 
 
 no_of_entries = len(struct_cmd.split()[1:])
 
@@ -68,7 +68,7 @@ def convert_to_list(mo_msg):
 
 def convert_to_str(mo_msg):
     '''Convert regular payload msg from list to string after struct unpacking, to standardize with other links'''
-    # Example: (b'r', 1, 1, 30, 226, 1, 1, 1, 30, 2, 2315, 102, 6857, 0, 1, 20, 0, 0, 10, 1591089280)
+    # Example: (b'r', 1, 1, 255, 30, 226, 1, 1, 1, 30, 2, 2315, 102, 6857, 0, 1, 20, 0, 0, 10, 1591089280)
     string = str(mo_msg)
     string = string.replace('b\'r\'', 'r', 1) # The 'r' msg prefix is still byte encoded
     bad_char = ",()"
@@ -124,21 +124,22 @@ def convert_to_rosmsg(entries):
     rosmsg.header.frame_id = entries[0]
     rosmsg.is_aircraft = int(entries[1])
     rosmsg.vehicle_no = int(entries[2])
-    rosmsg.airspeed = int(entries[3])
-    rosmsg.alt = int(entries[4]) # can be negative
-    rosmsg.armed = int(entries[5])
-    rosmsg.batt = int(entries[6])
-    rosmsg.fuel = int(entries[7])
-    rosmsg.groundspeed = int(entries[8])
-    rosmsg.lat = int(entries[9]) + float(entries[10])/10000
-    rosmsg.lon = int(entries[11]) + float(entries[12])/10000
-    rosmsg.mode = int(entries[13])
-    rosmsg.throttle = float(entries[14])/10
-    rosmsg.vibe = int(entries[15]) 
-    rosmsg.vtol = int(entries[16])
-    rosmsg.wp = int(entries[17])
-    rosmsg.wp_total = int(entries[18])
-    rosmsg.header.stamp.secs = int(entries[19])
+    # Entry 3 belongs to UUID which is not required for regular payload
+    rosmsg.airspeed = int(entries[4])
+    rosmsg.alt = int(entries[5])
+    rosmsg.armed = int(entries[6])
+    rosmsg.batt = int(entries[7])
+    rosmsg.fuel = int(entries[8])
+    rosmsg.groundspeed = int(entries[9])
+    rosmsg.lat = int(entries[10]) + float(entries[11])/10000
+    rosmsg.lon = int(entries[12]) + float(entries[13])/10000
+    rosmsg.mode = int(entries[14])
+    rosmsg.throttle = float(entries[15])/10
+    rosmsg.vibe = int(entries[16]) 
+    rosmsg.vtol = int(entries[17])
+    rosmsg.wp = int(entries[18])
+    rosmsg.wp_total = int(entries[19])
+    rosmsg.header.stamp.secs = int(entries[20])
     return rosmsg
 
 ########################################

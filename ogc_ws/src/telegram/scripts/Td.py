@@ -21,7 +21,7 @@ import json
 class Td():
 	def __init__(self, tdlib_dir):
 		# Creates interface for libtdjson. This is a C library so it requires some initial setup
-		tdjson_path = '/usr/local/lib/libtdjson.so.1.6.0'
+		tdjson_path = '/usr/local/lib/libtdjson.so'
 		tdjson = CDLL(tdjson_path)
 
 		client_create = tdjson.td_json_client_create
@@ -63,9 +63,18 @@ class Td():
 			'new_verbosity_level': 1
 		})
 
+		self.send({
+			"@type": "setOption",
+			"name": "ignore_inline_thumbnails",
+			"value": {
+				"@type": "optionValueBoolean",
+				"value": True
+			}
+		})
+
 	# Called when tdlib faces a fatal error
 	def _fatal_error_cb(self, error):
-		print('TDLiB fatal error: ', error)
+		print(f'Td: TDLiB fatal error: {error}')
 
 	# Called for interacting with the telegram account
 	def _execute(self, query):
@@ -73,6 +82,13 @@ class Td():
 		result = self._client_execute(None, query)
 		if result:
 			return json.loads(result.decode('utf-8'))
+	
+	# Get chats of user, latest 100 chats
+	def get_chats(self):
+		self.send({
+			"@type": "getChats",
+			"limit": 100
+		})
 
 	# Get the contacts of this telegram account
 	def get_contacts(self):
@@ -123,7 +139,7 @@ class Td():
 		for id_n in ids:
 			self.send_message(id_n, msg)
 
-	def send_file(self, telegram_id, path):
+	def send_file(self, telegram_id, path, destination):
 		self.send({
 			'@type': 'sendMessage',
 			'chat_id': telegram_id,
@@ -132,6 +148,10 @@ class Td():
 				'document': {
 					'@type': 'inputFileLocal',
 					'path': path
+				},
+				'caption': {
+					'@type': 'formattedText',
+					'text': destination
 				}
 			}
 		})
@@ -191,6 +211,12 @@ class Td():
 			'priority': 1,
 		})
 
+	def create_chat(self, user_id):
+		self.send({
+			'@type': 'createPrivateChat',
+			'user_id': user_id
+		})
+
 	# receive information from telegram
 	def receive(self):
 		result_orig = self._client_receive(self.client, 1.0)
@@ -236,7 +262,6 @@ class Td():
 
 	# Mark a message as read (double tick in app)
 	def set_read(self, chat_id, message_id):
-		# print('marking as read')
 		self.send({
 			'@type': 'viewMessages',
 			'chat_id': chat_id,

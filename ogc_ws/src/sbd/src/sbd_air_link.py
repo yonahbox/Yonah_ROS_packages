@@ -21,15 +21,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # ROS/Third-Party
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import LinkMessage
 
 # Local
-# from identifiers import Identifiers
-from identifiers.srv import GetSelfDetails, GetDetails, CheckSender
+from identifiers.srv import GetSelfDetails, GetDetails, CheckSender, GetIds
+import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
+import feedback_util
 class local_mo_buffer():
     '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
@@ -37,27 +38,42 @@ class local_mo_buffer():
         self.msgtype = "r" # Msg type of the message that is already in the buffer
         self.write_time = rospy.get_rostime().secs # Time which msg is written to buffer
         self.target_id = 1 # ID of the client which we are sending to
+        self.uuid = 0 # Feedback message system (timeout node) UUID
 
 class satcomms(rockBlockProtocol):
 
     def __init__(self):
         rospy.init_node('sbd_air_link', anonymous=False)
         
+        rospy.wait_for_service("identifiers/get/valid_ids")
+
+        self._init_variables()
+        self._is_air = 1 # We are an air node!
+        
+        # Headers (for checking of switch cmds)
+        _valid_ids = self._get_valid_ids().ids
+        self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
+    
+        rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+    
+    def update_valid_ids_cb(self, msg):
+        _valid_ids = [i for i in msg.data]
+        del self._new_switch_cmd
+        self._new_switch_cmd = headers.new_msg_chk(_valid_ids)
+
+    def _init_variables(self):
+        self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
+        self._pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
+
+        # Identifiers
         rospy.wait_for_service("identifiers/self/serial")
         rospy.wait_for_service("identifiers/get/serial")
         rospy.wait_for_service("identifiers/check/lazy")
 
-        self._init_variables()
-        self._is_air = 1 # We are an air node!
-        self._prev_switch_cmd_time = rospy.get_rostime().secs # Transmit time of previous incoming switch cmd
-    
-    def _init_variables(self):
-        self._pub_to_despatcher = rospy.Publisher('ogc/from_sbd', String, queue_size = 5)
-
-        # Identifiers
         self._get_self_serial = rospy.ServiceProxy("identifiers/self/serial", GetSelfDetails)
         self._get_serial = rospy.ServiceProxy("identifiers/get/serial", GetDetails)
         self._check_lazy = rospy.ServiceProxy("identifiers/check/lazy", CheckSender)
+        self._get_valid_ids = rospy.ServiceProxy("identifiers/get/valid_ids", GetIds)
 
         # Rockblock Comms
         self._buffer = local_mo_buffer()
@@ -70,17 +86,19 @@ class satcomms(rockBlockProtocol):
         try:
             self._sbdsession = rockBlock.rockBlock(self._portID, self._own_serial, self)
         except rockBlockException:
+            rospy.logerr("SBD: Check if rockBlock is connected")
             rospy.signal_shutdown("rockBlock error")
         
         # Msg Type Prioritization. Higher number means higher priority
         self._msg_priority = {
-            "r": 0,
-            "a": 1,
-            "m": 2,
-            "s": 3,
-            "i": 4,
-            "w": 5,
-            "e": 6
+            "h": 0,
+            "r": 1,
+            "a": 2,
+            "m": 3,
+            "s": 4,
+            "i": 5,
+            "w": 6,
+            "e": 7
         }
 
     ################################
@@ -133,12 +151,30 @@ class satcomms(rockBlockProtocol):
         rospy.logwarn("SBD: Msg not sent: " + momsg)
         self._msg_send_success = -1
 
-    def rockBlockTxSuccess(self,momsn, momsg):
+    def rockBlockTxSuccess(self,momsg,target_id,uuid):
+        # Acknowledgment message sending. Create a LinkMessage to be compatible with feedback_util's ack converter
+        msg = LinkMessage()
+        msg.data = momsg
+        msg.id = target_id
+        msg.uuid = uuid
+        ack = feedback_util.ack_converter(msg, 1)
+        if ack != None:
+            self._pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)
         self._msg_send_success = 1
 
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
+
+    def rockBlockLogMsg(self,msg,severity):
+        if severity == "debug":
+            rospy.logdebug(msg)
+        elif severity == "info":
+            rospy.loginfo(msg)
+        elif severity == "warn":
+            rospy.logwarn(msg)
+        elif severity == "err":
+            rospy.logerr(msg)
 
     ############################
     # Check for switch cmds
@@ -147,15 +183,15 @@ class satcomms(rockBlockProtocol):
     def _check_switch_cmd(self, data):
         '''Check if there is a need to switch between server and RB-2-RB comms. Return True if switch was made'''
         if "sbd switch 0" in data:
-            switch_cmd_time = int(data.split()[-1])
-            if switch_cmd_time > self._prev_switch_cmd_time:
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
+            if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 0
                 rospy.loginfo("SBD: Switching to RB-2-RB comms")
                 return True
         if "sbd switch 1" in data:
-            switch_cmd_time = int(data.split()[-1])
-            if switch_cmd_time > self._prev_switch_cmd_time:
+            _, _, sysid, _, switch_cmd_time, _ = headers.split_headers(data)
+            if self._new_switch_cmd.is_new_msg(switch_cmd_time, sysid):
                 self._prev_switch_cmd_time = switch_cmd_time
                 self._thr_server = 1
                 rospy.loginfo("SBD: Switching to Server comms")
@@ -166,12 +202,12 @@ class satcomms(rockBlockProtocol):
     # Rockblock MO/MT msg calls
     ############################
     
-    def sbd_get_mo_msg(self, data):
+    def sbd_get_mo_msg(self, data): # Add here
         '''
         Get MO msg from to_sbd topic and put it in local MO buffer depending on its priority level
         Note that MO msg will only be sent on next loop of check_sbd_mailbox
         '''
-        incoming_msgtype = data.data.split()[0]
+        incoming_msgtype,_,_,_,_,_ = headers.split_headers(data.data)
         # Reject incoming msg if existing msg in the local buffer is already of a higher priority
         if (self._msg_priority[incoming_msgtype] < self._msg_priority[self._buffer.msgtype]):
             rospy.loginfo("SBD: Reject incoming msg " + data.data)
@@ -181,6 +217,7 @@ class satcomms(rockBlockProtocol):
         self._buffer.msgtype = incoming_msgtype
         self._buffer.write_time = rospy.get_rostime().secs
         self._buffer.target_id = data.id
+        self._buffer.uuid = data.uuid
     
     def sbd_check_mailbox(self, data):
         '''
@@ -201,7 +238,8 @@ class satcomms(rockBlockProtocol):
         if self._buffer.data.startswith("r "):
             mo_is_regular = True
         try:
-            self._sbdsession.messageCheck(self._buffer.data, client_serial, self._thr_server, mo_is_regular)
+            self._sbdsession.messageCheck(self._buffer.data, self._buffer.target_id, self._buffer.uuid, \
+                client_serial, self._thr_server, mo_is_regular)
         except rockBlockException:
             # Restart the node if error occurs
             rospy.signal_shutdown("rockBlock error")

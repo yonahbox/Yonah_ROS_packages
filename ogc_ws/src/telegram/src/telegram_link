@@ -16,66 +16,118 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from despatcher.msg import LinkMessage
-from identifiers.srv import GetDetails, AddTelegramId, CheckSender
-from telegram.msg import ContactInfo
+from identifiers.srv import GetDetails, AddTelegramId, CheckSender, GetSelfDetails
 
-import sys
+import feedback_util
+
 import os
 from pathlib import Path
 from threading import Thread
 import json
+import time
+import sys
 
 from Td import Td
+
+tdtimeout = {}
+
+class LinkSwitchTimeout():
+	# Checks if outgoing msgs take too long to reach the Tele Servers
+	# If enough outgoing msgs timeout, the tele link is assumed to have failed
+	# Upon link failure, inform switcher node to trigger a link switch
+	def __init__(self, timestamp):
+		self.timestamp = timestamp
+		self.time = 10
+		self.pub_to_switcher = rospy.Publisher('ogc/to_switcher_tele', String, queue_size=5)
+
+	def countdown(self, data):
+		self.time -= 1
+		if self.time <= 0:
+			self.timer.shutdown()
+			self.pub_to_switcher.publish("Timeout")
+	
+	def persec(self):
+		self.timer = rospy.Timer(rospy.Duration(1), self.countdown)
 
 # callback function for listening to the ogc/to_telegram topic
 def tdlib_topic_cb(msg, args):
 	td = args[0]					# instance of Td class
 	id_service = args[1]			# service proxy for identifers service to get the telegram user id
 	tele_id = id_service(msg.id)	# get the telegram user id to send the message to
-
 	if tele_id.data_int == 0:
-		rospy.logwarn("Invalid user id")
-	else:
-		rospy.loginfo("sending message to " + str(tele_id.data_int))
-		td.send_message(tele_id.data_int, msg.data)
-
-# callback function run to add a contact to the telegram account
-def tdlib_add_contact_cb(contact, td):
-	rospy.loginfo("Received request to add contact " + contact.label + " " + contact.number)
-
-	# check if the requested contact is the account itself
-	if contact.me:
-		td.get_me()										# get information about this telegram account
-	else:
-		td.add_contact(contact.number, contact.label)	# add new contacts to the telegram account
-	td.get_contacts()									# refresh contacts to get the user ids
-
-def tdlib_file_cb(msg, args):
-	td = args[0]
-	id_service = args[1]
-	tele_id = id_service(msg.id)
-
-	if tele_id.data_int == 0:
-		rospy.logwarn("Invalid user id")
+		rospy.logwarn("Telegram: Invalid user id")
 		return
 
-	rospy.loginfo("SENDING FILE")
-	home_dir = str(Path.home())
-	file_path = home_dir + "/Waypoints/" + msg.data
-	td.send_file(tele_id.data_int, file_path)
+	td.create_chat(tele_id.data_int)
+
+	ack = feedback_util.ack_converter(msg, 1)
+	if ack != None:
+		pub_to_timeout.publish(ack)
+	# args[2] contains the type of message to send
+	#	0: text
+	#	1: file
+	if args[2] == 0:
+		if msg.uuid == 0:
+			timestamp = int(msg.data.split()[-1])
+			tdtimeout[timestamp] = LinkSwitchTimeout(timestamp)
+			tdtimeout[timestamp].persec()
+		rospy.loginfo("Telegram: sending to " + str(tele_id.data_int))
+		td.send_message(tele_id.data_int, msg.data)
+	elif args[2] == 1:
+		rospy.loginfo("Telegram: sending file")
+		home_dir = str(Path.home())
+		file_path = home_dir + "/Sync/" + msg.data
+		td.send_file(tele_id.data_int, file_path, msg.data)
+	else:
+		rospy.logerr(args)
+
+def tdlib_admin_cb(msg, args):
+	td = args[0]
+	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
+	get_self_id = rospy.ServiceProxy("identifiers/self/self_id", GetSelfDetails)
+	admin_id = get_admin_id().data_int
+	self_id = get_self_id().data_int
+
+	td.create_chat(admin_id)
+	time.sleep(1)
+
+	# args[1] contains the type of message to send
+	#	0: request changes to identifers file
+	#	1: set gcs_ids for the valid bones
+	if args[1] == 0:
+		td.send_message(admin_id, msg.data)
+	elif args[1] == 1:
+		data = [i for i in msg.data]
+		cmd = {
+			"request": "set_gcs",
+			"air_ids": data,
+			"ground_ids": [self_id]
+		}
+
+		rospy.loginfo(f"Telegram: sending message to admin {json.dumps(cmd)}")
+		td.send_message(admin_id, json.dumps(cmd))
+
 
 # Function to receive all messages from telegram
 # runs in a seperate thread
 def tdlib_recv():
 	from_tele_pub = rospy.Publisher('ogc/from_telegram', String, queue_size=10)
+	to_despatcher_pub = rospy.Publisher('ogc/ack_tele_file', String, queue_size=10)
 	identifiers_add_tele_id = rospy.ServiceProxy("identifiers/add/telegram_id", AddTelegramId)
 	is_valid_sender_service = rospy.ServiceProxy("identifiers/check/proper", CheckSender)
-	# Loop runs indefinitely, checking for any updates in telegram
+	get_admin_id = rospy.ServiceProxy("identifiers/get/admin_id", GetDetails)
+	admin_id = get_admin_id().data_int
+
 	boot_time = rospy.get_rostime().secs
 
+	file_locations = {}
+
+	# Loop runs indefinitely, checking for any updates in telegram
 	while True: 
+		if stop_thread:
+			break
 		event = td.receive()
 		if event:
 			rospy.logdebug(event)
@@ -83,23 +135,35 @@ def tdlib_recv():
 			if event['@type'] == 'error':
 				rospy.logwarn(json.dumps(event))
 
+				# get chats to fix chat not found error
+				td.get_chats()
+
 			# For knowing status of downloading files
 			if event['@type'] == 'updateFile':
 				# Check if the file has finished downloading
 				if event['file']['local']['is_downloading_completed']:
 					local_path = event['file']['local']['path']
+					file_id = event['file']['id']
 
 					# Currenly only supports sending waypoint files
-					home_dir = str(Path.home())
-					final_path = home_dir + "/Waypoints/" + os.path.basename(local_path)
+					base_dir = str(Path.home()) + "/Sync/"
+					try:
+						final_dir = file_locations[file_id]
+					except KeyError:
+						continue
+
+					final_path = base_dir + final_dir
+					final_dir_path = Path(os.path.dirname(final_path))
+					final_dir_path.mkdir(parents=True, exist_ok=True)
 					
 					# Move the file
 					os.rename(local_path, final_path)
-					#from_tele_pub.publish(f"File {final_path} Downloaded")
+					# Acknowledgement
+					ack = "FILE SYNC: " + final_dir + " updated"
+					to_despatcher_pub.publish(ack)
 
 			# information about a user ( used to get the user id)
 			if event['@type'] == 'user':
-				# print(event)
 				result = identifiers_add_tele_id(event["phone_number"], event["id"])
 
 			# new message received 
@@ -107,46 +171,57 @@ def tdlib_recv():
 				# ignore outgoing messages and messages sent before the node was started
 				if event['message']['is_outgoing'] or event["message"]["date"] < boot_time:
 					continue
-
 				# Check if sender is from a whitelisted contact
 				is_valid_sender = is_valid_sender_service(0, str(event["message"]["sender_user_id"]))
 				if not is_valid_sender.result:
 					continue
 
-				# rospy.loginfo(json.dumps(event))
-
 				message_type = event['message']['content']['@type']
 				if message_type == 'messageText':
 					message = event['message']['content']['text']['text']
-					# rospy.logwarn(message)
 					from_tele_pub.publish(message)
 
 					# Mark message as read
 					td.set_read(event["message"]["chat_id"], event["message"]["id"])
-					rospy.loginfo("Incoming message from %d: %s", event["message"]["sender_user_id"], message)
+					rospy.loginfo("Telegram: Incoming message from %d: %s", event["message"]["sender_user_id"], message)
 
 				elif message_type == 'messageDocument':
 					file_id = event['message']['content']['document']['document']['id']
 					local_path = event['message']['content']['document']['document']['local']['path']
+					final_path = event['message']['content']['caption']['text']
 
 					# download the file
 					if local_path != 1:
 						td.download_file(file_id)
+						file_locations[file_id] = final_path
+
+			if event['@type'] == 'updateMessageSendSucceeded':
+				# ignore messages sent to admin
+				if event['message']['chat_id'] == admin_id:
+					continue
+				if event['message']['content']['@type'] == 'messageText':
+					if int(event["message"]["content"]["text"]["text"].split()[3]) == 0:
+						timestamp = int(event["message"]["content"]["text"]["text"].split()[-1])
+						if hasattr(tdtimeout, str(timestamp)):
+							if hasattr(tdtimeout[timestamp],"timer"):
+								tdtimeout[timestamp].timer.shutdown()
+								tdtimeout[timestamp].pub_to_switcher.publish("Success")
+
 
 if __name__ == '__main__':
 	try:
 		rospy.init_node('tele_ros', anonymous=False, disable_signals=True)
 		tdlib_dir = rospy.get_param("~tdlib_auth_dir")			# Location of the telegram account, created by the tele_auth script
-		valid_ids = rospy.get_param("~valid_ids") 				# whitelisted ids, if this is running in the air, valid_ids will only have ground ids and vice versa
 
 		# wait for required services to be available before continuing
 		rospy.wait_for_service("identifiers/get/telegram_id")
 		rospy.wait_for_service("identifiers/add/telegram_id")
 		rospy.wait_for_service("identifiers/check/proper")
+		rospy.wait_for_service("identifiers/get/admin_id")
+		rospy.wait_for_service("identifiers/self/self_id")
 
 		# Service to get the telegram user id from identifiers
 		identifiers_get_telegram_id = rospy.ServiceProxy("identifiers/get/telegram_id", GetDetails)
-
 		# Initialize Td class, handles all the telegram actions for the node
 		td = Td(tdlib_dir)
 
@@ -156,25 +231,30 @@ if __name__ == '__main__':
 
 
 		# Creates a new thread for running the receive function
+		stop_thread = False
 		recv_thread = Thread(target=tdlib_recv)
 		recv_thread.daemon = True
 		recv_thread.start()
 
-		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id))
-		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_file_cb, (td, identifiers_get_telegram_id))
-		rospy.Subscriber('ogc/to_telegram/contact', ContactInfo, tdlib_add_contact_cb, td)
-
-		# inform all valid nodes that the link is up
-		# td.send_message_multi(valid_ids, ("Air" if is_air else "Ground") + " id " + str(self_id) + " Setup complete")
+		rospy.Subscriber('ogc/to_telegram', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 0))
+		rospy.Subscriber('ogc/to_telegram/file', LinkMessage, tdlib_topic_cb, (td, identifiers_get_telegram_id, 1))
+		rospy.Subscriber('ogc/to_telegram/admin/edit_ids', String, tdlib_admin_cb, (td, 0))
+		rospy.Subscriber('ogc/to_telegram/admin/valid_ids', UInt8MultiArray, tdlib_admin_cb, (td, 1))
+		
+		pub_to_timeout = rospy.Publisher('ogc/to_timeout', LinkMessage, queue_size = 5)
 
 		rospy.spin()
 
 	except rospy.ROSInterruptException:
 		sys.stdout.flush()
+		stop_thread = True
+		recv_thread.join()
 		td.destroy()
 		exit()
 	except KeyboardInterrupt:
 		sys.stdout.flush()
+		stop_thread = True
+		recv_thread.join()
 		td.destroy()
 		exit()
 	

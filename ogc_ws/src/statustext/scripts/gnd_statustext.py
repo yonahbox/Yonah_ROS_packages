@@ -125,8 +125,8 @@ class StatusTextGround:
 
 	def callback(self, data):
 		try:
-			headers = data.data.split()[:3]
-			payload = data.data.split()[3] # Strip out message headers
+			headers = data.data.split()[:4]
+			payload = data.data.split()[4] # Strip out message headers
 			timestamp = str(data.data.split()[-1])
 			pts, d = payload.split(".", 1)
 			self.prefix = pts[0]

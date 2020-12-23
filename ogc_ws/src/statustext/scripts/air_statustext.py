@@ -145,7 +145,6 @@ class StatusTextHandler:
 
 	def GPStext(self, text):
 		if text.split()[3] == "not":
-			print(text)
 			self.status = 0
 			self.details = text.split()[1][:-1]
 			self.publishtext()
