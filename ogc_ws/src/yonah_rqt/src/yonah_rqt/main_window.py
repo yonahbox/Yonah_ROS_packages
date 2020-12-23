@@ -159,18 +159,23 @@ class MyPlugin(Plugin):
             self.create_tab_windows(diff_active)
         rospy.logwarn(f"tab with current index {self.tab.currentIndex()} and title {self.tab.tabText(self.tab.currentIndex())}")
         for i in range (self.tab.count()):
-            print(f"number of tabs: {self.tab.count()}")
+            # print(f"number of tabs: {self.tab.count()}")
             if self.tab.tabText(i) != "Summary":
-                print("Not summary pages")
                 aircraft_no = int(self.tab.tabText(i)[-1])
-                print(f"aircraft no is: {aircraft_no}")
+                # print(f"aircraft no is: {aircraft_no}")
                 if aircraft_no < i:
-                    print(f"Moving aircraft {aircraft_no} from index {i} to {aircraft_no}")
+                    # print(f"Moving aircraft {aircraft_no} from index {i} to {aircraft_no}")
                     self.tab.tabBar().moveTab(i, aircraft_no)
 
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
-        self.CommandWindow.combo_box.setCurrentIndex(i-1)
+        title_tab = self.tab.tabText(self.tab.currentIndex())
+        if (title_tab == "Summary" or title_tab == "Refresh"):
+            command_window_index = int(self.tab.tabText(1)[-1])
+        else:
+            command_window_index = int(title_tab[-1]) - 1
+            print(f"command window change index to: {command_window_index}")
+        self.CommandWindow.combo_box.setCurrentIndex(command_window_index)
 
     def feedback_message(self, data):
         status = Communicate()
