@@ -143,7 +143,7 @@ class SMSrx():
     def recv_sms(self, data):
         '''Receive incoming SMS, process it, and forward to despatcher node via ogc/from_sms topic'''
         if not self.is_online:
-            rospy.logerr("SMS: Unable to receive. Link is down.")
+            rospy.logerr("SMS: Unable to receive. Link is down")
             return
         # Read an SMS received by the air router
         self._msglist = RuTOS.extract_msg(self.ssh, 1)
