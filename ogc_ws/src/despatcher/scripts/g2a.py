@@ -189,7 +189,6 @@ def mission_load(self):
 		self.missionlist.append(line.rstrip())
 	f.close()
 	# Prints the missions for operator to check
-	self._send_ack(uuid)
 	self._msg = "Missions: " + ", ".join(self.missionlist)
 	self.sendmsg("i")
 	# Load first mission
