@@ -238,7 +238,6 @@ class CommandWindow(QWidget):
 
     def create_combobox(self, active_aircrafts):
         for i in range(self.combo_box.count(),-1,-1):
-            print(f"remove {i}")
             self.combo_box.removeItem(i)
         for j in active_aircrafts: 
             rospy.logwarn(f"generating new combo box: {active_aircrafts}")
@@ -520,7 +519,6 @@ class CommandWindow(QWidget):
         else:
             new_identifier.is_air = False
         add_identifier = self.add_new_device(new_identifier)
-        rospy.loginfo(add_identifier.success)
         self.add_identifiers_dialog.close()
         self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
@@ -592,7 +590,7 @@ class CommandWindow(QWidget):
 
         edit_identifiers = EditDeviceRequest()
         edit_identifiers.id = self.edit_identifiers_id
-        rospy.loginfo("ID that is sent: " + str(edit_identifiers.id))
+        rospy.loginfo("rqt: ID that is sent: " + str(edit_identifiers.id))
         edit_identifiers.label = self.edit_label
         edit_identifiers.number = self.edit_phone
         edit_identifiers.imei = self.edit_imei
@@ -602,7 +600,6 @@ class CommandWindow(QWidget):
         else:
             edit_identifiers.is_air = False
         edit_result = self.edit_device(edit_identifiers)
-        rospy.loginfo("Result: " + str(edit_result.success))
         self.edit_identifiers_dialog.close()
         self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
     

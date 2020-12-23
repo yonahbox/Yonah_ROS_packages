@@ -165,7 +165,7 @@ class ChecklistWindow(QWidget):
                 self.remove_widget()
                 self.create_widget()
             else:
-                print('ERROR: Checklist name must contain BPO or BTO')
+                rospy.logerr('rqt: Checklist name must contain BPO or BTO')
                 self.close()
     
     # Close all the main_layout
