@@ -62,7 +62,6 @@ class MyPlugin(Plugin):
         self.time = 0
         self.proper_shutdown= 0
         self.destination_id = 1
-        self.is_refresh_tab_open = True
         self.aircraft_list = []
         self.aircrafts_info = {}
         self.checklist_info = {}
@@ -139,17 +138,10 @@ class MyPlugin(Plugin):
             self.tab.addTab(self.aircrafts_info.get(tab_key), "Aircraft " + str(i))
             self.tab.show()
 
-        # if self.tab.count() == 1:
-        #     refresh = QScrollArea()
-        #     self.tab.addTab(refresh, "Refresh")
         self.tab.setMinimumHeight(500)
 
     def tab_change(self, i):
         '''Changes the command_window drop-down menu to follow the change in tab'''
-        # if self.is_refresh_tab_open:
-        #     self.tab.removeTab(1)
-        #     self.is_refresh_tab_open = False
-
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
         if not diff_active == []:
