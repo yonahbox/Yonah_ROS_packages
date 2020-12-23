@@ -43,7 +43,7 @@ class SummaryWindow(QWidget):
 
     def create_layout(self, active_aircrafts):
         # Declare the widgets
-        summarised_fields = ['Mode', 'Status', 'Link Status','Airspeed', 'Altitude']
+        summarised_fields = ['Mode', 'Status','Airspeed', 'Altitude']
         for i in active_aircrafts:
             self.create_summary(i, summarised_fields)
 
