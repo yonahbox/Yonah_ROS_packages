@@ -184,8 +184,10 @@ class switcher():
             
         if self._timeout_counter == 3:
             self._timeout_counter = 0
-            rospy.logerr("Switcher: Telegram timeout. switching to SMS")
-            self._switch_all(SMS)
+            rospy.logerr("Switcher: Telegram send timeout")
+            for i in self._valid_ids:
+                if self._watchdogs[i].link_status() == TELE:
+                    self._watchdogs[i].switch(SMS)
 
     def monitor_smsout(self, data):
         if data.data == "Timeout":
