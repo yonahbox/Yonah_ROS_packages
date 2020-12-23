@@ -167,7 +167,14 @@ class satcomms(rockBlockProtocol):
         rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
 
     def rockBlockTxLogMsg(self,msg,severity):
-        pass
+        if severity == "debug":
+            rospy.logdebug(msg)
+        elif severity == "info":
+            rospy.loginfo(msg)
+        elif severity == "warn":
+            rospy.logwarn(msg)
+        elif severity == "err":
+            rospy.logerr(msg)
 
     ############################
     # Check for switch cmds
