@@ -241,7 +241,6 @@ class CommandWindow(QWidget):
         for i in range(self.combo_box.count(),-1,-1):
             self.combo_box.removeItem(i)
         for j in active_aircrafts: 
-            rospy.logwarn(f"generating new combo box: {active_aircrafts}")
             self.combo_box.addItem('Aircraft ' + str(j))
             self.checklist_info["AC" + str(j)] = ChecklistWindow(j) # Create the checklist as well
 
@@ -275,7 +274,6 @@ class CommandWindow(QWidget):
     def combo_box_change(self, i):
         if self.combo_box.currentText() != "":
             title = self.combo_box.currentText()[-1]
-            rospy.logerr(f"rqt: Sending command to: {title}")
             self.destination_id = int(title)
 
     def custom_ping_change(self, i):
@@ -390,7 +388,6 @@ class CommandWindow(QWidget):
 
         self.change_identifiers_dialog.show()
         self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
-        # self.is_window_open[0] = 1
 
     def add_identifiers(self, side):
         self.side = side
@@ -663,13 +660,11 @@ class CommandWindow(QWidget):
         self.change_mode_dialog.close()
 
     def direct_update(self):
-        rospy.logwarn('direct update pressed')
         home_dir = expanduser("~")
         gndfolder = home_dir + "/Sync/Waypoints/"
         gndfiles = listdir(gndfolder)
         mission_msg = []
         for i in gndfiles:
-            rospy.logwarn('gnd files')
             mission_msg.append(str(i) + " " + str(int(path.getmtime(gndfolder + i))))
         update = LinkMessage()
         update.uuid = feedback_util.increment()
