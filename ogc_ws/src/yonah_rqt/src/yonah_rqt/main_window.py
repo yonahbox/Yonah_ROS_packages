@@ -169,12 +169,10 @@ class MyPlugin(Plugin):
 
         if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
             i = 1
-        title_tab = self.tab.tabText(self.tab.currentIndex())
-        if (title_tab == "Summary" or title_tab == "Refresh"):
-            command_window_index = int(self.tab.tabText(1)[-1])
-        else:
-            command_window_index = int(title_tab[-1]) - 1
-            print(f"command window change index to: {command_window_index}")
+        command_window_index = self.tab.currentIndex() - 1
+        if command_window_index < 0:
+            command_window_index = 0
+        print(f"command window change index to: {command_window_index}")
         self.CommandWindow.combo_box.setCurrentIndex(command_window_index)
 
     def feedback_message(self, data):
