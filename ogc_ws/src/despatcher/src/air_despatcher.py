@@ -132,7 +132,7 @@ class airdespatcher():
     def check_incoming_msgs(self, data):
         '''Check for incoming G2A messages from ogc/from_sms, from_sbd or from_telegram topics'''
         try:
-            rospy.loginfo("Received \"" + data.data + "\"")
+            rospy.loginfo("Despatcher: Received \"" + data.data + "\"")
             # Handle msg headers
             msgtype, devicetype, sysid, uuid, timestamp, self._recv_msg \
                 = headers.split_headers(data.data)
@@ -154,9 +154,9 @@ class airdespatcher():
             elif "syncthing" in self._recv_msg:
                 g2a.handle_syncthing(self, uuid)
         except(rospy.ServiceException):
-            rospy.logwarn("Service Call Failed")
+            rospy.logwarn("Despatcher: Mavros service call failed")
         except (ValueError, IndexError, TypeError):
-            rospy.logerr("Invalid message format")
+            rospy.logerr("Despatcher: Invalid message format")
 
     def resume_syncthing(self, data):
         if data.data == "hop False" and self.payloads.entries["arm"] == False: 
