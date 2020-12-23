@@ -61,7 +61,7 @@ def split_headers(msg):
         return msgtype, devicetype, sysid, uuid, timestamp, msglist[PREFIX_COUNT:-SUFFIX_COUNT]
     except:
         rospy.logerr("Headers: Cannot split headers")
-        return None
+        return None, None, None, None, None, None
     
 ######################
 # Handle outgoing msgs
