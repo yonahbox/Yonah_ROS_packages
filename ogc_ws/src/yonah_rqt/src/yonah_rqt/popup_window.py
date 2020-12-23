@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
-import timeoutscript
+import feedback_util
 
 import threading
 from despatcher.msg import LinkMessage
@@ -37,7 +37,7 @@ class PopupMessages(QWidget):
     def create_link_message(self, destination_id, data):
         '''Create a custom Link Message'''
         message = LinkMessage()
-        message.uuid = timeoutscript.increment()
+        message.uuid = feedback_util.increment()
         message.id = destination_id
         message.data = data
         self.command_publisher.publish(message)

@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import rospy
 import time
-import timeoutscript
+import feedback_util
 
 from functools import partial
 from os import listdir, path
@@ -263,12 +263,12 @@ class CommandWindow(QWidget):
     def create_link_message(self, destination_id, data):
         message = LinkMessage()
         message.id = destination_id
-        message.uuid = timeoutscript.increment()
+        message.uuid = feedback_util.increment()
         if "mission next" in data or "mission load" in data:
             rospy.logwarn("rqt: mission next or mission load commands will not have acknowledgments")
             message.uuid = 0
         else:
-            message.uuid = timeoutscript.increment()
+            message.uuid = feedback_util.increment()
         message.data = data
         self.pub_to_despatcher.publish(message)
 
@@ -672,7 +672,7 @@ class CommandWindow(QWidget):
             rospy.logwarn('gnd files')
             mission_msg.append(str(i) + " " + str(int(path.getmtime(gndfolder + i))))
         update = LinkMessage()
-        update.uuid = timeoutscript.increment()
+        update.uuid = feedback_util.increment()
         update.id = self.destination_id
         update.data = "mission update " + " ".join(mission_msg)
         time.sleep(1)

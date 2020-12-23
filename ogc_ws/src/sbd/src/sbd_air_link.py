@@ -30,7 +30,7 @@ import headers
 import rockBlock
 from rockBlock import rockBlockProtocol, rockBlockException
 
-import timeoutscript
+import feedback_util
 class local_mo_buffer():
     '''Buffer to hold MO msg locally before a mailbox check takes place'''
     def __init__(self):
@@ -152,12 +152,12 @@ class satcomms(rockBlockProtocol):
         self._msg_send_success = -1
 
     def rockBlockTxSuccess(self,momsg,target_id,uuid):
-        # Acknowledgment message sending. Create a LinkMessage to be compatible with timeoutscript's ack converter
+        # Acknowledgment message sending. Create a LinkMessage to be compatible with feedback_util's ack converter
         msg = LinkMessage()
         msg.data = momsg
         msg.id = target_id
         msg.uuid = uuid
-        ack = timeoutscript.ack_converter(msg, 1)
+        ack = feedback_util.ack_converter(msg, 1)
         if ack != None:
             self._pub_to_timeout.publish(ack)
         rospy.loginfo("SBD: Msg sent: " + momsg)

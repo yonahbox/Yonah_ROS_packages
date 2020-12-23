@@ -38,7 +38,7 @@ from sbd_air_link import satcomms
 from regular import struct_cmd, convert_to_str
 # TODO remove this
 
-import timeoutscript
+import feedback_util
 
 class satcommsgnd(satcomms):
 
@@ -148,7 +148,7 @@ class satcommsgnd(satcomms):
             reply = requests.post(url, data=self._mt_cred)
             rospy.loginfo(reply.text)
             if "OK" in reply.text:
-                ack = timeoutscript.ack_converter(data, 1)
+                ack = feedback_util.ack_converter(data, 1)
                 if ack != None:
                     self._pub_to_timeout.publish(ack)
             return True
@@ -218,7 +218,7 @@ class satcommsgnd(satcomms):
     def send_msg(self, data):
         '''Handle outgoing msgs'''
         # Acknowledgment message sending
-        ack = timeoutscript.ack_converter(data, 0)
+        ack = feedback_util.ack_converter(data, 0)
         if ack != None:
             self._pub_to_timeout.publish(ack)
         # Try sending through Rock 7 server first. If it fails, fallback to gnd rockBlock

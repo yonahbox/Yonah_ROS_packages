@@ -21,7 +21,7 @@ from despatcher.msg import LinkMessage
 from identifiers.srv import GetDetails, AddTelegramId, CheckSender, GetSelfDetails
 from telegram.msg import ContactInfo
 
-import timeoutscript
+import feedback_util
 
 import os
 from pathlib import Path
@@ -61,7 +61,7 @@ def tdlib_topic_cb(msg, args):
 
 	td.create_chat(tele_id.data_int)
 
-	ack = timeoutscript.ack_converter(msg, 1)
+	ack = feedback_util.ack_converter(msg, 1)
 	if ack != None:
 		pub_to_timeout.publish(ack)
 	# args[2] contains the type of message to send
