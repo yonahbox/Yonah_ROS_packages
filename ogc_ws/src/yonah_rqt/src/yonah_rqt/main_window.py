@@ -153,26 +153,18 @@ class MyPlugin(Plugin):
         active_aircrafts = self.CommandWindow.ValidIdWindow.valid_ids
         diff_active = list(set(active_aircrafts) - set(self.aircraft_list))
         if not diff_active == []:
-            rospy.logerr(f"New AC added: {diff_active}")
             self.aircraft_list = active_aircrafts
-            rospy.logerr(f"newest ac_list: {self.aircraft_list}")
             self.create_tab_windows(diff_active)
         rospy.logwarn(f"tab with current index {self.tab.currentIndex()} and title {self.tab.tabText(self.tab.currentIndex())}")
         for i in range (self.tab.count()):
-            # print(f"number of tabs: {self.tab.count()}")
             if self.tab.tabText(i) != "Summary":
                 aircraft_no = int(self.tab.tabText(i)[-1])
-                # print(f"aircraft no is: {aircraft_no}")
                 if aircraft_no < i:
-                    # print(f"Moving aircraft {aircraft_no} from index {i} to {aircraft_no}")
                     self.tab.tabBar().moveTab(i, aircraft_no)
 
-        if i == 0: # When Tab is at Summary Page, show AC 1 in the Command Window combo_box
-            i = 1
         command_window_index = self.tab.currentIndex() - 1
         if command_window_index < 0:
-            command_window_index = 0
-        print(f"command window change index to: {command_window_index}")
+            command_window_index = 0 # If tab is at Summary page, set Combobox to 0th index
         self.CommandWindow.combo_box.setCurrentIndex(command_window_index)
 
     def feedback_message(self, data):
@@ -217,16 +209,13 @@ class MyPlugin(Plugin):
         status.time_signal.emit(data.header.stamp.secs, aircraft_id)
 
     def ondemand(self, data):
-        rospy.loginfo(data)
         # data. data list is i 1 1 0 message
         data_list = data.data.split()
         msg = " ".join(data_list[4:-1])
         aircraft_id = data_list[2]
         status = Communicate()
         if "LinkSwitch" in msg:
-            # link_status = Communicate()
             status.ondemand_signal.connect(self.link_status)
-            # link_status.ondemand_signal.emit(msg, aircraft_id)
         else:
             status.ondemand_signal.connect(self.ondemand_display)
         status.ondemand_signal.emit(msg, aircraft_id) # Change the id where to display using headers module
@@ -362,7 +351,6 @@ class MyPlugin(Plugin):
 
     def link_status(self, link, aircraft_id):
         link = link[-1] # extract the status
-        rospy.loginfo(link)
         if int(link) == 0:
             link = "Telegram"
         elif int(link) == 1:
@@ -476,7 +464,7 @@ class MyPlugin(Plugin):
                     msg = regular.convert_to_rosmsg(regpay)
                     self.regular_payload(msg)
         else:
-            rospy.loginfo("rqt_log file doesn't exist, creating new rqt_log file")
+            rospy.loginfo("rqt: rqt_log file doesn't exist, creating new rqt_log file")
             f = open(self.path, "w+")
             f.write("None")
    
