@@ -57,8 +57,8 @@ class Identifiers:
 				with open(self_id_file, "r") as f:
 					self.self_id = int(f.readline().rstrip())
 			except FileNotFoundError:
-				print("self_id file is not available")
-				print("Please ensure the device was properly set up")
+				print("Identifiers: self_id file is not available")
+				print("Identifiers: Please ensure the device was properly set up")
 				exit()
 		else:
 			self.admin = True
@@ -102,8 +102,8 @@ class Identifiers:
 					while valid_id := f.readline().rstrip():
 						self.valid_ids.append(int(valid_id))
 			except FileNotFoundError:
-				print("Valid ids file is not available")
-				print("please check that the telegram_bone script works properly")
+				print("Identifiers: valid_ids file is not available")
+				print("Identifiers: Please check that the telegram_bone script works properly")
 				exit()
 
 		with open(self.json_file) as file:
@@ -112,7 +112,7 @@ class Identifiers:
 				self.json_obj = json.load(file)
 			except json.JSONDecodeError:
 				# file does not contain valid json
-				print("invalid identifier file")
+				print("Identifiers: invalid identifier file")
 				exit()
 
 		for obj in self.json_obj['ground']:
@@ -311,7 +311,7 @@ class Identifiers:
 			elif data_type == 5 and data == obj.syncthing_id:
 				return obj.is_air, obj.id
 
-		print(f"Error {data_type} {data}")
+		print("Identifiers: device not found")
 		return 0, 0
 
   # add new device to the identifiers file
