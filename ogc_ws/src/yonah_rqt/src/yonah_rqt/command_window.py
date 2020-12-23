@@ -345,9 +345,9 @@ class CommandWindow(QWidget):
             message_type = ["sync resume", "Warning"]
             title = "Sync Resume Warning"
             self.PopupMessages.arm_window(self.destination_id, message_type, title, message, text)
-            
-        data = "syncthing resume"
-        self.create_link_message(self.destination_id, data)
+        else:
+            data = "syncthing resume"
+            self.create_link_message(self.destination_id, data)
     
     def sync_pause(self):
         data = "syncthing pause"
