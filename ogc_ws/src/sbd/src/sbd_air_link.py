@@ -166,6 +166,9 @@ class satcomms(rockBlockProtocol):
     def rockBlockTxBlankMsg(self):
         rospy.loginfo("SBD: Mailbox check " + str(self._count) + " complete")
 
+    def rockBlockTxLogMsg(self,msg,severity):
+        pass
+
     ############################
     # Check for switch cmds
     ############################
