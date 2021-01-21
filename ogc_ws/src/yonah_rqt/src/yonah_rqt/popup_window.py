@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-summary_window: Part of the RQt that shows the main information about each aircraft
+popup_window: A centralised set of functions in order to display PopUp Windows
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 

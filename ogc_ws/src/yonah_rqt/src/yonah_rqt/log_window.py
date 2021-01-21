@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-checklist_window: Additional window that contains the BPO and BTO checklists
+log_window: rqt window to display ROS logs files into neater, more readable table-form
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 

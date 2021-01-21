@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-my_module: Main Python file where RQt layout and components are assembled
+main_window: Main Python file where RQt layout and components are assembled
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
