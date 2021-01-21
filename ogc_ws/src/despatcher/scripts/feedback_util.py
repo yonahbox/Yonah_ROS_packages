@@ -30,7 +30,7 @@ def ack_converter(data, state):
     else:
         message = LinkMessage()
         message.uuid = data.uuid
-        message.id = 0 #@TODO change the message id to the supposed value
+        message.id = 0
         if state == 0:
             message.data = "pending"
         elif state == 1:

@@ -77,6 +77,7 @@ class LogWindow(QWidget):
         self.main_layout.addWidget(self.table_widget)
 
     def condensed_layout(self):
+        '''Condense the information in the table if it is too long'''
         self.table_widget.setRowCount(0)
         self.file = [x for x in self.file if x]
         self.table_widget.setRowCount(len(self.file))
@@ -121,6 +122,7 @@ class LogWindow(QWidget):
         self.table_widget.resizeRowsToContents()
 
     def lengthy_layout(self):
+        '''Show the full length of message in the table'''
         self.table_widget.setRowCount(0)
         self.file = [x for x in self.file if x]
         self.table_widget.setRowCount(len(self.file))
@@ -161,6 +163,7 @@ class LogWindow(QWidget):
 
     
     def reload_file(self):
+        '''Handles selection of a new file'''
         filenames = QFileDialog.getOpenFileNames(
             self, self.tr('Load from Files'), '.', self.tr('log files {.log} (*.log)'))
         if filenames[0] == []:

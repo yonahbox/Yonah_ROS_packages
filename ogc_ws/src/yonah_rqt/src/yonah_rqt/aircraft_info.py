@@ -20,9 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit
 from python_qt_binding.QtGui import QFont
 
-# File is still changing rapidly and dynamically, hence comments might not be accurate
-# @TODO change the variable names. As of now it is heavily referenced from the summary page
-# AircraftInfo is the parent widget for all the other aircrafts
 class AircraftInfo(QWidget):
     def __init__(self, aircraft_id):
         super(AircraftInfo, self).__init__()
