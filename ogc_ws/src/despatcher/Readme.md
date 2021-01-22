@@ -4,31 +4,28 @@
 
 Despatcher nodes act as a relay agent between the three links and mavros (on the aircraft) or the RQt GUI (on the Ground Control Station)
 
+In addition to the despatchers, this package also contain two other nodes: Feedback Timeout and Switcher Nodes. They are placed in the despatcher package as they are centralised nodes receiving data from all three links, similar to how despatcher nodes are centralised.
+
 ## Installation
 
-If you haven't done so already, clone this repository and check out onto the branch on which this Readme is located. Then initialize the OGC workspace:
-
-```
-cd ogc_ws
-catkin_make
-```
-Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
+This package should be installed alongside the rest of Yonah's OGC. See the [Software Install](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Software-Installation) page for more details.
 
 ## Usage
 
-Before running this package, make sure you are connected into the RUT cellular router wifi, and the ssh keypairs of the device running this package are copied into the router (see [this user guide](https://wiki.teltonika-networks.com/view/SSH_RSA_key_authentication_(Linux)) on how to copy your ssh keypairs into the router)
+Before running this package, make sure your device:
+
+* Is connected into the RUT cellular router wifi, and the ssh keypairs of the device running this package are copied into the router (see [this user guide](https://wiki.teltonika-networks.com/view/SSH_RSA_key_authentication_(Linux)) on how to copy your ssh keypairs into the router)
+* Has the Rockblock 9603 satellite modem connected, if running/testing the SBD link
 
 **Testing**
 
-Currently, the despatcher nodes only interact with the sms link, but provisions have been made to easily expand to the other two links (telegram and SBD)
-
-To test the air side sms link, run `sms_airtest.launch` in the sms package. In a separate terminal, launch mavros (to-do: Elaborate on this)
-
-To test the ground side sms link, run `sms_gndtest.launch` in the sms package
+The despatcher nodes can be tested with any one of the three links. To test each link, use the launch files in the respective link packages (sbd, sms, tele)
 
 **Opeational usage**
 
-(to-do. This package is not yet operational)
+To run the despatcher node and links on the air side, go to the root launch folder of this repository and run `ogc_airtest.launch`
+
+To run the despatcher node and links on the ground side, go to the root launch folder of this repository and run `ogc_gndtest.launch`
 
 ## Nodes
 
@@ -43,7 +40,14 @@ Serves as the relay between mavros and the three telemetry links on the aircraft
 * `ogc/from_sms`: Topic through which air_despatcher receives incoming G2A messages from the sms_link node
 * `ogc/from_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/from_telegram`: Corresponding topic for Telegram Cellular Data link
-* `ogc/statustext`: Topic to receive condensed statustexts from Statustest Handler Node
+* `ogc/statustext`: Receive condensed statustexts from Statustext Handler Node
+* `ogc/from_switcher`: Receive link switch commands from switcher node
+* `ogc/files_modified`: Receive update on modified files from syncthing node
+* `ogc/ack_tele_file`: Used for file syncing over telegram
+* `ogc/to_despatcher/error`: Receive error messages
+* `ogc/from_rff`: Receive commands to move to the next mission from RFF node
+* `ogc/to_rff`: Receive the armed state of aircraft to determine whether to pause or resume syncthing
+* `ogc/identifiers/valid_ids`: Receive the list of authorised device IDs if it is changed
 * `mavros/*`: Family of mavros topics which air_despatcher subscribes to in order to receive data from aircraft
 
 **Published Topics**
@@ -51,13 +55,21 @@ Serves as the relay between mavros and the three telemetry links on the aircraft
 * `ogc/to_sms`: Topic through which the despatcher node publishes A2G messages that are to be sent out as SMS
 * `ogc/to_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/to_telegram`: Corresponding topic for Telegram Cellular Data link
+* `ogc/to_rff`: Send mission commands to RFF node
+* `ogc/files/syncthing`: Communication with syncthing node
+
+**Subscribed Services**
+
+* `identifiers/self/self_id`: Get the aircraft's own IDs
+* `identifiers/get/valid_ids`: Get the list of authorised device IDs
+* `mavros/*`: Family of mavros services that act on G2A commands
 
 **Parameters**
 
-* `interval_1`: Short time interval between SMS regular payload
-* `interval_2`: Long time interval between SMS regular payload
-
-(To-do: Add more time intervals to cater for SBD and Telegram latencies)
+* `interval_1`: Short time interval between regular payload
+* `interval_2`: Medium time interval between regular payload
+* `interval_3`: Long time interval between regular payload
+* `waypoint_folder`: Folder in which the aircraft waypoints and mission files are stored
 
 ### gnd_despatcher
 
@@ -68,67 +80,91 @@ Serves as the relay between RQt GUI and the three telemetry links on the Ground 
 * `ogc/from_sms`: Topic through which gnd_despatcher receives incoming A2G messages from the sms_link node
 * `ogc/from_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/from_telegram`: Corresponding topic for Telegram Cellular Data link
-* `ogc/from_despatcher/regular`: Topic through which gnd_despatcher publishes regular payload messages to RQT
-* `ogc/from_despatcher/statustext`: Topic through which gnd despatcher publishes statustext messages to Statustext Handler Node
-* `ogc/from_despatcher/ondemand`: Topic through which gnd_despatcher publishes miscellaneous messages to RQT
+* `ogc/to_despatcher`: Receive G2A commands from RQT
+* `ogc/identifiers/valid_ids`: Receive the list of authorised device IDs if it is changed
+* `ogc/from_switcher`: Receive link switch commands from switcher node
 
 **Published Topics**
 
 * `ogc/to_sms`: Topic through which the despatcher node publishes G2A messages that are to be sent out as SMS
 * `ogc/to_sbd`: Corresponding topic for Iridium Short-Burst-Data (SBD) link
 * `ogc/to_telegram`: Corresponding topic for Telegram Cellular Data linkic
-* `ogc/to_despatcher`: Topic through which gnd_despatcher receives G2A commands from RQT
+* `ogc/from_despatcher/regular`: Publish regular payload messages to RQT
+* `ogc/from_despatcher/statustext`: Publish statustext messages to Statustext Handler Node
+* `ogc/from_despatcher/ondemand`: Publish miscellaneous messages to RQT
+* `ogc/to_telegram/file`: Used for file syncing over telegram
+* `ogc/to_timeout`: Send the status of outgoing messages to the feedback_timeout module (for Feedback Message Design)
+
+**Subscribed Services**
+
+* `identifiers/self/self_id`: Get the aircraft's own IDs
+* `identifiers/get/valid_ids`: Get the list of authorised device IDs
+
+**Parameters**
+
+* `interval_1`: Short time interval between heartbeats
+* `interval_2`: Medium time interval between heartbeats
+* `interval_3`: Long time interval between heartbeats
+
+### feedback_timeout
+
+Provide feedback to the ground operator on whether a G2A command succeeed or failed in getting sent. Present only on ground side. See the [Feedback Message documentation](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Feedback) for more details.
+
+**Subscribed Topics**
+
+* `ogc/to_timeout` and `ogc/to_despatcher`: Receive feedback on outgoing messages from other nodes (e.g. despatcher, link nodes)
+
+**Published Topics**
+
+* `ogc/feedback_to_rqt`: Publish feedback on outgoing messages to the RQT to be displayed to the ground user
+
+### switcher
+
+Handles link switching on both air and ground side. See [link switching documentation](https://github.com/yonahbox/Yonah_ROS_packages/wiki/LinkSwitch) for more details.
+
+**Subscribed Topics**
+
+* `ogc/from_sms`: Topic to receive incoming messages (A2G, G2A) from the sms_link node
+* `ogc/from_telegram`: Corresponding topic for Telegram Cellular Data link
+* `ogc/to_switcher_tele`: Receive **internal** messages on the status of the Telegram link (e.g. whether timeout has occured when sending a message over Telegram
+* `ogc/to_switcher_sms`: Receive **internal** messages on the status of the SMS link (e.g. whether error message was received from router when sending an SMS)
+* `ogc/identifiers/valid_ids`: Receive the list of authorised device IDs if it is changed
+
+**Published Topics**
+
+* `ogc/from_switcher`: Publish link switch updates (e.g. which link to switch to when current link is declared as failed)
+
+**Subscribed Services**
+
+* `identifiers/get/valid_ids`: Get the list of authorised device IDs
+
+**Parameters**
+
+* `router_username`: Username of Cellular Router
+* `router_ip`: IP Address of Cellular Router
 
 ## Msgs
 
 All custom ROS messages are located in the `msg` folder
 
 **RegularPayload**: Stores the regular payload format for A2G message
+**LinkMessage**: Stores the format used for an outgoing message (data, ID of receipient, UUID of message)
 
 ## Message/Command formats
 
-To-do: Add details on message headers
-
 **Air-to-Ground messages/payloads**
 
-Regular payload format:
-
-* Airspeed
-* Altitude
-* Armed Status
-* Groundspeed
-* Latitude
-* Longitude
-* Throttle level
-* Waypoint reached
-* VTOL status
-
-To-do: Add details on statustext and other msg types
+Regular payload is sent from air to ground at specified intervals. See the [regular payload](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Regular-Payload-Design) for more details
 
 **Ground-to-Air commands**
 
-Available G2A commands:
+Available G2A commands can be found in the [G2A Wiki Page](https://github.com/yonahbox/Yonah_ROS_packages/wiki/G2A)
 
-To-do: Change "sms" to a more generic name (to cater to all three links)
+In addition to G2A commands, heartbeats are also sent at regular intervals (similar to regular payload but without the data) from ground to air. This is for [link switching](https://github.com/yonahbox/Yonah_ROS_packages/wiki/LinkSwitch) purposes.
 
-* ping: Receive one-off messages (i.e. on-demand payloads)
-    * "ping": Receive a one-off regular payload from the aircraft
-    * "ping mode": Get an update on flight mode of aircraft
-    * "ping statustext": Receive the latest status text from the aircraft
-* sms: Handle regular payloads from the aircraft
-    * "sms true": Request regular payloads (default to long intervals) from aircraft
-    * "sms false*: Deactivate regular payload service
-    * "sms short": Change intervals in between regular payload to short intervals
-    * "sms long": Change intervals in between regular payload to long intervals
-* statustext: Handle status texts from the aircraft
-    * "statustext true": Request regular status text updates from aircraft
-    * "statustext false": Deactivate regular status text updates from aircraft
-* "arm": Arm the aircraft
-* "disarm": Disarm the aircraft
-* "mode (flight mode)": Set flight mode of aircraft
-* wp: Waypoint commands
-    * "wp set (number)": Set target waypoint to the waypoint number specified
-    * "wp load (name of waypoint file)": Load waypoint file in the home folder of the aircraft companion computer
+**Message Headers**
+
+Each A2G and G2A message follows a predefined header format specified in this [Wiki page](https://github.com/yonahbox/Yonah_ROS_packages/wiki/G2A)
 
 ## License
 

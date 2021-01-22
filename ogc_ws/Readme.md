@@ -4,12 +4,7 @@ ROS Workspace containing the packages used for Ops Ground Control
 
 ## Packages
 
-* **despatcher**: Contains ground and air despatcher nodes. Air despatcher serves as the relay between mavros and the three links on the aircraft. Ground despatcher serves as the relay between the RQt GUI and the three links on the Ground Control Station (GCS)
-* **statustext**: Contains ground and air StatusText handlers, which serve to simplify and filter the StatusText messages comming from mavros for use in Yonah's RQT GUI
-* **rqt_mypkg**: Contains nodes to launch RQt GUI on the GCS
-* **sbd**: Contains nodes to handle Iridium Short-Burst-Data (SBD) telemetry link
-* **sms**: Contains nodes to handle SMS telemetry link
-* **telegram**: Contains nodes to handle Telegram Cellular Data telemetry link
+See the Development [Wiki Page](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Development) for a breakdown of the packages and their nodes.
 
 ## License
 
