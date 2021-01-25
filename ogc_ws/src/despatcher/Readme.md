@@ -148,6 +148,7 @@ Handles link switching on both air and ground side. See [link switching document
 All custom ROS messages are located in the `msg` folder
 
 **RegularPayload**: Stores the regular payload format for A2G message
+
 **LinkMessage**: Stores the format used for an outgoing message (data, ID of receipient, UUID of message)
 
 ## Message/Command formats
