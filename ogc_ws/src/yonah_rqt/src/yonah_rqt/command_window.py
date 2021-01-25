@@ -153,6 +153,7 @@ class CommandWindow(QWidget):
         self.setLayout(self.main_layout) 
     
     def full_window(self):
+        '''Create the full menu window'''
         self.full_widget = QWidget()
         self.full_widget.setWindowTitle("Full Menu List")
 
@@ -213,7 +214,6 @@ class CommandWindow(QWidget):
 
         for i in range(1, len(group_titles)):
             label = QLabel(group_titles[i])
-            # label.setStyleSheet("border: 1px solid black;")
             label.setAlignment(Qt.AlignCenter)
             layout.addWidget(label,0,i)
 
@@ -248,7 +248,6 @@ class CommandWindow(QWidget):
         self.ValidIdWindow.show()
         self.windows_opened["change_valid_ids"] = self.ValidIdWindow.isVisible()
 
-    # Temporary place so that I dont have to scroll so far down
     def ros_log_parser(self):
         filenames = QFileDialog.getOpenFileNames(
             self, self.tr('Load from Files'), '.', self.tr('log files {.log} (*.log)'))
@@ -260,6 +259,7 @@ class CommandWindow(QWidget):
         file.close()
 
     def create_link_message(self, destination_id, data):
+        '''Creates the link message'''
         message = LinkMessage()
         message.id = destination_id
         message.uuid = feedback_util.increment()
@@ -284,7 +284,9 @@ class CommandWindow(QWidget):
         self.create_link_message(self.destination_id, data)
 
     def arm(self):
+        '''Arms Aircraft'''
         self.windows_opened["arm window"] = True
+        # Arm command will be sent from PopupMessages
         if self.checklist_info.get("AC" + str(self.destination_id)).checklist_state == 0:
             self.PopupMessages.arm_window(self.destination_id, ["ARM","Warning"], "Warning Message", "You have not completed pre-flight checklist", "Are you sure you want to ARM?")
         else:
@@ -294,10 +296,13 @@ class CommandWindow(QWidget):
             pass
 
     def disarm(self):
+        '''Disarms Aircraft'''
         self.windows_opened["disarm window"] = True
+        # Disarm command will be sent from PopupMessages
         self.PopupMessages.arm_window(self.destination_id, ["DISARM", "Information"], "Confirmation Message", "Please confirm your action", "Are you sure you want to DISARM?")
 
     def go(self):
+        '''Changes mode to Auto'''
         data = "mode 10"
         statustext_message = "Aircraft {} mode has been set to AUTO".format(self.destination_id)
         self.create_link_message(self.destination_id, data)
@@ -356,7 +361,12 @@ class CommandWindow(QWidget):
         data = "syncthing pause"
         self.create_link_message(self.destination_id, data)
 
+    ################################
+    # Add/Edit Identifiers
+    ################################
+
     def change_identifiers(self):
+        '''Creates the change identifiers window'''
         if self.identifiers_error == 1:
             rospy.logerr("Attempt to open change identifiers window without initialising identifiers node")
             self.PopupMessages.warning_message("Identifiers Node failed to start", "Edit and Add Identifiers function will be unavailable")
@@ -390,6 +400,7 @@ class CommandWindow(QWidget):
         self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
 
     def add_identifiers(self, side):
+        '''Add identifiers window'''
         self.side = side
         self.change_identifiers_dialog.close()
         self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
@@ -423,6 +434,7 @@ class CommandWindow(QWidget):
         self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def identifiers_input_field(self, field):
+        '''Creates the form for both and and edit identifiers'''
         self.name = QLabel("Label")
         self.name_lineedit = QLineEdit()
         self.name_lineedit.setValidator(QRegExpValidator(QRegExp("^[a-zA-Z0-9_]{2,15}$")))
@@ -460,6 +472,7 @@ class CommandWindow(QWidget):
         self.serial_lineedit.setToolTip(serial_msg)
 
     def identifiers_submit(self, field, subfields, text):
+        '''Handles the submission for both add and edit identifiers'''
         sender = self.sender()
         validator = sender.validator()
         state = validator.validate(text, 0)[0]
@@ -526,6 +539,7 @@ class CommandWindow(QWidget):
         self.windows_opened["add_identifiers_dialog"] = self.add_identifiers_dialog.isVisible()
 
     def edit_identifiers(self, side):
+        '''Edit identifiers window'''
         self.side = side
         self.change_identifiers_dialog.close()
         self.windows_opened["change_identifiers_dialog"] = self.change_identifiers_dialog.isVisible()
@@ -543,15 +557,12 @@ class CommandWindow(QWidget):
         label = QLabel("Select Aircraft label to edit")
         self.edit_combo_box = QComboBox()
         self.edit_identifiers_id = 1
-        # Somehow get the current label inside it
         if side == "Air":
             for i in self.air_ids:
-                self.edit_combo_box.addItem("Aircraft " + chr(ord(i) + 48))
-                # self.edit_combo_box.addItem(f"Aircraft {i}")
+                self.edit_combo_box.addItem(f"Aircraft {i}")
         else:
             for i in self.ground_ids:
-                self.edit_combo_box.addItem("GCS " + chr(ord(i) + 48))
-                # self.edit_combo_box.addItem(f"GCS {i}")
+                self.edit_combo_box.addItem(f"GCS {i}")
         self.edit_combo_box.currentIndexChanged.connect(self.edit_identifiers_combo_box)
 
         self.check_validity = [0, 0, 0, 0]
@@ -577,6 +588,7 @@ class CommandWindow(QWidget):
         self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
 
     def close_identifiers(self, side):
+        '''Handles the closing and opening of identifiers tabs'''
         if side == "Edit":
             self.edit_identifiers_dialog.close()
             self.windows_opened["edit_identifiers_dialog"] = self.edit_identifiers_dialog.isVisible()
@@ -629,7 +641,11 @@ class CommandWindow(QWidget):
             self.edit_combo_box.setCurrentIndex(0)
             self.PopupMessages.warning_message("The ID you have selected is invalid", "Please select another ID")
 
+    ################################
+    # Change Flight Mode of Aircraft
+    ################################
     def change_mode(self):
+        '''Changes flight mode of an Aircraft'''
         self.change_mode_dialog = QDialog()
         self.change_mode_dialog.setWindowTitle("Change Mode")
         self.label = QLabel("Select MODE for Aircraft " + str(self.destination_id))
@@ -653,6 +669,7 @@ class CommandWindow(QWidget):
         self.mode_change = self.mode_list[i]
 
     def dropdown_accept(self):
+        '''Handles the sending of change mode command'''
         data = "mode " + str(self.decoder.index(self.mode_change))
         statustext_message = "Aircraft {} mode has been set to {}".format(self.destination_id, self.mode_change)
         self.SummaryWindow.statustext.appendPlainText(statustext_message)
@@ -660,6 +677,7 @@ class CommandWindow(QWidget):
         self.change_mode_dialog.close()
 
     def direct_update(self):
+        '''Directly sync files to an aircraft'''
         home_dir = expanduser("~")
         gndfolder = home_dir + "/Sync/Waypoints/"
         gndfiles = listdir(gndfolder)
@@ -672,9 +690,6 @@ class CommandWindow(QWidget):
         update.data = "mission update " + " ".join(mission_msg)
         time.sleep(1)
         self.pub_to_despatcher.publish(update)
-    
-    def direct_update_identifiers(self):
-        pass
 
     def shutdown(self):
         self.close()

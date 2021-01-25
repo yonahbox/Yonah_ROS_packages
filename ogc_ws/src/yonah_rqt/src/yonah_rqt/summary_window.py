@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QLabel, QHBoxLayout, QW
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QFont
 
-### File is still changing rapidly and dynamically, hence comments might not be accurate
 class SummaryWindow(QWidget):
     def __init__(self, active_aircrafts):
         super(SummaryWindow, self).__init__()
@@ -76,14 +75,6 @@ class SummaryWindow(QWidget):
 
     def open(self):
         self.show()
-
-    def remove(self, layout):
-        for i in reversed(range(layout.count())):
-            child = layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-            if child.layout():
-                self.remove(child.layout())
     
     def shutdown(self):
         self.close()

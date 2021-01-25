@@ -4,42 +4,40 @@ ROS Package to handle Yonah's Iridum Short-Burst-Data (SBD) Telemetry for Operat
 
 The node interfaces with a Rockblock 9603, connected to the main system via a FTDI-USB cable.
 
-To-do: Add more details on 9603 setup and comms architecture (Rockblock 2 Rockblock, Web Server)
+More details on how the SBD link works is in the [Wiki Page](https://github.com/yonahbox/Yonah_ROS_packages/wiki/SBD-Link).
 
 ## Installation
 
-If you haven't done so already, clone this repository and check out onto the branch on which this Readme is located. Then initialize the OGC workspace:
-
-```
-cd ogc_ws
-catkin_make
-```
-Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
+This package should be installed alongside the rest of Yonah's OGC. See the [Software Install](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Software-Installation) page for more details.
 
 ## Usage
 
 Before running this package, ensure the following;
 
 * Your system (companion computer, GCS) is connected to the Rockblock modem via the FTDI-USB cable, with the modem having a clear view of the sky
-* Your web server is running with the neccessary scripts in your server cgi-bin folder (to-do: Guide on how to set up the scripts + apache service)
-* A `login.txt` file containing the neccessary login credentials is placed in the `src` folder. The file should have: (1) URL of your web sever script, (2) IMEI number of the Rockblock modem you are connected to, (3) Email used to login to Rock Seven Web Services, (4) Password used to login to Rock Seven Web Services. For example:
+* Your web server is running with the neccessary scripts in your server cgi-bin folder, see [Server Installation Instructions](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Software-Installation#server-side-installation)
+* The identifiers file already contains the neccessary login credentials (see [Identifiers Wiki](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Identifiers#the-json-file) for more details), for example:
 
 ```
-http://ec2-1-2-3-4.ap-southeast-1.compute.amazonaws.com/cgi-bin/testscript.py
-123456789012345
-somebody@gmail.com
-fakepassword
+"sbd_details": {
+		"rock7_username": "somebody@gmail.com",
+		"rock7_password": "fakepassword",
+		"svr_hostname": "ubuntu",
+                "svr_ip": "127.0.0.1"
+	},
 ```
 
 **Testing**
 
-To test the air side sbd link, run `sbd_airtest.launch`. In a separate terminal, launch mavros (to-do: Elaborate on this)
+To test the air side sbd link, run `sbd_airtest.launch`. In a separate terminal, launch mavros
 
 To test the ground side sbd link, run `sbd_gndtest.launch`
 
-**Opeational usage**
+**Operational Usage**
 
-(to-do. This package is not yet operational)
+To run the sms link on the air side, go to the root launch folder of this repository and run `ogc_airtest.launch`
+
+To run the sms link on the ground side, go to the root launch folder of this repository and run `ogc_gndtest.launch`
 
 ## Launch files
 
@@ -51,11 +49,9 @@ All launch files are located in the launch folder
 
 See each launch file for a description of their arguments
 
-Note: The `interval_1` and `interval_2` arguments in the launch files are currently not used
-
 ## Nodes
 
-All nodes are located inside the `src` folder
+All nodes are located inside the `src` folder.
 
 ### sbd_air_link
 
@@ -64,37 +60,46 @@ Send and receive SBD msgs for the aircraft
 **Subscribed topics**
 
 * `ogc/to_sbd`: Topic through which the despatcher node publishes messages that will be sent out via SBD
+* `ogc/identifiers/valid_ids`: Receive the list of authorised device IDs if it is changed
 
 **Published Topics**
 
 * `ogc/from_sbd`: Topic through which the sbd_link node publishes messages that it had received via SBD
+* `ogc/to_timeout`: Publishes feedback on the delivery status of outgoing SBD msg. Data is used by the timeout node. **Note**: This is inherited and used by the sbd ground node, and is actually not actively used in the sbd air node (the feedback timeout node does not run on the air side)
+
+**Subscribed Services**
+
+* `identifiers/self/serial`: Get the Rockblock serial number of the local device
+* `identifiers/get/serial`: Get the Rockblock serial number of the specified client device
+* `identifiers/check/lazy`: Perform a simple verification of whether an incoming message is from a valid sender
+* `identifiers/get/valid_ids`: Request for the list of authorised device IDs
 
 **Parameters**
 
+* `thr_server`: Whether the server or the RB-2-RB method will be used. 1 = Server, 0 = RB-2-RB
 * `interval`: Time interval between each SBD mailbox check in seconds
-* `own_serial`: Serial number of the Rockblock connected to the aircraft. **Note that this is not the IMEI number**
-* `client_serial`: Serial number of the Rockblock connected to the GCS
 * `portID`: Serial port of the aircraft companion computer where the Rockblock is connected to (e.g. dev/ttyUSB0)
 
 ### sbd_gnd_link
 
 Send and receive SBD msgs for GCS. Inherits most of the code from **sbd_air_link** node
 
-**Subscribed topics**
+**Subscribed and Published topics**
 
-* `ogc/to_sbd`: Topic through which the despatcher node publishes messages that will be sent out via SBD
+The subscribed and published topics are the same as and inherited from sbd_air_link
 
-**Published Topics**
+**Subscribed Services**
 
-* `ogc/from_sbd`: Topic through which the sbd_link node publishes messages that it had received via SBD
+The sbd_gnd_link inherits all services from the sbd_air_link, and uses the additional services:
+
+* `identifiers/get/imei`: Get the Rockblock IMEI number of the specified client device
+* `identifiers/check/proper`: To verify that incoming messages come from valid clients
+* `identifiers/self/sbd`: Get the credentials required for accessing the admin server (for server communication)
+* `identifiers/self/self_id`: Get the identifier-assigned ID of the local device
 
 **Parameters**
 
-* `interval`: Time interval between each SBD mailbox check in seconds
-* `own_serial`: Serial number of the Rockblock connected to the GCS. **Note that this is not the IMEI number**
-* `client_serial`: Serial number of the Rockblock connected to the aircraft
-* `portID`: Serial port of the GCS where the Rockblock is connected to (e.g. dev/ttyUSB0)
-* `credentials`: Location of the login.txt file containing the required login info to send and receive messages via the web server method
+The parameters are the same as and inherited from sbd_air_link
 
 # Modules
 

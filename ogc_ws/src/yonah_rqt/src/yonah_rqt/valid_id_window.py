@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-command_window: Part of the RQt that is responsible to send commands to aircraft
+valid_id_window: An rqt window that is spawned when rqt first starts up. Responsible for initial setting up of rqt
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
@@ -48,6 +48,7 @@ class ValidIdWindow (QDialog):
         self.populate_layout()
 
     def populate_layout(self):
+        '''Generates the UI of the valid id window'''
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         header = QLabel('Select Aircrafts you need: ')
 
@@ -67,6 +68,7 @@ class ValidIdWindow (QDialog):
         self.setLayout(self.layout)
 
     def accept(self):
+        '''Handles sending of valid ids'''
         for i in self.air_ids:
             if self.buttons_state[i].isChecked() == True:
                 self.buttons_state[i].setEnabled(False)

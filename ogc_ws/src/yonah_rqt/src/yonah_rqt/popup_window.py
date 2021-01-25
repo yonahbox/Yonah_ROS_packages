@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-summary_window: Part of the RQt that shows the main information about each aircraft
+popup_window: A centralised set of functions in order to display PopUp Windows
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
@@ -43,6 +43,7 @@ class PopupMessages(QWidget):
         self.command_publisher.publish(message)
 
     def user_input_textbox(self, title, message, id):
+        '''Creates a Input Dialogue window'''
         text, ok = QInputDialog.getText(self, title, message + str(id))
         if ok:
             self.input_text = [text, id]
@@ -50,6 +51,7 @@ class PopupMessages(QWidget):
             self.input_text = []
 
     def emergency_disarm(self):
+        '''Creates window for emergency disarm'''
         self.windows_opened["emergency disarm"] = True
         num,ok = QInputDialog.getInt(self,"Emergency Disarm","Enter Aircraft Number for EMERGENCY DISARM")
         
@@ -62,6 +64,7 @@ class PopupMessages(QWidget):
             rospy.loginfo("[AC %d EMERGENCY DISARM]", num)
     
     def arm_window(self, sysid, message_type, title, message, text = "Do you still want to continue?"):
+        '''Creates window for arm or disarm'''
         self.destination_id = sysid
         self.message = QMessageBox()
         if message_type[1] == "Warning":
@@ -81,6 +84,7 @@ class PopupMessages(QWidget):
             self.message.buttonClicked.connect(self.sync_resume)
 
     def sync_resume(self, i):
+        '''Handles sending of syncthing resume command'''
         if i.text() == '&Yes':
             data = "syncthing resume"
             statustext_message = "Aircraft {} Resume Syncthing command sent".format(self.destination_id)
@@ -108,6 +112,7 @@ class PopupMessages(QWidget):
         self.windows_opened["arm window"] = self.message.isVisible()
 
     def warning_message(self, heading, text):
+        '''Creates window for warning window'''
         self.warning = QMessageBox()
         self.warning.setIcon(QMessageBox.Warning)
         self.warning.setText(heading)

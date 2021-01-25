@@ -23,6 +23,7 @@ from std_msgs.msg import String
 from despatcher.msg import LinkMessage
 
 class MessageTimer():
+    '''Create class for every new message'''
     def __init__(self, message, message_id):
         self.message_id = message_id
         self.message = message
@@ -31,8 +32,8 @@ class MessageTimer():
         self._watchdog = self.timeout
 
     def countdown(self, data):
-        self._watchdog[self.status] -= 1
-        if self._watchdog[self.status] == 0:
+        self._watchdog[self.status] -= 1 # perform countdown
+        if self._watchdog[self.status] == 0: # stop when reaches 0
             self.stop_timer()
             data = "Command " + self.message + " with message ID " + str(self.message_id) + " has failed to send.\n\nLast status: " + str(self.status)
             send_to_rqt(self.message_id, data)
@@ -42,6 +43,7 @@ class MessageTimer():
             rospy.logerr("rqt: Message status is negative")
 
     def stop_timer(self):
+        '''Stop timer'''
         self.watcher.shutdown()
 
     '''Main Function'''
@@ -49,16 +51,19 @@ class MessageTimer():
         self.watcher = rospy.Timer(rospy.Duration(1), self.countdown)
 
 class Manager():
+    '''Main class that handles the incoming information'''
     def __init__(self):
         rospy.init_node('timeout', anonymous=False)
-        self.messages = {}
+        self.messages = {} # Stores all the messages as MessageTimer classes
     
     def watcher(self):
+        '''Watches incoming data from the topics and redirect to sent_commands'''
         rospy.Subscriber("ogc/to_despatcher", LinkMessage, self.sent_commands)
         rospy.Subscriber("ogc/to_timeout", LinkMessage, self.sent_commands)
         rospy.spin()
 
     def sent_commands(self, data):
+        '''Main function that processes the data'''
         commands = ["sms", "statustext", "arm", "mode", "wp", "disarm", "syncthing"]
         if data.uuid not in self.messages and data.data.split()[0] in commands:
             self.messages[data.uuid] = MessageTimer(data.data, data.uuid)
@@ -89,6 +94,7 @@ class Manager():
                 rospy.logerr("rqt: Unknown message received: " + str(data))
 
 def send_to_rqt(message_id, data):
+    '''Handles sending LinkMessage to rqt'''
     message = LinkMessage()
     message.id = message_id
     message.data = data
@@ -96,7 +102,6 @@ def send_to_rqt(message_id, data):
     pub_to_rqt.publish(message)
 
 if __name__=='__main__':
-    rospy.logerr("name is called")
     run = Manager()
     pub_to_rqt = rospy.Publisher("ogc/feedback_to_rqt", LinkMessage, queue_size = 5)
     run.watcher()

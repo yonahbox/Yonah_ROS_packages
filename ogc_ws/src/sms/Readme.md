@@ -6,26 +6,7 @@ ROS Package to handle Yonah's SMS Telemetry for Operational Usage. This package 
 
 ## Installation
 
-If you haven't done so already, clone this repository and check out onto the branch on which this Readme is located. Then initialize the OGC workspace:
-
-```
-cd ogc_ws
-catkin_make
-```
-
-Source the `setup.bash` file of the ogc workspace devel folder in your `.bashrc` file, and reload the `bashrc`
-
-Change the `client_phone_no` parameter in the launch files (located in the `launch` folder) to the phone number of the receipient. For example, if this package is deployed on the aircraft, specify the phone number of the GCS, and vice-versa. Be sure the include the country code of the number (e.g. +6512345678, instead of 12345678))
-
-Make sure that a text file containing whitelisted phone numbers (with the title `whitelist.txt`) is located in `src` directory
-
-* When specifying the phone numbers, be sure to include the country code of the number
-* Example file, containing one Singapore and one Malaysian phone number (`whitelist.txt`):
-
-```
-+6512345678
-+60123456789
-```
+This package should be installed alongside the rest of Yonah's OGC. See the [Software Install](https://github.com/yonahbox/Yonah_ROS_packages/wiki/Software-Installation) page for more details.
 
 ## Usage
 
@@ -33,13 +14,15 @@ Before running this package, make sure you are connected into the RUT cellular r
 
 **Testing**
 
-To test the air side sms link, run `sms_airtest.launch`. In a separate terminal, launch mavros (to-do: Elaborate on this)
+To test the air side sms link, run `sms_airtest.launch`. In a separate terminal, launch mavros.
 
 To test the ground side sms link, run `sms_gndtest.launch`
 
-**Opeational usage**
+**Operational usage**
 
-(to-do. This package is not yet operational)
+To run the sms link on the air side, go to the root launch folder of this repository and run `ogc_airtest.launch`
+
+To run the sms link on the ground side, go to the root launch folder of this repository and run `ogc_gndtest.launch`
 
 ## Launch files
 
@@ -56,7 +39,7 @@ All nodes are located inside the `src` folder
 
 ### sms_link
 
-Interacts with the cellular router to send and receive SMS messages
+Interacts with the cellular router to send and receive SMS messages. See the SMS [Wiki Page](https://github.com/yonahbox/Yonah_ROS_packages/wiki/SMS-Link) for detailed information on how the link operates.
 
 **Subscribed topics**
 
@@ -65,13 +48,18 @@ Interacts with the cellular router to send and receive SMS messages
 **Published Topics**
 
 * `ogc/from_sms`: Topic through which the sms_link node publishes messages that it had received as SMS
+* `ogc/to_switcher_sms`: Topic through which the sms_link node publishes updates on the router connection status. Data is used by switcher node
+* `ogc/to_timeout`: Topic thorugh which the sms_link node publishes feedback on the delivery status of outgoing SMS. Data is used by the timeout node
+
+**Subscribed Services**
+
+* `identifiers/check/proper`: To verify that incoming messages come from valid clients
+* `identifiers/get/number`: Get the phone number of the client which the node is sending messages to
 
 **Parameters**
 
 * `router_username`: Username of cellular router
 * `router_ip`: IP address of cellular router
-* `client_phone_no`: Phone number of client (if this package is running on the ground, then the client is the aircraft, and vice versa)
-* `whitelist`: Location of the text file containing whitelisted phone numbers, relative to the sms package folder
 
 ## Modules
 

@@ -18,5 +18,9 @@ It subcribes to the `/mavros/statustext/recv/` topic and publishes to `/ogc/stat
 The ground statustext node serves as a translater to convert the message into a readable string for display on the GUI. 
 It subscribes to `/ogc/from_despatcher/statustext/` and publishes to `/ogc/yonahtext/`
 
+### Yonah Statustext Msg
+
+This is a custom ROS msg that contains the condensed version of the statustext. It is located in the `msg` directory.
+
 # License
 This package is licensed under the GNU GPL version 3 license or later. Refer to the COPYING.txt file in the root folder of this repository for more details
