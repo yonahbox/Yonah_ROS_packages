@@ -18,7 +18,7 @@ Launch the node alongside all other OGC packages/nodes using the `ogc_airtest.la
 
 ## Nodes
 
-The syncthing node is located in the `srv` folder.
+The syncthing node is located in the `src` folder.
 
 **Subscribed Topics**
 
