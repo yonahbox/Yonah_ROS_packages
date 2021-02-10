@@ -39,10 +39,12 @@ class watchdog():
         self._client_id = client_id
         self._link = TELE
         self._max_time = [0,0,0] # Starting time in seconds
-        self._max_time[TELE] = 20
+        self._max_time[TELE] = 20 # Set initial values of tele/sms over here
         self._max_time[SMS] = 20
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
         self.countdown_handler = rospy.Timer(rospy.Duration(0.5), self.countdown)
+
+    # @TODO: Dynamic timeout handling based on Bertier et al (2002) and RFC6298
 
     def reset_watchdog(self, link):
         self._watchdog[link] = self._max_time[link]
@@ -119,7 +121,7 @@ class switcher():
                 self._watchdogs[i].switch(link)
 
     ###########################
-    # Link Monitors
+    # Baseline Link Monitors
     ###########################
     
     def _is_valid_msg(self, msg):
@@ -145,19 +147,22 @@ class switcher():
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
-        # Add optiimization methods here
         valid, sender_sysid = self._is_valid_msg(data.data)
         if valid:
             self._monitor_common(sender_sysid, TELE)
 
     def monitor_sms(self, data):
         '''Monitor sms link for incoming msgs'''
-        # Add optiimization methods here
         valid, sender_sysid = self._is_valid_msg(data.data)
         if valid:
             self._monitor_common(sender_sysid, SMS)
 
+    ###########################
+    # Optimisation Monitors
+    ###########################
+    
     def monitor_router(self, data):
+        '''Check router for updates on connection status'''
         if self.SMS_timedout:
             return
         connection = RuTOS.get_conntype(self._ssh)
@@ -177,6 +182,7 @@ class switcher():
                 self._watchdogs[i].switch(old_link + 1) # In 4G mode, switch at low rssi
     
     def monitor_teleout(self, data):
+        '''Obtain send status of outgoing tele msgs'''
         if data.data == "Timeout":
             self._timeout_counter += 1
         elif data.data == "Success":
@@ -190,6 +196,7 @@ class switcher():
                     self._watchdogs[i].switch(SMS)
 
     def monitor_smsout(self, data):
+        '''Obtain send status of outgoing sms msgs'''
         if data.data == "Timeout":
             rospy.logerr("Switcher: SMS timeout. Link will restart in 8 minutes")
             self.SMS_timedout = True
