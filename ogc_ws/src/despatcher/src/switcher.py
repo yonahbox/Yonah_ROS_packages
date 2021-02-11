@@ -60,6 +60,7 @@ class watchdog():
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
+        #TODO: Possibly have to decrease the sleep rate to 0.1s for more accurate dynamic delay
         if self._link >= SBD:
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
@@ -125,16 +126,16 @@ class switcher():
     ###########################
     
     def _is_valid_msg(self, msg):
-        '''Takes in a string msg. Return true + sender's sysid if msg is valid'''
+        '''Takes in a string msg. Return true + sender's sysid + timestamp if msg is valid'''
         try:
             msgtype, devicetype, sysid, uuid, timestamp, entries \
                 = headers.split_headers(msg)
             if not self._new_msg_chk.is_new_msg(timestamp, sysid):
-                return False, 0
+                return False, 0, 0
             else:
-                return True, sysid
+                return True, sysid, timestamp
         except (ValueError, IndexError, TypeError):
-            False, 0
+            False, 0, 0
     
     def _monitor_common(self, sysid, link):
         '''Manage link status of the client with the specified sysid'''
@@ -147,13 +148,13 @@ class switcher():
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
-        valid, sender_sysid = self._is_valid_msg(data.data)
+        valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
             self._monitor_common(sender_sysid, TELE)
 
     def monitor_sms(self, data):
         '''Monitor sms link for incoming msgs'''
-        valid, sender_sysid = self._is_valid_msg(data.data)
+        valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
             self._monitor_common(sender_sysid, SMS)
 
