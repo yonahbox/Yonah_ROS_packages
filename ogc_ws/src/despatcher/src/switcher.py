@@ -20,17 +20,18 @@ switcher.py: Handle intelligent link-switching logic
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import rospy
-import RuTOS
 from std_msgs.msg import String, UInt8MultiArray
 
+from dynamic_delay import dynamic_delay
 import headers
 from identifiers.srv import GetIds
+import RuTOS
 
 TELE = 0
 SMS = 1
 SBD = 2
 
-SMS_timedout = False
+SMS_timedout = False #@TODO: Why is SMS_timedout declared here and then again in the switcher class???
 
 class watchdog():
     '''An instance of watchdog should be created for each client'''
@@ -38,21 +39,47 @@ class watchdog():
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
         self._client_id = client_id
         self._link = TELE
-        self._max_time = [0,0,0] # Starting time in seconds
-        self._max_time[TELE] = 20 # Set initial values of tele/sms over here
-        self._max_time[SMS] = 20
+        self._max_time = [0,0] # Starting time in seconds. Defined as rto in the dynamic delay calculators
+        self._delay_calc = [None, None] # Dynamic delay calculator
+        self._init_delay_calc()
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
-        self.countdown_handler = rospy.Timer(rospy.Duration(0.5), self.countdown)
+        self.countdown_handler = rospy.Timer(rospy.Duration(1), self.countdown)
 
-    # @TODO: Dynamic timeout handling based on Bertier et al (2002) and RFC6298
+    ###########################
+    # Dynamic Delay Interfaces
+    ###########################
+
+    def _init_delay_calc(self):
+        '''Initialise dynamic delay calculators for each link in the watchdog'''
+        link = 0
+        while link <= SMS:
+            self._delay_calc[link] = dynamic_delay()
+            self._delay_calc[link].set_initial_rto(self._max_time[link])
+            self.update_countdown_time(link)
+            link += 1
+        self._delay_calc[TELE].set_interval(rospy.get_param("~interval_1"))
+        self._delay_calc[TELE].set_extended_interval(rospy.get_param("~interval_2"))
+        self._delay_calc[SMS].set_interval(rospy.get_param("~interval_2"))
+        self._delay_calc[SMS].set_extended_interval(rospy.get_param("~interval 3"))
+    
+    def update_countdown_time(self, link):
+        '''Update the watchdog countdown time of the specified link with calculated rto'''
+        self._max_time[link] = self._delay_calc[link].get_rto()
+
+    def calc_rto(self, link, sent_timestamp):
+        self._delay_calc[link].calc_rto(sent_timestamp)
+
+    ###########################
+    # Main Watchdog Functions
+    ###########################
 
     def reset_watchdog(self, link):
         self._watchdog[link] = self._max_time[link]
     
     def switch(self, target_link):
         '''Perform the link-switch action and notify despatcher'''
-        if target_link == 1 and SMS_timedout:
-            target_link = 2
+        if target_link == SMS and SMS_timedout:
+            target_link = SBD
         self._link = target_link
         self._watchdog[target_link] = self._max_time[target_link]
         rospy.logwarn("Switcher: Client " + str(self._client_id) +  " switching to link " + str(target_link))
@@ -60,7 +87,6 @@ class watchdog():
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
-        #TODO: Possibly have to decrease the sleep rate to 0.1s for more accurate dynamic delay
         if self._link >= SBD:
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
@@ -137,26 +163,29 @@ class switcher():
         except (ValueError, IndexError, TypeError):
             False, 0, 0
     
-    def _monitor_common(self, sysid, link):
+    def _monitor_common(self, sysid, link, sent_timestamp):
         '''Manage link status of the client with the specified sysid'''
-        # If active link is downstream of current link, trigger link switch to current link
-        # Otherwise, simply reset the watchdog of the current link
+        # If active link is downstream of current link, trigger link switch to current link and enter recovery phase
+        # Otherwise, reset watchdog and update max_time of the current link
         if self._watchdogs[sysid].link_status() > link:
             self._watchdogs[sysid].switch(link)
+            # @TODO: Max-time handling logic for recovery phase
         else:
             self._watchdogs[sysid].reset_watchdog(link)
+            self._watchdogs[sysid].calc_rto(link, sent_timestamp)
+            #self._watchdogs[sysid].update_countdown_time(link)
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
         valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
-            self._monitor_common(sender_sysid, TELE)
+            self._monitor_common(sender_sysid, TELE, sent_timestamp)
 
     def monitor_sms(self, data):
         '''Monitor sms link for incoming msgs'''
         valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
-            self._monitor_common(sender_sysid, SMS)
+            self._monitor_common(sender_sysid, SMS, sent_timestamp)
 
     ###########################
     # Optimisation Monitors
