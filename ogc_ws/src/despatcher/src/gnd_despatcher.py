@@ -82,7 +82,7 @@ class aircraft():
     def switch_link(self, link):
         self._link = link
         if self._link == SBD:
-            self._tele_interval = rospy.get_param("~interval_3")
+            self._tele_interval = rospy.get_param("~interval_2")
             self._sms_interval = rospy.get_param("~interval_3")
         elif self._link == SMS:
             self._tele_interval = rospy.get_param("~interval_2")
@@ -136,19 +136,15 @@ class gnddespatcher():
             self._aircrafts[i] = aircraft(i)
 
     def update_valid_ids_cb(self, msg):
+        '''Callback function to obtain updated list of valid ids from the admin server'''
         self._valid_ids = [i for i in msg.data]
-
+        # clear and recreate self._new_msg_chk and self._aircrafts, since they are dependent on valid id list
         del self._new_msg_chk
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
-
-
         for j in self._aircrafts.keys():
             self._aircrafts[j].kill_timers()
-
-        # clear and recreate self._aircrafts
         del self._aircrafts
         self._aircrafts = {}
-
         for i in self._valid_ids:
             self._aircrafts[i] = aircraft(i)
 

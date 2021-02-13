@@ -33,14 +33,18 @@ SBD = 2
 
 SMS_timedout = False #@TODO: Why is SMS_timedout declared here and then again in the switcher class???
 
+###########################
+# Watchdog Class
+###########################
+
 class watchdog():
     '''An instance of watchdog should be created for each client'''
     def __init__(self, client_id):
         self.pub_to_despatcher = rospy.Publisher('ogc/from_switcher', String, queue_size=5)
         self._client_id = client_id
         self._link = TELE
-        self._max_time = [0,0] # Starting time in seconds. Defined as rto in the dynamic delay calculators
-        self._delay_calc = [None, None] # Dynamic delay calculator
+        self._max_time = [0,0] # Starting time in seconds. Values are obtained from "rto" in dynamic delay calculators
+        self._delay_calc = [None, None] # Dynamic delay calculator. One for tele, one for sms
         self._init_delay_calc()
         self._watchdog = list(self._max_time) # Watchdog timer. When timer expires, link switch will trigger
         self.countdown_handler = rospy.Timer(rospy.Duration(1), self.countdown)
@@ -54,29 +58,42 @@ class watchdog():
         link = 0
         while link <= SMS:
             self._delay_calc[link] = dynamic_delay()
-            # Modify your respective link intervals here
+            # Modify your respective link intervals here. @TODO: Break out all link interval handling into one area
             if link == TELE:
                 self._delay_calc[link].set_interval(rospy.get_param("~interval_1"))
-                self._delay_calc[link].set_extended_interval(rospy.get_param("~interval_2"))
+                self._delay_calc[link].set_recovery_interval_and_rto(rospy.get_param("~interval_2"))
             elif link == SMS:
                 self._delay_calc[link].set_interval(rospy.get_param("~interval_2"))
-                self._delay_calc[link].set_extended_interval(rospy.get_param("~interval 3"))
-            self._delay_calc[link].init_rto()
-            self.update_countdown_time(link)
+                self._delay_calc[link].set_recovery_interval_and_rto(rospy.get_param("~interval 3"))
+            self._reset_rto(link)
+            self._watchdog[link] = self._max_time[link]
             link += 1
 
-    def update_countdown_time(self, link):
+    def _update_max_time(self, link):
         '''Update the watchdog countdown time of the specified link with calculated rto'''
         self._max_time[link] = self._delay_calc[link].get_rto()
 
-    def calc_rto(self, link, sent_timestamp):
+    def _reset_rto(self, link):
+        if link < len(self._delay_calc):
+            rospy.logerr(f"Switcher: Invalid link {link} for client {self._client_id} in _reset_rto")
+            return
+        self._delay_calc[link].reset_rto()
+        self._update_max_time(link)
+    
+    def _calc_rto(self, link, sent_timestamp):
+        if link < len(self._delay_calc):
+            rospy.logerr(f"Switcher: Invalid link {link} for client {self._client_id} in _calc_rto")
+            return
         self._delay_calc[link].calc_rto(sent_timestamp)
+        self._update_max_time(link)
 
     ###########################
     # Main Watchdog Functions
     ###########################
 
-    def reset_watchdog(self, link):
+    def reset_watchdog(self, link, sent_timestamp):
+        '''Update the watchdog max time and then reset watchdog to that time'''
+        self._calc_rto(link, sent_timestamp)
         self._watchdog[link] = self._max_time[link]
     
     def switch(self, target_link):
@@ -84,9 +101,11 @@ class watchdog():
         if target_link == SMS and SMS_timedout:
             target_link = SBD
         self._link = target_link
-        self._watchdog[target_link] = self._max_time[target_link]
         rospy.logwarn("Switcher: Client " + str(self._client_id) +  " switching to link " + str(target_link))
         self.pub_to_despatcher.publish(str(self._client_id) + " " + str(self._link))
+        if target_link <= SMS:
+            self._reset_rto(target_link) # Set rto to its beginning value
+            self._watchdog[target_link] = self._max_time[target_link]
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
@@ -102,6 +121,10 @@ class watchdog():
 
     def kill_timers(self):
         self.countdown_handler.shutdown()
+
+###########################
+# Switcher Class
+###########################
 
 class switcher():
 
@@ -169,11 +192,8 @@ class switcher():
         # Otherwise, reset watchdog and update max_time of the current link
         if self._watchdogs[sysid].link_status() > link:
             self._watchdogs[sysid].switch(link)
-            # @TODO: Max-time handling logic for recovery phase
         else:
             self._watchdogs[sysid].reset_watchdog(link)
-            self._watchdogs[sysid].calc_rto(link, sent_timestamp)
-            #self._watchdogs[sysid].update_countdown_time(link)
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''

@@ -31,39 +31,48 @@ class dynamic_delay():
     '''Each link monitor in switcher should spawn an instance of this calculator'''
     def __init__(self):
         self._inter = 1 # Interval between sender's msgs
-        self._extended_inter = 3 # Extended interval
-        self._first_r = True # True = waiting for first incoming msg after startup/restoration of link
+        self._recovery_inter = 3 # Extended interval
+        self._link_state = 0 # -1 = link down, 0 = link initialised/in recovery mode, 1 = link up
         self._srtt = 0 # Smoothed round-trip-time (rtt)
         self._rttvar = 0 # rtt variance
         self._rto = 1 # "Retransmission" timeout. In our case it is the watchdog timeout value
-        self._recovery_rto = 1.5 * self._extended_inter # rto used during recovery phase
+        self._recovery_rto = 3 * self._recovery_inter # rto used during recovery phase
         self._clock_gran = 1 # Clock granularity (seconds)
 
     def calc_rto(self, sent_timestamp):
         '''Calculate Retransmission Timeout according to Jacobson's Algo (RFC6298)'''
+        if self._link_state == -1:
+            return
         recv_timestamp = time.time().seconds
         r = recv_timestamp - sent_timestamp + self._inter # r = measured rtt
-        if self._first_r:
+        if self._link_state == 0:
             self._rttvar = 0.5*r
             self._srtt = r
-            self._first_r = False
+            self._link_state = 1
         else:
             # Use RFC recommended values of alpha = 0.125 and beta = 0.25. Numbers are hardcoded to save memory
             self._rttvar = 0.75 * self._rttvar + 0.25 * abs(self._srtt - r)
             self._srtt = 0.875 * self._srtt + 0.125 * r
         self._rto = self._srtt + max(self._clock_gran, 4 * self._rttvar)
 
-    def init_rto(self):
-        '''Initialize RTO to extended interval. Used during bootup and link recovery'''
-        self._rto = self._extended_inter
-        self._first_r = True
+    def reset_rto(self):
+        '''Set RTO to recovery RTO. Used during bootup and link recovery'''
+        self._rto = self._recovery_rto
+        self._link_state = 0
+
+    def set_link_state(self, state):
+        if state == -1 or state == 0 or state == 1:
+            self._link_state = state
 
     def set_interval(self, inter):
         self._inter = inter
 
-    def set_extended_interval(self, extended_inter):
-        self._extended_inter = extended_inter
+    def set_recovery_interval_and_rto(self, extended_inter):
+        self._recovery_inter = extended_inter
+        self._recovery_rto = 3 * self._recovery_inter
     
     def get_rto(self):
         return self._rto
 
+    def get_link_state(self):
+        return self._link_state

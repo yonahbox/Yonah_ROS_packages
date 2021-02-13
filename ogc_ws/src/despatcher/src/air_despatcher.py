@@ -74,8 +74,6 @@ class airdespatcher():
         self._statustext_flag = True # Whether we should send status texts to Ground Control
         self.payloads = air_payload() # Handler for regular and on-demand payloads
         self._prev_transmit_time = rospy.get_rostime().secs # Transmit time of previous incoming msg
-        # WARN deleted self._header = new_msg_chk(9)
-
 
         rospy.wait_for_service("identifiers/self/self_id")
         rospy.wait_for_service("identifiers/get/valid_ids")
@@ -85,7 +83,6 @@ class airdespatcher():
         # Air Identifiers (attached to outgoing msgs)
         self._is_air = 1 # 1 = Aircraft, 0 = GCS. Obviously, air despatcher should be on an aircraft...
         self._id = ids_get_self_id().data_int
-        # self._id = rospy.get_param("~self_id") # Our aircraft ID
 
         # Ground Identifiers. For now we assume only one GCS
         self.ground_id = ids_get_valid_ids().ids[0]
@@ -118,9 +115,10 @@ class airdespatcher():
         rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
 
     def update_valid_ids_cb(self, msg):
+        '''Callback function to obtain updated list of valid ids from the admin server'''
         valid_ids = [i for i in msg.data]
         self.ground_id = valid_ids[0]
-
+        # clear and recreate self._new_msg_chk, since it is dependent on valid id list
         del self._new_msg_chk
         self._new_msg_chk = headers.new_msg_chk(self.ground_id)
 
@@ -261,24 +259,21 @@ class airdespatcher():
         id = int(msglist[0]) # Msg format: aircraft id + link no. For now, id is not used
         self.link_select = int(msglist[1])
         if self.link_select == SBD:
-            self._tele_interval = self._interval_3
+            self._tele_interval = self._interval_2
             self._sms_interval = self._interval_3
             self.sbd_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sbd)
         elif self.link_select == SMS:
             self._tele_interval = self._interval_2
             self._sms_interval = self._interval_2
             self.sms_sender = rospy.Timer(rospy.Duration(0.5), self.send_regular_payload_sms)
-            try:
+            if hasattr(self, 'sbd_sender'):
                 self.sbd_sender.shutdown()
-            except:
-                pass
         elif self.link_select == TELE:
             self._tele_interval = self._interval_1
-            try:
+            if hasattr(self, 'sms_sender'):
                 self.sms_sender.shutdown()
+            if hasattr(self, 'sbd_sender'):
                 self.sbd_sender.shutdown()
-            except:
-                pass
 
     def _handle_modified(self, msg):
         self._msg = "syncthing downloaded " + msg.data
