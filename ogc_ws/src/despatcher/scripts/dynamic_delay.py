@@ -53,9 +53,9 @@ class dynamic_delay():
             self._srtt = 0.875 * self._srtt + 0.125 * r
         self._rto = self._srtt + max(self._clock_gran, 4 * self._rttvar)
 
-    def set_initial_rto(self, t):
-        '''Initialize RTO to t. Used during bootup or on restoration of link'''
-        self._rto = t
+    def init_rto(self):
+        '''Initialize RTO to extended interval. Used during bootup and link recovery'''
+        self._rto = self._extended_inter
         self._first_r = True
 
     def set_interval(self, inter):

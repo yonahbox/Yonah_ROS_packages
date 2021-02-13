@@ -54,14 +54,17 @@ class watchdog():
         link = 0
         while link <= SMS:
             self._delay_calc[link] = dynamic_delay()
-            self._delay_calc[link].set_initial_rto(self._max_time[link])
+            # Modify your respective link intervals here
+            if link == TELE:
+                self._delay_calc[link].set_interval(rospy.get_param("~interval_1"))
+                self._delay_calc[link].set_extended_interval(rospy.get_param("~interval_2"))
+            elif link == SMS:
+                self._delay_calc[link].set_interval(rospy.get_param("~interval_2"))
+                self._delay_calc[link].set_extended_interval(rospy.get_param("~interval 3"))
+            self._delay_calc[link].init_rto()
             self.update_countdown_time(link)
             link += 1
-        self._delay_calc[TELE].set_interval(rospy.get_param("~interval_1"))
-        self._delay_calc[TELE].set_extended_interval(rospy.get_param("~interval_2"))
-        self._delay_calc[SMS].set_interval(rospy.get_param("~interval_2"))
-        self._delay_calc[SMS].set_extended_interval(rospy.get_param("~interval 3"))
-    
+
     def update_countdown_time(self, link):
         '''Update the watchdog countdown time of the specified link with calculated rto'''
         self._max_time[link] = self._delay_calc[link].get_rto()
@@ -121,18 +124,15 @@ class switcher():
         rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
 
     def update_valid_ids_cb(self, msg):
+        '''Callback function to obtain updated list of valid ids from the admin server'''
         self._valid_ids = [i for i in msg.data]
-
         del self._new_msg_chk
         self._new_msg_chk = headers.new_msg_chk(self._valid_ids)
-
+        # clear and recrete self._watchdogs, since it is dependent on valid id list
         for i in self._watchdogs.values():
             i.kill_timers()
-
-        # clear and recrete self._watchdogs
         del self._watchdogs
         self._watchdogs = {}
-
         for i in self._valid_ids:
             self._watchdogs[i] = watchdog(i)
 
