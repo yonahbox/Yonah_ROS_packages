@@ -43,7 +43,7 @@ class dynamic_delay():
         '''Calculate Retransmission Timeout according to Jacobson's Algo (RFC6298)'''
         if self._link_state == -1:
             return
-        recv_timestamp = time.time().seconds
+        recv_timestamp = int(time.time())
         r = recv_timestamp - sent_timestamp + self._inter # r = measured rtt
         if self._link_state == 0:
             self._rttvar = 0.5*r

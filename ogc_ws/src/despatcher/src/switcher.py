@@ -48,6 +48,9 @@ class watchdog():
         self._init_delay_calc_and_timer()
         self.countdown_handler = rospy.Timer(rospy.Duration(1), self.countdown)
 
+    def _print_rto_update(self, link):
+        rospy.logwarn(f"Switcher: Device {self._client_id}, link {link} watchdog set to {self._watchdog[link]} secs")
+    
     def _init_delay_calc_and_timer(self):
         '''Initialise dynamic delay calculators and watchdog timers for each link in the watchdog'''
         link = 0
@@ -59,15 +62,17 @@ class watchdog():
                 self._delay_calc[link].set_recovery_interval_and_rto(rospy.get_param("~interval_2"))
             elif link == SMS:
                 self._delay_calc[link].set_interval(rospy.get_param("~interval_2"))
-                self._delay_calc[link].set_recovery_interval_and_rto(rospy.get_param("~interval 3"))
+                self._delay_calc[link].set_recovery_interval_and_rto(rospy.get_param("~interval_3"))
             self._delay_calc[link].reset_rto()
             self._watchdog[link] = self._delay_calc[link].get_rto()
+            self._print_rto_update(link)
             link += 1
 
     def reset_watchdog(self, link, sent_timestamp):
         '''Calculate the new rto time and then reset watchdog to that time'''
         self._delay_calc[link].calc_rto(sent_timestamp)
         self._watchdog[link] = self._delay_calc[link].get_rto()
+        self._print_rto_update(link)
     
     def switch(self, target_link):
         '''Perform the link-switch action and notify despatcher'''
@@ -79,6 +84,7 @@ class watchdog():
         if target_link <= SMS:
             self._delay_calc[target_link].reset_rto() # Set rto to its beginning value
             self._watchdog[target_link] = self._delay_calc[target_link].get_rto()
+            self._print_rto_update(target_link)
     
     def countdown(self, data):
         '''Decrement the watchdog by 1 second. When watchdog expires, trigger the link switch'''
