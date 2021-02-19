@@ -49,7 +49,7 @@ class watchdog():
         self.countdown_handler = rospy.Timer(rospy.Duration(1), self.countdown)
 
     def _print_rto_update(self, link):
-        rospy.logwarn(f"Switcher: Device {self._client_id}, link {link} watchdog set to {self._watchdog[link]} secs")
+        rospy.logwarn(f"Switcher: Client {self._client_id}, link {link} watchdog set to {self._watchdog[link]} secs")
     
     def _init_delay_calc_and_timer(self):
         '''Initialise dynamic delay calculators and watchdog timers for each link in the watchdog'''
@@ -79,7 +79,7 @@ class watchdog():
         if target_link == SMS and SMS_timedout:
             target_link = SBD
         self._link = target_link
-        rospy.logwarn("Switcher: Client " + str(self._client_id) +  " switching to link " + str(target_link))
+        rospy.logwarn(f"Switcher: Client {self._client_id} switching to link {target_link}")
         self.pub_to_despatcher.publish(str(self._client_id) + " " + str(self._link))
         if target_link <= SMS:
             self._delay_calc[target_link].reset_rto() # Set rto to its beginning value
@@ -92,7 +92,7 @@ class watchdog():
             return
         self._watchdog[self._link] = self._watchdog[self._link] - 1
         if self._watchdog[self._link] <= 0:
-            rospy.logwarn(f"Switcher: {self._link} watchdog expired")
+            rospy.logwarn(f"Switcher: Client {self._client_id}, link {self._link} watchdog expired")
             self._delay_calc[self._link].set_link_state(-1) # Tell delay calculator that this link is down
             self.switch(self._link + 1)
     
