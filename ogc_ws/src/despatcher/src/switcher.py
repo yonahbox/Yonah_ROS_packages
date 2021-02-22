@@ -49,7 +49,7 @@ class watchdog():
         self.countdown_handler = rospy.Timer(rospy.Duration(1), self.countdown)
 
     def _print_rto_update(self, link):
-        rospy.logwarn(f"Switcher: Client {self._client_id}, link {link} watchdog set to {self._watchdog[link]} secs")
+        rospy.loginfo(f"Switcher: Client {self._client_id}, link {link} watchdog set to {self._watchdog[link]} secs")
     
     def _init_delay_calc_and_timer(self):
         '''Initialise dynamic delay calculators and watchdog timers for each link in the watchdog'''
