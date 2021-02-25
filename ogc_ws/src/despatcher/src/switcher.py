@@ -198,7 +198,7 @@ class switcher():
         if SIM:
             rto = self._watchdogs[sysid].get_rto(link)
             inter = self._watchdogs[sysid].get_interval(link)
-            rospy.loginfo(f"Switcher: Est latency = {inter + self._fake_latency}")
+            rospy.loginfo(f"Switcher: Est latency = {rto}")
             rospy.loginfo(f"Switcher: True latency = {inter + self._fake_latency}")
             self.writer.writerow([sent_timestamp, inter + self._fake_latency, rto])
 
