@@ -135,9 +135,9 @@ class switcher():
         
         # Log rto data if doing high latency simulation
         if SIM:
-            with open('sim.csv', 'w') as csvfile:
-                self.writer = csv.writer(csvfile)
-                self.writer.writerow(['sent_timestamp', 'rto'])
+            csvfile = open('sim.csv', 'w')
+            self.writer = csv.writer(csvfile)
+            self.writer.writerow(['sent_timestamp', 'rto'])
 
     def update_valid_ids_cb(self, msg):
         '''Callback function to obtain updated list of valid ids from the admin server'''
