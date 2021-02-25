@@ -135,8 +135,9 @@ class switcher():
         
         # Log rto data if doing high latency simulation
         if SIM:
-            csvfile = open('sim.csv', 'w')
-            self.writer = csv.writer(csvfile)
+            env_home = '/home/lenovo' # Since this is only for simulation, we can hardcode the home directory
+            self.csvfile = open(f'{env_home}/sim.csv', 'w')
+            self.writer = csv.writer(self.csvfile)
             self.writer.writerow(['sent_timestamp', 'rto'])
 
     def update_valid_ids_cb(self, msg):
@@ -265,7 +266,7 @@ class switcher():
         router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
         router_monitor.shutdown()
-        self.writer.close()
+        self.csvfile.close()
 
 if __name__=='__main__':
     run = switcher()
