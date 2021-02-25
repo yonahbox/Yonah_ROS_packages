@@ -71,5 +71,8 @@ class dynamic_delay():
     def get_rto(self):
         return self._rto
 
+    def get_interval(self):
+        return self._inter
+
     def get_link_state(self):
         return self._link_state

@@ -36,6 +36,7 @@ SMS_timedout = False #@TODO: Why is SMS_timedout declared here and then again in
 
 if SIM:
     import csv
+    import numpy
 
 ###########################
 # Watchdog Class
@@ -109,6 +110,9 @@ class watchdog():
     def get_rto(self, link):
         return self._watchdog[link]
 
+    def get_interval(self, link):
+        return self._delay_calc[link].get_interval()
+
 ###########################
 # Switcher Class
 ###########################
@@ -138,7 +142,8 @@ class switcher():
             env_home = '/home/lenovo' # Since this is only for simulation, we can hardcode the home directory
             self.csvfile = open(f'{env_home}/sim.csv', 'w')
             self.writer = csv.writer(self.csvfile)
-            self.writer.writerow(['sent_timestamp', 'rto'])
+            self.writer.writerow(['sent_timestamp', 'true rtt', 'est rto'])
+            self._fake_latency = 0
 
     def update_valid_ids_cb(self, msg):
         '''Callback function to obtain updated list of valid ids from the admin server'''
@@ -161,9 +166,10 @@ class switcher():
                 self._watchdogs[i].switch(link)
 
     def _sim_latency(self):
-        '''Calculate and return simulated latency'''
-        latency = 1 #@TODO: Make variable latency using mean and stdev
-        return latency
+        '''Generate simulated latency from a normal distribution'''
+        mean = 1 # Edit mean and standard deviations here
+        stdev = 0.1
+        self._fake_latency = numpy.random.normal(mean, stdev, 1)[0]
 
     ###########################
     # Baseline Link Monitors
@@ -191,14 +197,16 @@ class switcher():
             self._watchdogs[sysid].reset_watchdog(link, sent_timestamp)
         if SIM:
             rto = self._watchdogs[sysid].get_rto(link)
-            self.writer.writerows([str(sent_timestamp), str(rto)])
-    
+            inter = self._watchdogs[sysid].get_interval(link)
+            self.writer.writerows([str(sent_timestamp), str(inter + self._fake_latency), str(rto)])
+
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
         valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
             if SIM:
-                rospy.sleep(self._sim_latency()) # Simulate high latency
+                self._sim_latency()
+                rospy.sleep(self._fake_latency) # Simulate high latency
             self._monitor_common(sender_sysid, TELE, sent_timestamp)
 
     def monitor_sms(self, data):
