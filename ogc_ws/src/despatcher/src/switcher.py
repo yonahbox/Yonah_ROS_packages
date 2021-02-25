@@ -142,7 +142,7 @@ class switcher():
             env_home = '/home/lenovo' # Since this is only for simulation, we can hardcode the home directory
             self.csvfile = open(f'{env_home}/sim.csv', 'w')
             self.writer = csv.writer(self.csvfile)
-            self.writer.writerow(['sent_timestamp', 'true rtt', 'est rto'])
+            self.writer.writerow(['sent_timestamp', 'true latency', 'est latency'])
             self._fake_latency = 0
 
     def update_valid_ids_cb(self, msg):
@@ -198,7 +198,9 @@ class switcher():
         if SIM:
             rto = self._watchdogs[sysid].get_rto(link)
             inter = self._watchdogs[sysid].get_interval(link)
-            self.writer.writerows([str(sent_timestamp), str(inter + self._fake_latency), str(rto)])
+            rospy.loginfo(f"Switcher: Est latency = {inter + self._fake_latency}")
+            rospy.loginfo(f"Switcher: True latency = {inter + self._fake_latency}")
+            self.writer.writerow([sent_timestamp, inter + self._fake_latency, rto])
 
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
