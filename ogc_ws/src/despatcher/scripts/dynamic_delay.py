@@ -5,9 +5,6 @@ Dynamically calculate the watchdog countdown interval for switcher node
 
 The interval calculation adopts Jacobson's Algorithm for TCP RTT calculation
 as given by RFC6298: https://tools.ietf.org/html/rfc6298
-
-The recovery behaviour adopts modified version of Eifel Algorithm
-as given by RFC3522: https://tools.ietf.org/html/rfc3522
 '''
 
 # Copyright (C) 2021, Lau Yan Han and Yonah (yonahbox@gmail.com)

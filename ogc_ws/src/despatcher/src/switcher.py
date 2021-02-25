@@ -31,7 +31,11 @@ TELE = 0
 SMS = 1
 SBD = 2
 
+SIM = True # High latency simulator toggle
 SMS_timedout = False #@TODO: Why is SMS_timedout declared here and then again in the switcher class???
+
+if SIM:
+    import csv
 
 ###########################
 # Watchdog Class
@@ -102,6 +106,9 @@ class watchdog():
     def kill_timers(self):
         self.countdown_handler.shutdown()
 
+    def get_rto(self, link):
+        return self._watchdog[link]
+
 ###########################
 # Switcher Class
 ###########################
@@ -125,6 +132,12 @@ class switcher():
             self._watchdogs[i] = watchdog(i)
     
         rospy.Subscriber("ogc/identifiers/valid_ids", UInt8MultiArray, self.update_valid_ids_cb)
+        
+        # Log rto data if doing high latency simulation
+        if SIM:
+            with open('sim.csv', 'w') as csvfile:
+                self.writer = csv.writer(csvfile)
+                self.writer.writerow(['sent_timestamp', 'rto'])
 
     def update_valid_ids_cb(self, msg):
         '''Callback function to obtain updated list of valid ids from the admin server'''
@@ -145,6 +158,11 @@ class switcher():
             rospy.logwarn(f"Switcher: Switching all clients to {link}")
             if not (self._watchdogs[i].link_status() == link):
                 self._watchdogs[i].switch(link)
+
+    def _sim_latency(self):
+        '''Calculate and return simulated latency'''
+        latency = 1 #@TODO: Make variable latency using mean and stdev
+        return latency
 
     ###########################
     # Baseline Link Monitors
@@ -170,11 +188,16 @@ class switcher():
             self._watchdogs[sysid].switch(link)
         else:
             self._watchdogs[sysid].reset_watchdog(link, sent_timestamp)
+        if SIM:
+            rto = self._watchdogs[sysid].get_rto(link)
+            self.writer.writerows([str(sent_timestamp), str(rto)])
     
     def monitor_tele(self, data):
         '''Monitor telegram link for incoming msgs'''
         valid, sender_sysid, sent_timestamp = self._is_valid_msg(data.data)
         if valid:
+            if SIM:
+                rospy.sleep(self._sim_latency()) # Simulate high latency
             self._monitor_common(sender_sysid, TELE, sent_timestamp)
 
     def monitor_sms(self, data):
@@ -242,6 +265,7 @@ class switcher():
         router_monitor = rospy.Timer(rospy.Duration(5), self.monitor_router)
         rospy.spin()
         router_monitor.shutdown()
+        self.writer.close()
 
 if __name__=='__main__':
     run = switcher()
