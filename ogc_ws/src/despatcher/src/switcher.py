@@ -212,7 +212,7 @@ class switcher():
         if valid:
             if SIM:
                 self._sim_latency()
-                rospy.sleep(self._fake_latency) # Simulate high latency
+                sent_timestamp -= self._fake_latency # Simulate high latency
             self._monitor_common(sender_sysid, TELE, sent_timestamp)
 
     def monitor_sms(self, data):
