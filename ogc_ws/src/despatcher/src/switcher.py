@@ -169,7 +169,11 @@ class switcher():
         '''Generate simulated latency from a normal distribution'''
         mean = 1 # Edit mean and standard deviations here
         stdev = 0.1
-        self._fake_latency = numpy.random.normal(mean, stdev, 1)[0]
+        temp = numpy.random.normal(mean, stdev, 1)[0]
+        if temp < 0:
+            self._fake_latency = 0
+        else:
+            self._fake_latency = temp
 
     ###########################
     # Baseline Link Monitors
