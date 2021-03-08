@@ -30,6 +30,7 @@ class dynamic_delay():
         self._inter = 1 # Interval between sender's msgs
         self._recovery_inter = 3 # Extended interval
         self._link_state = 0 # -1 = link down, 0 = link initialised/in recovery mode, 1 = link up
+        self._recovery_timestamp = 0 # Timestamp when a link recovers. Used to reject old messages at the point of recovery
         self._srtt = 0 # Smoothed round-trip-time (rtt)
         self._rttvar = 0 # rtt variance
         self._rto = 1 # "Retransmission" timeout. In our case it is the watchdog timeout value
@@ -39,6 +40,10 @@ class dynamic_delay():
     def calc_rto(self, sent_timestamp):
         '''Calculate Retransmission Timeout according to Jacobson's Algo (RFC6298)'''
         if self._link_state == -1:
+            return
+        # Reject old messages that were sent prior to recovery. This is to prevent flooding of messages
+        # that were waiting when the link was down, which will mess up the rto calculation
+        if sent_timestamp < self._recovery_timestamp:
             return
         recv_timestamp = int(time.time())
         r = recv_timestamp - sent_timestamp + self._inter # r = measured rtt
@@ -56,6 +61,7 @@ class dynamic_delay():
         '''Set RTO to recovery RTO. Used during bootup and link recovery'''
         self._rto = self._recovery_rto
         self._link_state = 0
+        self._recovery_timestamp = int(time.time())
 
     def set_link_state(self, state):
         if state == -1 or state == 0 or state == 1:
