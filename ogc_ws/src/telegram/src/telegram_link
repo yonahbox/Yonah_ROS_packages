@@ -32,6 +32,7 @@ import sys
 from Td import Td
 
 tdtimeout = {}
+DEBUG = False
 
 class LinkSwitchTimeout():
 	# Checks if outgoing msgs take too long to reach the Tele Servers
@@ -44,6 +45,8 @@ class LinkSwitchTimeout():
 
 	def countdown(self, data):
 		self.time -= 1
+		if DEBUG:
+			rospy.logwarn(f"Tele: {self.timestamp} countdown: {self.time}")
 		if self.time <= 0:
 			self.timer.shutdown()
 			self.pub_to_switcher.publish("Timeout")
@@ -202,7 +205,7 @@ def tdlib_recv():
 				if event['message']['content']['@type'] == 'messageText':
 					if int(event["message"]["content"]["text"]["text"].split()[3]) == 0:
 						timestamp = int(event["message"]["content"]["text"]["text"].split()[-1])
-						if hasattr(tdtimeout, str(timestamp)):
+						if timestamp in tdtimeout:
 							if hasattr(tdtimeout[timestamp],"timer"):
 								tdtimeout[timestamp].timer.shutdown()
 								tdtimeout[timestamp].pub_to_switcher.publish("Success")

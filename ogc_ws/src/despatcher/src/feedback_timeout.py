@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-timeout: A timeout tracker for each command message sent from rqt
+feedback_timeout: A timeout tracker for each command message sent from rqt
 
 Copyright (C) 2020 Dani Purwadi and Yonah (yonahbox@gmail.com)
 
@@ -53,7 +53,7 @@ class MessageTimer():
 class Manager():
     '''Main class that handles the incoming information'''
     def __init__(self):
-        rospy.init_node('timeout', anonymous=False)
+        rospy.init_node('feedback_timeout', anonymous=False)
         self.messages = {} # Stores all the messages as MessageTimer classes
     
     def watcher(self):

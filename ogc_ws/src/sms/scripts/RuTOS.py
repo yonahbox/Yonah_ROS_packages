@@ -94,8 +94,11 @@ def get_gps_speed(ssh):
 def get_conntype(ssh):
     '''Get type of connection'''
     _, stdout, _ = ssh.exec_command("gpsctl -t")
-    conntype = stdout.readlines()[0]
-    return conntype
+    try:
+        conntype = stdout.readlines()[0].rstrip()
+        return conntype
+    except IndexError: # If command returns blank line
+        return None
 
 def get_rssi(ssh):
     '''Get RSSI'''
