@@ -31,7 +31,7 @@ TELE = 0
 SMS = 1
 SBD = 2
 
-SIM = True # High latency simulator toggle
+SIM = False # High latency simulator toggle
 SMS_timedout = False #@TODO: Why is SMS_timedout declared here and then again in the switcher class???
 
 if SIM:
